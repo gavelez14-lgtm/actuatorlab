@@ -674,12 +674,357 @@ export const LESSONS: Lesson[] = [
       },
     ],
   },
-  { slug: "torque-requirements", number: 11, title: "Torque requirements and torque curves", level: "Advanced", status: "planned", summary: "Break-out, run, re-seat and end torques, and safety factors." },
-  { slug: "supply-pressure-sizing", number: 12, title: "Supply pressure and actuator sizing principles", level: "Advanced", status: "planned", summary: "Sizing at minimum supply pressure and checking spring end torque." },
-  { slug: "valve-mounting", number: 13, title: "Valve mounting and interfaces", level: "Advanced", status: "planned", summary: "Brackets, couplings, standards and alignment." },
-  { slug: "control-panels", number: 14, title: "Control panels and accessories", level: "Advanced", status: "planned", summary: "What sits between the control system and the actuator." },
-  { slug: "solenoids-boosters-switches", number: 15, title: "Solenoid valves, volume boosters and limit switches", level: "Advanced", status: "planned", summary: "Directing air, moving it faster and confirming position." },
-  { slug: "speed-control", number: 16, title: "Speed control and operating times", level: "Advanced", status: "planned", summary: "Restrictors, exhaust control and what sets stroke time." },
+  {
+    slug: "torque-requirements",
+    number: 11,
+    title: "Torque requirements and torque curves",
+    level: "Advanced",
+    status: "available",
+    minutes: 12,
+    summary: "Break-out, run, re-seat and end torques, and safety factors.",
+    objectives: [
+      "Name the points on a quarter-turn valve's torque demand.",
+      "Lay an actuator curve over a valve curve and find the tightest margin.",
+      "Explain why safety factors and service conditions matter.",
+    ],
+    sections: [
+      {
+        heading: "What the valve asks for",
+        body: [
+          "A quarter-turn valve does not need the same torque all the way. Valve makers usually quote a few points: **break to open** (unseating from closed), **run** (moving between the ends), **end to open**, **break to close**, and **end to close** or re-seat (pushing back into the seats).",
+          "For many ball valves the largest values are at the **closed** end. Butterfly valves can also have a dynamic torque from the flow itself, which peaks part-way open.",
+          "These values depend on size, pressure class, seat material, the medium, temperature and how long the valve sits without moving. They must come from the valve maker for the actual service.",
+        ],
+      },
+      {
+        heading: "Overlaying the curves",
+        body: [
+          "Sizing is a comparison at every point in the stroke: **actuator output must exceed valve demand times a margin**, everywhere, in both directions. The smallest gap decides the size.",
+          "In the chart, compare the actuator curve with the illustrative demand. With a Scotch yoke the tightest point is usually near an end; with a rack and pinion it is wherever the valve's peak is.",
+        ],
+        figure: "torque-curves",
+      },
+      {
+        heading: "Margins and conditions",
+        body: [
+          "A **safety factor** covers what the datasheet cannot know: dirty service, long periods without moving, temperature, wear. The factor to use is set by the valve maker, the end user's specification or the applicable standard.",
+          "Check the worst case, not the nominal one: **lowest** supply pressure, **weakest** end of the spring stroke, **highest** valve torque. An actuator that only works at nominal conditions will fail when it is needed.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Break-out torque", definition: "Torque to start a valve moving from rest, usually off its seats." },
+      { term: "Run torque", definition: "Torque while the closure member is moving between the ends." },
+      { term: "Re-seat / end-to-close torque", definition: "Torque to push the closure member back into its seats." },
+      { term: "Safety factor", definition: "Multiplier on valve demand to cover uncertainty and service conditions." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Where should you check the actuator against the valve?",
+        options: ["Only at mid-stroke", "Only at break-out", "At every point of the stroke, in both directions", "Only at the open end"],
+        answer: 2,
+        explanation: "The tightest margin can be anywhere; the curves must be compared through the whole stroke.",
+      },
+      {
+        id: "q2",
+        prompt: "Which supply pressure should a pneumatic actuator be sized at?",
+        options: ["The highest expected", "The nominal", "The lowest expected at the actuator", "Any"],
+        answer: 2,
+        explanation: "It must still work when the supply is at its lowest.",
+      },
+    ],
+  },
+  {
+    slug: "supply-pressure-sizing",
+    number: 12,
+    title: "Supply pressure and actuator sizing principles",
+    level: "Advanced",
+    status: "available",
+    minutes: 10,
+    summary: "Sizing at minimum supply pressure and checking spring end torque.",
+    objectives: [
+      "Explain why force scales with pressure and piston area.",
+      "List the checks for double-acting and spring-return sizing.",
+      "Explain why bigger is not automatically safer.",
+    ],
+    sections: [
+      {
+        heading: "Force from pressure",
+        body: [
+          "Piston force is pressure times effective area. Halve the supply pressure and the air torque halves too. That is why the **minimum** pressure at the actuator, after regulators, filters and long tubing, is the one that matters.",
+          "In the simulator, lower the supply pressure until the Scotch yoke stalls part-way. The point where it stalls is where the actuator curve drops below the valve demand.",
+        ],
+      },
+      {
+        heading: "Spring-return checks",
+        body: [
+          "A spring-return actuator has two strokes and therefore two sets of checks. The **spring** must move the valve at the end of the spring stroke, where it is weakest. The **air** must overcome valve demand **plus** the spring at the end of the air stroke, at minimum pressure, where the spring is strongest.",
+          "Raising the spring to cover the valve raises the air torque needed too. Spring and cylinder are sized together.",
+        ],
+        figure: "fail-comparison",
+      },
+      {
+        heading: "Oversizing has costs",
+        body: [
+          "An actuator far too large can overstress the valve stem, the coupling or the mounting if it ever drives against a jam. Some specifications therefore set a **maximum** output relative to the valve's strength, as well as a minimum.",
+          "Larger actuators also use more air per stroke and stroke more slowly for the same supply.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Minimum supply pressure", definition: "Lowest pressure expected at the actuator, used for sizing." },
+      { term: "Spring end torque", definition: "Spring output at the end of the spring stroke, its weakest point." },
+      { term: "Maximum allowable stem torque", definition: "Valve stem limit that the actuator output should not exceed." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "For spring return, where is the air stroke usually hardest?",
+        options: ["At the start, when the spring is relaxed", "At the end, where the spring is most compressed", "In the middle", "It is constant"],
+        answer: 1,
+        explanation: "Spring force rises as it compresses, opposing the air most at the end of the air stroke.",
+      },
+      {
+        id: "q2",
+        prompt: "Why can an oversized actuator be a problem?",
+        options: ["It cannot open the valve", "It can overstress the valve stem or coupling against a jam", "It has no fail position", "It needs a higher voltage"],
+        answer: 1,
+        explanation: "Excess torque has to go somewhere when the valve cannot move.",
+      },
+    ],
+  },
+  {
+    slug: "valve-mounting",
+    number: 13,
+    title: "Valve mounting and interfaces",
+    level: "Advanced",
+    status: "available",
+    minutes: 8,
+    summary: "Brackets, couplings, standards and alignment.",
+    objectives: [
+      "Describe the parts between actuator and valve.",
+      "Name the common interface standards.",
+      "Explain why alignment and coupling orientation matter.",
+    ],
+    sections: [
+      {
+        heading: "From shaft to stem",
+        body: [
+          "Between the actuator output and the valve stem sit a **mounting bracket** (or adaptor) and a **coupling** (or drive bush). The bracket carries the actuator's reaction torque into the valve body; the coupling carries the output torque into the stem.",
+          "Both must be strong enough for the actuator's maximum output, not just the valve's demand.",
+        ],
+        figure: "scotch-yoke-live",
+      },
+      {
+        heading: "Standard interfaces",
+        body: [
+          "**ISO 5211** defines flange sizes and drive shapes for part-turn actuator attachment. **ISO 5210** does the same for multi-turn actuators. Matching codes mean an actuator and valve can be joined with a standard bracket and coupling.",
+          "On top of many pneumatic actuators, a **NAMUR** interface (VDI/VDE 3845) gives a standard pattern for mounting solenoid valves, switch boxes and positioners.",
+        ],
+      },
+      {
+        heading: "Alignment and orientation",
+        body: [
+          "Misalignment between actuator shaft and valve stem adds side load and wear, and can make a valve stick. Brackets should be rigid and concentric.",
+          "Coupling orientation decides which actuator end of travel is valve open. That is how one spring-return actuator can be fail open or fail closed (lesson 9). Check the position indicator agrees with the valve after any re-mounting.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "ISO 5211", definition: "Part-turn actuator attachment: flanges and drive components." },
+      { term: "ISO 5210", definition: "Multi-turn actuator attachment." },
+      { term: "NAMUR (VDI/VDE 3845)", definition: "Standard interfaces for mounting accessories on actuators." },
+      { term: "Reaction torque", definition: "Equal and opposite torque the bracket carries back into the valve body." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "What does the mounting bracket carry?",
+        options: ["The process fluid", "The actuator's reaction torque into the valve body", "Air to the cylinder", "The control signal"],
+        answer: 1,
+        explanation: "Output torque turns the stem; the equal reaction goes through the bracket.",
+      },
+      {
+        id: "q2",
+        prompt: "Which standard covers part-turn actuator flanges?",
+        options: ["ISO 5210", "ISO 5211", "IEC 60529", "ISO 9001"],
+        answer: 1,
+        explanation: "ISO 5211 is for part-turn; ISO 5210 is for multi-turn.",
+      },
+    ],
+  },
+  {
+    slug: "control-panels",
+    number: 14,
+    title: "Control panels and accessories",
+    level: "Advanced",
+    status: "available",
+    minutes: 8,
+    summary: "What sits between the control system and the actuator.",
+    objectives: [
+      "Trace a control signal from the control system to the cylinder.",
+      "Name the common pneumatic accessories and their jobs.",
+      "Explain why safety functions are often separate from normal control.",
+    ],
+    sections: [
+      {
+        heading: "Signal in, air out",
+        body: [
+          "The control system sends an electrical signal: on-off for a solenoid valve, or an analogue or digital demand for a positioner. The accessory turns that into air routed to the right chamber.",
+          "Air on its way in usually passes a **filter regulator** that cleans it and sets the pressure. Position comes back from a **switch box** (open and closed) or a **position transmitter**.",
+        ],
+      },
+      {
+        heading: "Control panels",
+        body: [
+          "Larger or safety-critical valves often get a **control panel**: a plate or cabinet with the solenoids, regulators, boosters, reservoirs, test valves and gauges plumbed together. The gas and electro-hydraulic actuators in the simulator have the same idea built in: the line-break control and the integral controller.",
+        ],
+        figure: "spring-return-live",
+      },
+      {
+        heading: "Separate safety paths",
+        body: [
+          "A shutdown function should not depend on the same parts as normal control. A common pattern is a dedicated ESD solenoid that vents the actuator regardless of what the positioner is doing. The electro-hydraulic simulator's ESD input shows the result.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Filter regulator", definition: "Cleans the supply air and sets its pressure." },
+      { term: "Switch box", definition: "Limit switches that report end positions." },
+      { term: "Positioner", definition: "Controls air to hold the valve at a demanded position." },
+      { term: "ESD", definition: "Emergency shutdown: a safety action that overrides normal control." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Why give an ESD function its own solenoid?",
+        options: ["It is cheaper", "So shutdown does not depend on the normal control path", "To move faster", "To save air"],
+        answer: 1,
+        explanation: "Independence means one failure cannot stop both normal control and the safety action.",
+      },
+      {
+        id: "q2",
+        prompt: "What does a switch box tell the control system?",
+        options: ["Supply pressure", "When the valve is at its open or closed end", "Torque", "Flow rate"],
+        answer: 1,
+        explanation: "Limit switches confirm end positions only.",
+      },
+    ],
+  },
+  {
+    slug: "solenoids-boosters-switches",
+    number: 15,
+    title: "Solenoid valves, volume boosters and limit switches",
+    level: "Advanced",
+    status: "available",
+    minutes: 8,
+    summary: "Directing air, moving it faster and confirming position.",
+    objectives: [
+      "Match 3/2 and 5/2 solenoid valves to spring-return and double-acting actuators.",
+      "Explain what a volume booster does.",
+      "Describe how limit switches confirm position.",
+    ],
+    sections: [
+      {
+        heading: "Solenoid valves",
+        body: [
+          "A **3/2** valve (three ports, two positions) connects one chamber to supply or to exhaust. It suits **spring return**: energise to fill the cylinder, de-energise to vent it and let the spring act.",
+          "A **5/2** valve (five ports, two positions) feeds one chamber while venting the other, and swaps them when switched. It suits **double acting**.",
+          "In the simulator's Air flow mode, the blue and grey paths are exactly what these valves do.",
+        ],
+      },
+      {
+        heading: "Volume boosters",
+        body: [
+          "A positioner or small solenoid passes only a little air. A **volume booster** is a pneumatic amplifier: a small signal pressure controls a large flow from the supply, so a big cylinder can stroke quickly while still following the small device.",
+        ],
+      },
+      {
+        heading: "Limit switches",
+        body: [
+          "Cams on the actuator shaft operate switches at the open and closed ends. The control system uses them to confirm the valve got there. Between the ends they say nothing, which is why the compact electric simulator reports only 'made' or 'clear'.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "3/2 valve", definition: "Three ports, two positions: supply or exhaust one chamber." },
+      { term: "5/2 valve", definition: "Five ports, two positions: one chamber to supply, the other to exhaust." },
+      { term: "Volume booster", definition: "Pneumatic amplifier that delivers high flow following a low-flow signal." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Which solenoid valve type suits a double-acting actuator?",
+        options: ["2/2", "3/2", "5/2", "None"],
+        answer: 2,
+        explanation: "A 5/2 valve pressurises one chamber and vents the other.",
+      },
+      {
+        id: "q2",
+        prompt: "What does a volume booster add?",
+        options: ["Higher pressure", "Higher flow following a small signal", "Position feedback", "A fail position"],
+        answer: 1,
+        explanation: "It amplifies flow, not pressure.",
+      },
+    ],
+  },
+  {
+    slug: "speed-control",
+    number: 16,
+    title: "Speed control and operating times",
+    level: "Advanced",
+    status: "available",
+    minutes: 8,
+    summary: "Restrictors, exhaust control and what sets stroke time.",
+    objectives: [
+      "Explain what sets the stroke time of air, gas, oil and electric actuators.",
+      "Describe why exhaust restriction gives steadier control than supply restriction.",
+      "Explain why some valves must not close too fast.",
+    ],
+    sections: [
+      {
+        heading: "What sets the time",
+        body: [
+          "A pneumatic actuator strokes as fast as air can fill one chamber and empty the other. Port and tubing size, solenoid and booster capacity, supply pressure and the torque margin all play a part. That is why the simulator's Scotch yoke slows when you lower the pressure.",
+          "Oil is metered precisely, so **gas-over-oil** and **electro-hydraulic** actuators keep a steady, adjustable speed. **Electric** actuators run at the motor and gear speed.",
+        ],
+      },
+      {
+        heading: "Restricting the exhaust",
+        body: [
+          "Restricting the **exhaust** side holds a cushion of air against the piston, so the stroke is steadier than when restricting the supply. Many speed controls are fitted on the exhaust for that reason.",
+        ],
+      },
+      {
+        heading: "Not too fast, not too slow",
+        body: [
+          "A shutdown valve may have a **maximum** closing time set by the safety case. A valve in a long liquid line may need a **minimum** closing time, because slamming it shut causes pressure surge (water hammer). Try the gas-over-oil flow-control setting to see how speed is set independently of pressure.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Stroke time", definition: "Time for a full open or close stroke." },
+      { term: "Exhaust restrictor", definition: "Speed control that limits outflow from the venting chamber." },
+      { term: "Surge (water hammer)", definition: "Pressure spike from stopping a moving liquid column too quickly." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Why do many pneumatic speed controls restrict the exhaust rather than the supply?",
+        options: ["Cheaper parts", "A cushion of air gives a steadier stroke", "It saves air", "It raises torque"],
+        answer: 1,
+        explanation: "Back pressure on the exhaust side damps the motion.",
+      },
+      {
+        id: "q2",
+        prompt: "Why might a liquid line valve need a minimum closing time?",
+        options: ["To save power", "To avoid pressure surge", "To pass a partial-stroke test", "To protect the switch box"],
+        answer: 1,
+        explanation: "Stopping the liquid too fast causes surge.",
+      },
+    ],
+  },
 ];
 
 export const LESSON_MAP = Object.fromEntries(LESSONS.map((l) => [l.slug, l])) as Record<string, Lesson>;
