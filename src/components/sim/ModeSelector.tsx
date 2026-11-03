@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Eye, Layers, Settings2, Wind } from "lucide-react";
+import { Activity, Eye, Layers, Settings2, Wind, Zap } from "lucide-react";
 import type { VisualizationMode } from "@/lib/sim/types";
 import { Segmented } from "@/components/ui/controls";
 import { useEngine, useSimSelector } from "./SimulationProvider";
@@ -16,6 +16,7 @@ export const MODES: { value: VisualizationMode; label: string; icon: typeof Eye;
 export function ModeSelector() {
   const { engine, camera } = useEngine();
   const mode = useSimSelector((s) => s.mode);
+  const electric = useSimSelector((s) => s.config.family === "electric-part-turn");
   return (
     <Segmented
       label="Visualisation mode"
@@ -27,11 +28,11 @@ export function ModeSelector() {
       className="w-full overflow-x-auto sm:w-auto"
       options={MODES.map((m) => ({
         value: m.value,
-        hint: m.summary,
+        hint: electric && m.value === "energy" ? "Illustrative electrical and mechanical power path" : m.summary,
         label: (
           <>
-            <m.icon aria-hidden />
-            <span className="max-sm:sr-only">{m.label}</span>
+            {electric && m.value === "energy" ? <Zap aria-hidden /> : <m.icon aria-hidden />}
+            <span className="max-sm:sr-only">{electric && m.value === "energy" ? "Power flow" : m.label}</span>
           </>
         ),
       }))}

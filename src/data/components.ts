@@ -1,6 +1,7 @@
 import type { ComponentId } from "@/lib/sim/types";
 import { CYLINDER, SPRING_MODULE, VALVE, YOKE_OFFSET } from "@/lib/sim/geometry";
 import { RP } from "@/lib/sim/rackPinionGeometry";
+import { EPT } from "@/lib/sim/electricGeometry";
 import type { MechanismKind } from "@/lib/sim/mechanisms";
 
 export type ComponentRole =
@@ -10,7 +11,9 @@ export type ComponentRole =
   | "Pressure containment"
   | "Energy storage"
   | "Flow control"
-  | "Structure and alignment";
+  | "Structure and alignment"
+  | "Motive power"
+  | "Sensing and control";
 
 export interface ComponentInfo {
   id: ComponentId;
@@ -294,7 +297,136 @@ export const RACK_PINION_COMPONENTS: ComponentInfo[] = [
   ...VALVE_PARTS,
 ];
 
+/**
+ * Electric part-turn with worm-wheel segment. Architecture follows publicly
+ * documented intelligent part-turn actuators; proportions are original.
+ */
+export const ELECTRIC_PART_TURN_COMPONENTS: ComponentInfo[] = [
+  {
+    id: "motor",
+    name: "Electric motor",
+    role: "Motive power",
+    function: "Turns the worm shaft at high speed and low torque.",
+    description:
+      "The motor runs at a fixed speed and drives the worm shaft directly. A reversing starter inside the actuator runs it one way to open and the other way to close. The motor is switched off at the position limits, on a torque trip, on Stop, or if power is lost.",
+    focus: [0.72, EPT.worm.y, EPT.worm.z],
+    distance: 2.2,
+    group: "actuator",
+  },
+  {
+    id: "worm",
+    name: "Worm shaft",
+    role: "Torque conversion",
+    function: "A screw thread that drives the wheel teeth, giving a large speed reduction.",
+    description:
+      "Each turn of the single-start worm advances the wheel by one tooth, so the worm turns many times for the output's quarter turn. A worm drive is typically self-locking: the valve cannot back-drive the motor, so the actuator holds position with the motor off.",
+    focus: [0, EPT.worm.y, EPT.worm.z],
+    distance: 1.6,
+    group: "actuator",
+  },
+  {
+    id: "worm-wheel",
+    name: "Worm wheel segment",
+    role: "Torque conversion",
+    function: "Toothed segment on the output shaft, driven by the worm.",
+    description:
+      "A part-turn actuator only needs about 90° of travel, so only a segment of a full wheel is needed. The wheel multiplies the motor torque by the gear ratio, less friction losses, and turns the output shaft.",
+    caveat: "Full-wheel versions exist for multi-turn output; a segment is shown here.",
+    focus: [0, EPT.wheel.y, -0.15],
+    distance: 1.7,
+    group: "actuator",
+  },
+  {
+    id: "torque-sensor",
+    name: "Torque sensor",
+    role: "Sensing and control",
+    function: "Measures output torque from the worm shaft's end thrust.",
+    description:
+      "When the wheel resists the worm, the worm shaft is pushed axially, in proportion to the output torque. A sensor at the end of the shaft measures that thrust. When it reaches the set torque limit, the motor is switched off to protect the valve and the actuator.",
+    focus: [0.44, EPT.worm.y, EPT.worm.z],
+    distance: 1.4,
+    group: "actuator",
+  },
+  {
+    id: "encoder",
+    name: "Absolute position encoder",
+    role: "Sensing and control",
+    function: "Knows the output position at all times, with or without power.",
+    description:
+      "An absolute encoder on the output reports its true position directly, rather than counting movement from a reference. Position is never lost on a power cut, including when the valve is moved by hand with the power off.",
+    focus: [0, 0.36, 0],
+    distance: 1.4,
+    group: "actuator",
+  },
+  {
+    id: "handwheel",
+    name: "Handwheel and hand/auto lever",
+    role: "Output transmission",
+    function: "Manual operation, independent of the motor.",
+    description:
+      "Locking the hand/auto lever in hand declutches the motor, so the handwheel drives the output without back-driving the motor. In auto, the motor drive takes priority. Manual operation works with no power at all.",
+    focus: [EPT.handwheel.x, EPT.worm.y, EPT.worm.z],
+    distance: 2.0,
+    group: "actuator",
+  },
+  {
+    id: "local-controls",
+    name: "Local controls and display",
+    role: "Sensing and control",
+    function: "Local/Stop/Remote and Open/Close selectors, with a position display.",
+    description:
+      "The selectors work through the cover rather than through holes in it, so the enclosure stays sealed. The display shows valve position, and a backup battery keeps it running when mains power is off.",
+    focus: [0, EPT.cover.y, EPT.cover.z + 0.1],
+    distance: 1.8,
+    group: "actuator",
+  },
+  {
+    id: "terminal",
+    name: "Terminal compartment",
+    role: "Pressure containment",
+    function: "Separately sealed space where power and control cables are connected.",
+    description:
+      "A sealed terminal block separates the wiring compartment from the electronics and gearing, so the internals stay sealed even with the terminal cover off during installation.",
+    focus: [0, 0.45, -0.33],
+    distance: 1.8,
+    group: "actuator",
+  },
+  {
+    id: "housing",
+    name: "Gearcase",
+    role: "Structure and alignment",
+    function: "Holds the gear train in an oil bath and carries the output bearings.",
+    description: "The gearcase supports the worm, wheel and output shaft in alignment. Gear trains of this type are commonly oil-bath lubricated for life.",
+    focus: [0, 0.12, -0.1],
+    distance: 2.6,
+    group: "actuator",
+  },
+  {
+    id: "travel-stops",
+    name: "Mechanical end stops",
+    role: "Structure and alignment",
+    function: "Physical limits on the wheel segment's travel.",
+    description:
+      "The electrical position limits stop the motor at each end of travel. The mechanical stops are a backstop beyond them, and are also what the handwheel works against.",
+    focus: [0.2, EPT.wheel.y, -0.1],
+    distance: 1.5,
+    group: "actuator",
+  },
+  {
+    id: "output-shaft",
+    name: "Output shaft",
+    role: "Output transmission",
+    function: "Carries torque from the wheel through the base to the valve.",
+    description: "The output shaft runs from the wheel through the base, where the drive coupling and mounting flange follow standard patterns such as ISO 5211.",
+    focus: [0, -0.3, 0],
+    distance: 2.0,
+    group: "actuator",
+  },
+  ...VALVE_PARTS,
+];
+
 export function componentsFor(kind: MechanismKind): ComponentInfo[] {
+  if (kind === "worm-gear") return ELECTRIC_PART_TURN_COMPONENTS;
   return kind === "rack-pinion" ? RACK_PINION_COMPONENTS : COMPONENTS;
 }
 

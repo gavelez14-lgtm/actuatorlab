@@ -2,8 +2,9 @@
 
 import { Illustrative } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
-import { useSimState } from "./SimulationProvider";
-import { TorqueChart } from "./TorqueChart";
+import { useSimSelector, useSimState } from "./SimulationProvider";
+import { isElectric, torqueLimitValue } from "@/lib/sim/electric";
+import { ElectricTorqueChart, TorqueChart } from "./TorqueChart";
 
 function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
   return (
@@ -22,7 +23,36 @@ function Row({ label, value, unit, tone }: { label: string; value: string; unit?
   );
 }
 
+function ElectricEngineering() {
+  const s = useSimState();
+  const e = s.electric;
+  return (
+    <div className="pointer-events-auto w-[340px] max-w-[calc(100vw-2rem)] glass rounded-2xl p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="font-sans text-[13px] font-semibold text-fg">Engineering view</h3>
+        <Illustrative>Illustrative, not certified</Illustrative>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-5 border-y border-rule py-1">
+        <Row label="Valve position" value={`${(s.position * 100).toFixed(1)}`} unit="%" />
+        <Row label="Output angle" value={s.outputAngle.toFixed(1)} unit="°" />
+        <Row label="Power" value={s.supplyAvailable ? "on" : "off"} tone={s.supplyAvailable ? "ok" : "danger"} />
+        <Row label="Motor" value={e.motorRunning ? "running" : e.tripped ? "tripped" : "stopped"} tone={e.tripped ? "danger" : e.motorRunning ? "ok" : undefined} />
+        <Row label="Output torque" value={e.outputTorque.toFixed(2)} tone="air" />
+        <Row label="Torque limit" value={torqueLimitValue(e.torqueLimit).toFixed(2)} tone="warn" />
+        <Row label="Selector" value={e.selector} />
+        <Row label="Drive" value={e.handMode ? "hand" : "motor"} />
+      </dl>
+      <ElectricTorqueChart torqueLimit={e.torqueLimit} obstruction={e.obstruction} position={s.position} outputTorque={e.outputTorque} className="mt-2" />
+    </div>
+  );
+}
+
 export function EngineeringOverlay() {
+  const electric = useSimSelector((s) => isElectric(s.config.family));
+  return electric ? <ElectricEngineering /> : <PneumaticEngineering />;
+}
+
+function PneumaticEngineering() {
   const s = useSimState();
   const sr = s.config.actionType === "spring-return";
   const t = s.torque;

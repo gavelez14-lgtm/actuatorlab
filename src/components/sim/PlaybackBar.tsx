@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDownToLine, ArrowUpFromLine, Pause, Play, Repeat, RotateCcw } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Pause, Play, Repeat, RotateCcw, Square } from "lucide-react";
+import { isElectric } from "@/lib/sim/electric";
 import { Button } from "@/components/ui/primitives";
 import { Range, Segmented } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
   const { engine } = useEngine();
   const s = useSimState();
   const pct = Math.round(s.position * 100);
+  const electric = isElectric(s.config.family);
   const travel = s.targetPosition === null ? null : 1 - Math.abs(s.targetPosition - s.position);
   const speedValue = (SPEEDS.find((v) => Math.abs(Number(v) - s.speed) < 0.01) ?? "custom") as (typeof SPEEDS)[number];
 
@@ -37,6 +39,12 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
           <ArrowDownToLine aria-hidden />
           Close
         </Button>
+        {electric && (
+          <Button variant="secondary" onClick={() => engine.dispatch({ type: "stop" })} aria-label="Stop the motor">
+            <Square aria-hidden />
+            Stop
+          </Button>
+        )}
         <Button variant="ghost" onClick={() => engine.dispatch({ type: "reset" })} aria-keyshortcuts="R">
           <RotateCcw aria-hidden />
           Reset
@@ -120,7 +128,7 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
             )}
           >
             <span className={cn("size-1.5 rounded-full", s.direction === "stopped" ? "bg-muted" : "bg-accent")} aria-hidden />
-            {s.direction === "stopped" ? (s.stalled ? "Stalled" : "Stopped") : s.direction === "opening" ? "Opening" : "Closing"}
+            {s.direction === "stopped" ? (s.electric.tripped ? "Torque trip" : s.stalled ? "Stalled" : "Stopped") : s.direction === "opening" ? "Opening" : "Closing"}
           </span>
           <span
             className={cn(
@@ -128,7 +136,7 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
               s.supplyAvailable ? "bg-air-soft text-air" : "bg-danger/10 text-danger",
             )}
           >
-            {s.supplyAvailable ? "Supply on" : "Supply lost"}
+            {electric ? (s.supplyAvailable ? "Power on" : "Power lost") : s.supplyAvailable ? "Supply on" : "Supply lost"}
           </span>
         </div>
       </div>

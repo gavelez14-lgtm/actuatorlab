@@ -15,6 +15,8 @@ const ROLE_TONE: Record<ComponentRole, "live" | "air" | "ok" | "warn" | "neutral
   "Energy storage": "warn",
   "Flow control": "air",
   "Structure and alignment": "neutral",
+  "Motive power": "live",
+  "Sensing and control": "ok",
 };
 
 export function ComponentInspector() {

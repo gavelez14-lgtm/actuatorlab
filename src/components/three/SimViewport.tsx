@@ -12,6 +12,7 @@ import { useEngine, useSimSelector } from "@/components/sim/SimulationProvider";
 import { usePrefersReducedMotion, useWebGLSupport } from "@/lib/hooks";
 import { ActuatorModel } from "./ActuatorModel";
 import { RackPinionModel } from "./RackPinionModel";
+import { ElectricPartTurnModel } from "./ElectricPartTurnModel";
 import { applyCutaway, applyHighlight, createMaterials, disposeMaterials } from "./materials";
 import { WebGLFallback } from "./WebGLFallback";
 
@@ -38,7 +39,17 @@ const RACK_PINION_VIEWS: Record<VisualizationMode, View> = {
   engineering: { target: [0, -0.55, 0], dir: [0.55, 0.38, 0.74], distance: 5.4 },
 };
 
+/** Electric part-turn: compact gearcase with the motor out to the right. */
+const ELECTRIC_VIEWS: Record<VisualizationMode, View> = {
+  normal: { target: [0.15, -0.45, 0], dir: [0.5, 0.4, 0.77], distance: 4.9 },
+  cutaway: { target: [0.1, -0.15, -0.1], dir: [0.3, 0.82, 0.48], distance: 4.0 },
+  mechanical: { target: [0.1, 0.08, -0.2], dir: [0.3, 0.86, 0.42], distance: 2.7 },
+  energy: { target: [0.3, -0.05, -0.3], dir: [0.45, 0.45, 0.77], distance: 4.6 },
+  engineering: { target: [0.15, -0.45, 0], dir: [0.5, 0.4, 0.77], distance: 4.9 },
+};
+
 function viewsFor(kind: MechanismKind) {
+  if (kind === "worm-gear") return ELECTRIC_VIEWS;
   return kind === "rack-pinion" ? RACK_PINION_VIEWS : SCOTCH_YOKE_VIEWS;
 }
 
@@ -238,7 +249,14 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
         <Lightformer form="ring" intensity={0.6} position={[0, -3, 0]} scale={4} />
       </Environment>
 
-      {mechanism === "rack-pinion" ? (
+      {mechanism === "worm-gear" ? (
+        <ElectricPartTurnModel
+          mats={mats}
+          rootRef={root}
+          onSelect={(id) => interactive && engine.dispatch({ type: "select", id })}
+          onHover={(id) => interactive && setHovered(id)}
+        />
+      ) : mechanism === "rack-pinion" ? (
         <RackPinionModel
           mats={mats}
           rootRef={root}

@@ -96,7 +96,9 @@ export function SimulatorWorkbench() {
   const selected = useSimSelector((s) => s.selectedComponent);
   const actionType = useSimSelector((s) => s.config.actionType);
   const fail = useSimSelector((s) => s.config.failPosition);
-  const rackPinion = useSimSelector((s) => s.config.family === "pneumatic-rack-pinion");
+  const family = useSimSelector((s) => s.config.family);
+  const rackPinion = family === "pneumatic-rack-pinion";
+  const electric = family === "electric-part-turn";
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("configure");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -104,11 +106,13 @@ export function SimulatorWorkbench() {
 
   useEffect(() => {
     touchRecent(
-      rackPinion
-        ? { id: "sim-rack-pinion", title: "Pneumatic rack and pinion simulator", href: "/simulator?type=rack-pinion" }
-        : { id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" },
+      electric
+        ? { id: "sim-electric-part-turn", title: "Electric part-turn simulator", href: "/simulator?type=electric-part-turn" }
+        : rackPinion
+          ? { id: "sim-rack-pinion", title: "Pneumatic rack and pinion simulator", href: "/simulator?type=rack-pinion" }
+          : { id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" },
     );
-  }, [touchRecent, rackPinion]);
+  }, [touchRecent, rackPinion, electric]);
 
   // Selecting a part in the scene brings the Components tab forward
   // (state adjusted during render, per React guidance, not in an effect).
@@ -150,14 +154,16 @@ export function SimulatorWorkbench() {
     tabRefs.current[n]?.focus();
   };
 
-  const configLabel = actionType === "double-acting" ? "Double acting, fails in place" : `Spring return, ${fail === "fail-closed" ? "fails closed" : "fails open"}`;
+  const configLabel = electric
+    ? "Motor and self-locking worm gear, fails in place"
+    : actionType === "double-acting" ? "Double acting, fails in place" : `Spring return, ${fail === "fail-closed" ? "fails closed" : "fails open"}`;
 
   return (
     <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh lg:min-h-0">
       <header className="flex flex-col gap-3 border-b border-rule bg-panel px-4 py-3 md:flex-row md:items-center md:justify-between lg:px-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] text-fg">{rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
+            <h1 className="text-[24px] text-fg">{electric ? "Electric part-turn" : rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">
@@ -168,17 +174,20 @@ export function SimulatorWorkbench() {
           <Segmented
             size="sm"
             label="Mechanism"
-            value={rackPinion ? "rack-pinion" : "scotch-yoke"}
+            value={electric ? "electric-part-turn" : rackPinion ? "rack-pinion" : "scotch-yoke"}
             onChange={(v) => {
               const params = new URLSearchParams();
-              if (v === "rack-pinion") params.set("type", "rack-pinion");
-              if (actionType === "double-acting") params.set("action", "double-acting");
-              if (fail === "fail-open") params.set("fail", "open");
+              if (v !== "scotch-yoke") params.set("type", v);
+              if (!electric && v !== "electric-part-turn") {
+                if (actionType === "double-acting") params.set("action", "double-acting");
+                if (fail === "fail-open") params.set("fail", "open");
+              }
               router.push(`/simulator${params.size ? `?${params}` : ""}`);
             }}
             options={[
               { value: "scotch-yoke", label: "Scotch yoke" },
               { value: "rack-pinion", label: "Rack and pinion" },
+              { value: "electric-part-turn", label: "Electric" },
             ]}
           />
           <ModeSelector />

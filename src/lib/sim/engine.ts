@@ -14,6 +14,7 @@
  * throttled rate during motion to avoid re-rendering on every frame.
  */
 import { MODEL, computeTorques, strokeFromValvePosition, valvePositionFromStroke } from "./model";
+import { ELECTRIC, electricDemand, isElectric, torqueLimitValue } from "./electric";
 import type {
   ActuatorConfiguration,
   ChamberCondition,
@@ -43,6 +44,8 @@ const MODE_PRESETS: Record<VisualizationMode, Partial<SimulationState>> = {
 };
 
 function normaliseConfig(c: ActuatorConfiguration): ActuatorConfiguration {
+  // Electric actuators have no spring and no coupling flip in this model.
+  if (isElectric(c.family)) return { ...c, actionType: "double-acting", failPosition: "fail-in-place" };
   if (c.actionType === "double-acting") return { ...c, failPosition: "fail-in-place" };
   if (c.failPosition === "fail-in-place") return { ...c, failPosition: "fail-closed" };
   return c;
@@ -81,6 +84,16 @@ export function createInitialState(config: Partial<ActuatorConfiguration> = {}):
     status: "",
     notice: null,
     time: 0,
+    electric: {
+      selector: "remote",
+      handMode: false,
+      handDir: 0,
+      torqueLimit: ELECTRIC.torqueLimitDefault,
+      obstruction: false,
+      tripped: null,
+      motorRunning: false,
+      outputTorque: 0,
+    },
   };
   derive(state);
   return state;
@@ -97,7 +110,9 @@ function derive(s: SimulationState) {
   // Chamber conditions follow the control signal and the supply.
   let a: ChamberCondition = "idle";
   let b: ChamberCondition = "idle";
-  if (config.actionType === "double-acting") {
+  if (isElectric(config.family)) {
+    // no air chambers
+  } else if (config.actionType === "double-acting") {
     if (s.supplyAvailable && s.commandedStroke !== null) {
       a = s.commandedStroke === 1 ? "supply" : "exhaust";
       b = s.commandedStroke === 1 ? "exhaust" : "supply";
@@ -204,6 +219,10 @@ export class SimulationEngine {
   private step(dt: number) {
     const s = this.s;
     s.time += dt;
+    if (isElectric(s.config.family)) {
+      this.electricStep(dt);
+      return;
+    }
     derive(s);
     const f = this.updateForces();
 
@@ -259,8 +278,78 @@ export class SimulationEngine {
     this.updateStatus();
   }
 
+  /**
+   * Electric part-turn: constant motor speed until a position limit, a torque
+   * trip, a Stop, or loss of power. The self-locking worm holds position the
+   * instant the motor stops. In hand mode the motor is declutched and only the
+   * handwheel moves the output.
+   */
+  private electricStep(dt: number) {
+    const s = this.s;
+    const e = s.electric;
+    const atEnd = (d: number) => (d > 0 ? s.stroke >= 1 - END_EPS : s.stroke <= END_EPS);
+    let vTarget = 0;
+    let running = false;
+    const prevTrip = e.tripped;
+
+    if (e.handMode) {
+      if (e.handDir !== 0 && !atEnd(e.handDir)) {
+        const [a, b] = ELECTRIC.obstructionWindow;
+        const jammed = e.obstruction && e.handDir > 0 && s.position >= a && s.position <= b;
+        if (!jammed) vTarget = e.handDir / ELECTRIC.handStrokeTime;
+      }
+    } else if (s.supplyAvailable && e.selector !== "stop" && s.commandedStroke !== null && !e.tripped) {
+      const dir = s.commandedStroke === 1 ? 1 : -1;
+      if (!atEnd(dir)) {
+        const demand = electricDemand(s.position, e.obstruction, dir > 0);
+        if (demand > torqueLimitValue(e.torqueLimit)) {
+          e.tripped = dir > 0 ? "opening" : "closing";
+        } else {
+          running = true;
+          vTarget = dir / ELECTRIC.strokeTime;
+        }
+      }
+    }
+
+    // Motors accelerate quickly; the worm gear stops the output almost instantly.
+    const response = vTarget !== 0 ? 18 : 45;
+    s.velocity += (vTarget - s.velocity) * (1 - Math.exp(-dt * response));
+    if (vTarget === 0 && Math.abs(s.velocity) < 1e-3) s.velocity = 0;
+    s.stroke = Math.min(1, Math.max(0, s.stroke + s.velocity * dt));
+    if ((s.stroke >= 1 && s.velocity > 0) || (s.stroke <= 0 && s.velocity < 0)) s.velocity = 0;
+
+    derive(s);
+    e.motorRunning = running;
+    const demandNow = electricDemand(s.position, e.obstruction, s.velocity >= 0);
+    e.outputTorque = running ? demandNow : e.tripped && !prevTrip ? torqueLimitValue(e.torqueLimit) : 0;
+    s.torque = { air: 0, spring: 0, valveDemand: demandNow, net: torqueLimitValue(e.torqueLimit) - demandNow };
+    s.stalled = false;
+    s.airFlowing = Math.abs(s.velocity) > 0.004;
+    s.direction = !s.airFlowing ? "stopped" : s.velocity > 0 ? "opening" : "closing";
+
+    if (s.autoCycle && !s.airFlowing && !e.handMode) {
+      this.dwell += dt;
+      if (this.dwell >= AUTO_CYCLE_DWELL) {
+        this.dwell = 0;
+        e.tripped = null;
+        this.command(s.position < 0.5 ? "open" : "close", true);
+      }
+    } else {
+      this.dwell = 0;
+    }
+
+    if (prevTrip !== e.tripped) this.emit();
+    this.updateStatus();
+  }
+
   private updateForces() {
     const s = this.s;
+    if (isElectric(s.config.family)) {
+      const e = s.electric;
+      const demand = electricDemand(s.position, e.obstruction, s.velocity >= 0);
+      s.torque = { air: 0, spring: 0, valveDemand: demand, net: torqueLimitValue(e.torqueLimit) - demand };
+      return { active: 0, air: 0, spring: 0, demand };
+    }
     const { pA, pB } = pressures(s);
     const f = computeTorques({ config: s.config, stroke: s.stroke, pressure: s.supplyPressure, pA, pB });
     s.torque = {
@@ -275,6 +364,22 @@ export class SimulationEngine {
   private command(kind: "open" | "close", silent = false) {
     const s = this.s;
     const targetStroke = strokeFromValvePosition(s.config, kind === "open" ? 1 : 0) as 0 | 1;
+    if (isElectric(s.config.family)) {
+      const e = s.electric;
+      if (!silent && e.selector === "stop") {
+        this.flash("The local selector is at Stop, so commands are ignored. Turn it to Local or Remote.");
+        return;
+      }
+      s.commandedStroke = targetStroke;
+      e.tripped = null;
+      derive(s);
+      if (silent) return;
+      const source = e.selector === "local" ? "Local control" : "Remote command";
+      if (e.handMode) this.flash(`${source} recorded. The hand/auto lever is locked in hand, so the motor is declutched until it is released.`);
+      else if (!s.supplyAvailable) this.flash(`${source} recorded, but there is no power. An electric actuator without stored energy stays where it is until power returns.`);
+      if (!s.playing) this.flash("Simulation is paused. Press Play to see the command execute.");
+      return;
+    }
     s.commandedStroke = targetStroke;
     derive(s);
     if (silent) return;
@@ -339,6 +444,16 @@ export class SimulationEngine {
       case "set-supply":
         s.supplyAvailable = cmd.available;
         derive(s);
+        if (isElectric(s.config.family)) {
+          this.flash(
+            cmd.available
+              ? s.commandedStroke === null
+                ? "Power restored. No command is active, so nothing moves."
+                : "Power restored. The actuator responds to the command that is still active."
+              : "Power lost. The motor stops and the self-locking worm holds the valve where it is. The absolute encoder keeps the position, and the battery keeps the display alive.",
+          );
+          break;
+        }
         if (!cmd.available) {
           this.flash(
             s.config.actionType === "spring-return"
@@ -393,6 +508,36 @@ export class SimulationEngine {
       case "select":
         s.selectedComponent = cmd.id;
         break;
+      case "stop":
+        s.commandedStroke = null;
+        derive(s);
+        break;
+      case "set-selector":
+        s.electric.selector = cmd.value;
+        if (cmd.value === "stop") {
+          s.commandedStroke = null;
+          derive(s);
+        }
+        break;
+      case "set-hand":
+        s.electric.handMode = cmd.value;
+        s.electric.handDir = 0;
+        if (cmd.value) this.flash("Hand/auto lever locked in hand. The motor is declutched; use the handwheel.");
+        break;
+      case "handwheel":
+        if (!s.electric.handMode && cmd.dir !== 0) {
+          this.flash("Lock the hand/auto lever in hand first. Otherwise the motor drive has priority.");
+          break;
+        }
+        s.electric.handDir = cmd.dir;
+        if (cmd.dir !== 0 && !s.playing) s.playing = true;
+        break;
+      case "set-torque-limit":
+        s.electric.torqueLimit = Math.min(1, Math.max(ELECTRIC.torqueLimitMin, cmd.value));
+        break;
+      case "set-obstruction":
+        s.electric.obstruction = cmd.value;
+        break;
       case "seek":
         // Manual scrubbing is a teaching aid. It pauses the clock so the
         // physics does not immediately fight the user.
@@ -410,6 +555,10 @@ export class SimulationEngine {
 
   private updateStatus() {
     const s = this.s;
+    if (isElectric(s.config.family)) {
+      s.status = this.electricStatus();
+      return;
+    }
     const sr = s.config.actionType === "spring-return";
     let msg: string;
     if (!s.playing) msg = `Paused at ${pct(s.position)} open.`;
@@ -432,9 +581,28 @@ export class SimulationEngine {
     s.status = msg;
   }
 
+  private electricStatus(): string {
+    const s = this.s;
+    const e = s.electric;
+    if (!s.playing) return `Paused at ${pct(s.position)} open.`;
+    if (e.handMode) {
+      if (e.handDir !== 0 && !s.airFlowing && e.obstruction && e.handDir > 0 && s.position > 0.05 && s.position < 0.95)
+        return `Handwheel will not turn further at ${pct(s.position)}: the valve is jammed.`;
+      return e.handDir !== 0
+        ? `Hand operation: handwheel turning the valve ${e.handDir > 0 ? "open" : "closed"}, ${pct(s.position)} open.`
+        : `Hand operation locked. Motor declutched at ${pct(s.position)} open; turn the handwheel.`;
+    }
+    if (e.tripped) return `Torque trip while ${e.tripped} at ${pct(s.position)}: output torque reached the limit, so the motor stopped to protect the valve.`;
+    if (s.airFlowing) return `${s.direction === "opening" ? "Opening" : "Closing"} on the motor at constant speed, until a limit or a torque trip.`;
+    if (!s.supplyAvailable) return `Power lost. Stopped at ${pct(s.position)} open (fails in place). The encoder still knows the position.`;
+    if (e.selector === "stop") return "Local selector at Stop. Commands are ignored.";
+    if (s.commandedStroke === null) return `Idle at ${pct(s.position)} open. Issue an Open or Close command.`;
+    return `Stopped at the ${s.position > 0.5 ? "open" : "closed"} limit. The self-locking worm holds the valve with the motor off.`;
+  }
+
   private copy(): SimulationState {
     const s = this.s;
-    return { ...s, config: { ...s.config }, torque: { ...s.torque } };
+    return { ...s, config: { ...s.config }, torque: { ...s.torque }, electric: { ...s.electric } };
   }
 
   private emit() {

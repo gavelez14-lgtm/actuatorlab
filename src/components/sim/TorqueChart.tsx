@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { torqueCurves } from "@/lib/sim/model";
 import { MECHANISMS, mechanismFor } from "@/lib/sim/mechanisms";
+import { ELECTRIC, electricDemand, torqueLimitValue } from "@/lib/sim/electric";
 import type { ActuatorConfiguration } from "@/lib/sim/types";
 import { cn } from "@/lib/utils";
 
@@ -93,6 +94,78 @@ export function TorqueChart({
           Valve demand
         </span>
         {showAxisNote && <span className="w-full">Horizontal: valve position. Vertical: normalised torque from {MECHANISMS[mechanismFor(config.family)].formula}.</span>}
+      </figcaption>
+    </figure>
+  );
+}
+
+/**
+ * Electric part-turn torque chart: illustrative valve demand across the
+ * stroke against the torque limit and rated output. The motor runs at
+ * constant speed while demand stays below the limit.
+ */
+export function ElectricTorqueChart({
+  torqueLimit,
+  obstruction,
+  position,
+  outputTorque,
+  className,
+}: {
+  torqueLimit: number;
+  obstruction: boolean;
+  position?: number;
+  outputTorque?: number;
+  className?: string;
+}) {
+  const W = 320;
+  const H = 168;
+  const pad = { l: 30, r: 10, t: 10, b: 26 };
+  const rated = ELECTRIC.ratedTorque;
+  const maxY = Math.max(rated, ELECTRIC.obstructionTorque) * 1.1;
+  const x = (v: number) => pad.l + v * (W - pad.l - pad.r);
+  const y = (v: number) => pad.t + (1 - v / maxY) * (H - pad.t - pad.b);
+  const pts = Array.from({ length: 121 }, (_, i) => i / 120);
+  const demand = pts.map((p, i) => `${i ? "L" : "M"}${x(p).toFixed(1)},${y(electricDemand(p, obstruction, true)).toFixed(1)}`).join(" ");
+  const limit = torqueLimitValue(torqueLimit);
+  return (
+    <figure className={cn("w-full", className)}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Illustrative valve torque demand against a torque limit of ${Math.round(torqueLimit * 100)} percent of rated output.`}>
+        {[0, 1, 2].map((t) => (
+          <g key={t}>
+            <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--rule)" strokeWidth={t === 0 ? 1 : 0.5} />
+            <text x={pad.l - 6} y={y(t) + 3} textAnchor="end" fontSize="9" fill="var(--muted)" className="num">
+              {t}
+            </text>
+          </g>
+        ))}
+        {[0, 0.25, 0.5, 0.75, 1].map((t) => (
+          <text key={t} x={x(t)} y={H - 10} textAnchor={t === 1 ? "end" : t === 0 ? "start" : "middle"} fontSize="9" fill="var(--muted)" className="num">
+            {t * 100}%
+          </text>
+        ))}
+        <line x1={x(0)} x2={x(1)} y1={y(rated)} y2={y(rated)} stroke="var(--muted)" strokeWidth={1} strokeDasharray="1 3" />
+        <line x1={x(0)} x2={x(1)} y1={y(limit)} y2={y(limit)} stroke="var(--accent)" strokeWidth={1.5} />
+        <path d={demand} fill="none" stroke="var(--air)" strokeWidth={2} />
+        {position !== undefined && (
+          <>
+            <line x1={x(position)} x2={x(position)} y1={pad.t} y2={H - pad.b} stroke="var(--fg-2)" strokeWidth={0.75} />
+            {outputTorque !== undefined && outputTorque > 0 && <circle cx={x(position)} cy={y(outputTorque)} r={3} fill="var(--accent)" stroke="var(--panel)" strokeWidth={1.5} />}
+          </>
+        )}
+      </svg>
+      <figcaption className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="h-0.5 w-3 bg-air" aria-hidden />
+          Valve demand (opening)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-0.5 w-3 bg-accent" aria-hidden />
+          Torque limit
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-0 w-3 border-t border-dotted border-muted" aria-hidden />
+          Rated output
+        </span>
       </figcaption>
     </figure>
   );

@@ -77,12 +77,53 @@ const RP_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   },
 };
 
+/** Electric part-turn versions of the explanations. */
+const EPT_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "An electric part-turn actuator sits on the bracket above the ball valve. The motor drives a worm, the worm drives a wheel segment on the output shaft, and the output turns the ball through 90°.",
+      "The display on the front cover shows valve position. The two knobs below it are the Local/Stop/Remote selector and the Open/Close control.",
+    ],
+  },
+  cutaway: {
+    title: "Cutaway",
+    body: [
+      "Half section removes the top of the gearcase, motor and covers. You can see the worm thread engaging the bronze wheel segment, the torque sensor at the worm shaft end, and the encoder on top of the output.",
+      "The valve body is always shown sectioned so the ball can be seen.",
+    ],
+  },
+  mechanical: {
+    title: "How the worm gear works",
+    body: [
+      "The motor spins fast with low torque. Each turn of the single-start worm moves the wheel on by one tooth, so the worm turns many times for the output's quarter turn. Speed goes down and torque goes up by the same ratio, less friction.",
+      "A worm drive is typically self-locking: the valve cannot turn the worm backwards. That is why the actuator holds position with the motor off, and why an electric part-turn actuator does not need a brake.",
+      "When the wheel resists, the worm shaft is pushed along its own axis. The torque sensor at the shaft end measures that thrust. Animation is slowed to 0.35× in this mode.",
+    ],
+  },
+  energy: {
+    title: "Power flow (illustrative)",
+    body: [
+      "Yellow shows electrical power: in through the cable to the terminal compartment, and on to the motor. Orange shows mechanical power: along the worm, through the wheel, and down the output shaft to the valve.",
+      "Markers appear only while the motor runs and show the direction of power, not its amount. Turn the hand/auto lever to hand and the motor path goes quiet: the handwheel is driving instead.",
+    ],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: [
+      "The chart shows the valve's illustrative torque demand across the stroke against the torque limit. The motor runs at constant speed whatever the load, until demand reaches the limit and the sensor switches it off.",
+      "Set the limit below the seat break-out torque and the actuator trips before it moves. Enable the jam and it trips mid-stroke, stopping the motor instead of forcing the valve. Values are normalised and illustrative.",
+    ],
+  },
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const fail = useSimSelector((s) => s.config.failPosition);
   const rp = useSimSelector((s) => s.config.family.includes("rack-pinion"));
-  const t = (rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const electric = useSimSelector((s) => s.config.family === "electric-part-turn");
+  const t = (electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>
@@ -95,9 +136,17 @@ export function ModeGuide() {
       </section>
 
       <section className="rounded-xl bg-panel-2 p-4">
-        <h3 className="text-[17px] text-fg">{sr ? "Spring return: why it fails safe" : "Double acting: why it fails in place"}</h3>
+        <h3 className="text-[17px] text-fg">{electric ? "Electric: why it fails in place" : sr ? "Spring return: why it fails safe" : "Double acting: why it fails in place"}</h3>
         <div className="prose-lab mt-2 text-[13.5px]">
-          {sr ? (
+          {electric ? (
+            <>
+              <p>Without power the motor cannot run, and the self-locking worm holds the valve exactly where it stopped. Nothing stores energy to drive it anywhere else.</p>
+              <p>
+                The absolute encoder still knows the position, and a backup battery keeps the display and settings alive. The handwheel works with no power at all. Electric actuators that must fail open or closed
+                add stored energy, such as a spring or a battery or capacitor unit. That is not modelled here.
+              </p>
+            </>
+          ) : sr ? (
             <>
               <p>
                 On the air stroke, pressure in chamber A pushes the piston outward and compresses the spring. When the cylinder vents, either because the solenoid de-energises or because supply is lost, the

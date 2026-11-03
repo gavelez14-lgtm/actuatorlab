@@ -64,7 +64,15 @@ export type ComponentId =
   | "stem"
   | "rack"
   | "pinion"
-  | "travel-stops";
+  | "travel-stops"
+  | "motor"
+  | "worm"
+  | "worm-wheel"
+  | "handwheel"
+  | "torque-sensor"
+  | "encoder"
+  | "local-controls"
+  | "terminal";
 
 export interface ActuatorConfiguration {
   family: ActuatorFamilyId;
@@ -83,6 +91,27 @@ export interface TorqueSnapshot {
   valveDemand: number;
   /** Net torque in the direction of travel. Negative or zero = stall. */
   net: number;
+}
+
+export type LocalSelector = "local" | "stop" | "remote";
+
+/** Electric actuator state. Present for every family; only used by electric ones. */
+export interface ElectricState {
+  /** Local/Stop/Remote selector on the actuator's local controls. */
+  selector: LocalSelector;
+  /** Hand/auto lever locked in hand: motor declutched, handwheel drives. */
+  handMode: boolean;
+  /** Handwheel being turned: -1 toward closed, +1 toward open, 0 not turning. */
+  handDir: -1 | 0 | 1;
+  /** Torque switch-off setting, fraction of rated output (0.4..1). */
+  torqueLimit: number;
+  /** Teaching aid: a jam partway through the opening stroke. */
+  obstruction: boolean;
+  /** Direction the motor was travelling when it tripped on torque, or null. */
+  tripped: "opening" | "closing" | null;
+  motorRunning: boolean;
+  /** Output torque the actuator is producing, illustrative units (rated = 1 on the display scale). */
+  outputTorque: number;
 }
 
 export interface SimulationState {
@@ -136,6 +165,8 @@ export interface SimulationState {
 
   /** Simulation clock, seconds (pauses when `playing` is false). */
   time: number;
+
+  electric: ElectricState;
 }
 
 export type SimulationCommand =
@@ -155,4 +186,10 @@ export type SimulationCommand =
   | { type: "set-housing-opacity"; value: number }
   | { type: "set-labels"; value: boolean }
   | { type: "select"; id: ComponentId | null }
-  | { type: "seek"; position: number };
+  | { type: "seek"; position: number }
+  | { type: "stop" }
+  | { type: "set-selector"; value: LocalSelector }
+  | { type: "set-hand"; value: boolean }
+  | { type: "handwheel"; dir: -1 | 0 | 1 }
+  | { type: "set-torque-limit"; value: number }
+  | { type: "set-obstruction"; value: boolean };

@@ -12,7 +12,7 @@ const MODES: VisualizationMode[] = ["normal", "cutaway", "mechanical", "energy",
  *   action = double-acting | spring-return
  *   fail   = closed | open
  *   mode   = normal | cutaway | mechanical | energy | engineering
- *   type   = scotch-yoke (default) | rack-pinion
+ *   type   = scotch-yoke (default) | rack-pinion | electric-part-turn
  */
 export function SimulatorFromQuery() {
   const q = useSearchParams();
@@ -20,7 +20,8 @@ export function SimulatorFromQuery() {
   const fail = q.get("fail") === "open" ? "fail-open" : "fail-closed";
   const modeParam = q.get("mode") as VisualizationMode | null;
   const mode = modeParam && MODES.includes(modeParam) ? modeParam : "normal";
-  const family = q.get("type") === "rack-pinion" ? "pneumatic-rack-pinion" : "pneumatic-scotch-yoke";
+  const type = q.get("type");
+  const family = type === "rack-pinion" ? "pneumatic-rack-pinion" : type === "electric-part-turn" ? "electric-part-turn" : "pneumatic-scotch-yoke";
   const config: Partial<ActuatorConfiguration> = { family, actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail };
   return (
     <SimulationProvider key={`${family}-${action}-${fail}-${mode}`} initialConfig={config} initialMode={mode}>

@@ -136,7 +136,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Electric gearbox",
     powerSource: "Electric",
     movement: "Quarter-turn (90°)",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=electric-part-turn",
     summary: "A motor drives a high-ratio gear train, often a worm gear, to turn the output through about 90° and stop at set limits.",
     operation: [
       "An electric motor drives a reduction gear train. A worm gear stage is common because it gives a high ratio and resists being back-driven.",
