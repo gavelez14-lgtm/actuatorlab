@@ -6,6 +6,7 @@ import { useSimSelector, useSimState } from "./SimulationProvider";
 import { MULTI_TURN, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "@/lib/sim/electric";
 import { ElectricTorqueChart, TorqueChart } from "./TorqueChart";
 import { isGas, pipelineToModel } from "@/lib/sim/gas";
+import { HYD, isHydraulic } from "@/lib/sim/hydraulic";
 
 function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
   return (
@@ -96,7 +97,7 @@ function PneumaticEngineering() {
             <Row label="Line break" value={s.gas.tripped ? (s.gas.tripCause === "low" ? "low P" : "tripped") : s.gas.armed ? "armed" : "off"} tone={s.gas.tripped ? "danger" : s.gas.armed ? "ok" : "warn"} />
           </>
         ) : (
-          <Row label="Supply" value={s.supplyAvailable ? s.supplyPressure.toFixed(1) : "0.0"} unit="bar" tone={s.supplyAvailable ? "air" : "danger"} />
+          <Row label="Supply" value={s.supplyAvailable ? s.supplyPressure.toFixed(isHydraulic(s.config.family) ? 0 : 1) : "0"} unit="bar" tone={s.supplyAvailable ? "air" : "danger"} />
         )}
         <Row label="Chamber A" value={s.chamberA} tone={s.chamberA === "supply" ? "air" : undefined} />
         <Row label="Air torque" value={t.air.toFixed(2)} tone="air" />
@@ -105,7 +106,7 @@ function PneumaticEngineering() {
         <Row label="Valve demand" value={t.valveDemand.toFixed(2)} />
         <Row label="Margin" value={t.net.toFixed(2)} tone={t.net > 0 ? "ok" : "danger"} />
       </dl>
-      <TorqueChart config={s.config} pressure={isGas(s.config.family) ? pipelineToModel(s.gas.tank) : s.supplyPressure} position={s.position} className="mt-2" />
+      <TorqueChart config={s.config} pressure={isGas(s.config.family) ? pipelineToModel(s.gas.tank) : isHydraulic(s.config.family) ? s.supplyPressure * HYD.scale : s.supplyPressure} position={s.position} className="mt-2" />
     </div>
   );
 }

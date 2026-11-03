@@ -151,6 +151,7 @@ export function RackPinionModel({
   rootRef?: React.RefObject<THREE.Group | null>;
 }) {
   const { engine } = useEngine();
+  const hydraulic = useSimSelector((s) => s.config.family === "hydraulic-rack-pinion");
   const actionType = useSimSelector((s) => s.config.actionType);
   const failPosition = useSimSelector((s) => s.config.failPosition);
   const cutaway = useSimSelector((s) => s.cutaway);
@@ -307,7 +308,7 @@ export function RackPinionModel({
       {showLabels && <Label position={[0, 0.95, 0]}>Racks move apart, pinion turns 90°</Label>}
 
       <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={rpPinionRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
-      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} layout={RP_AIR} />
+      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} layout={RP_AIR} oil={hydraulic} />
     </group>
   );
 }

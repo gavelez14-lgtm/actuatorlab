@@ -133,6 +133,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
   const gas = useSimSelector((s) => isGas(s.config.family));
   const overOil = useSimSelector((s) => isGasOverOil(s.config.family));
   const eh = useSimSelector((s) => s.config.family === "electro-hydraulic");
+  const hydraulic = useSimSelector((s) => s.config.family === "hydraulic-scotch-yoke");
 
   const geo = useMemo(
     () => ({
@@ -395,7 +396,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
       <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={shaftRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
 
-      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil || eh} />
+      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil || eh || hydraulic} />
       {eh && <ElectroHydraulicModule mats={mats} pick={pick} showLabels={showLabels} />}
       {gas && <GasSystem mats={mats} pick={pick} showLabels={showLabels} shellRaycast={shellRaycast} overOil={overOil} />}
     </group>

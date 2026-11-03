@@ -10,13 +10,15 @@ import { Illustrative } from "@/components/ui/primitives";
 import { useEngine, useSimState } from "./SimulationProvider";
 import { GAS, goStrokeTime, isGas, isGasOverOil } from "@/lib/sim/gas";
 import { EH } from "@/lib/sim/electroHydraulic";
+import { HYD, isHydraulic } from "@/lib/sim/hydraulic";
 import { mechanismFor } from "@/lib/sim/mechanisms";
 
 export function ConfigPanel() {
   const { engine } = useEngine();
   const s = useSimState();
   const sr = s.config.actionType === "spring-return";
-  const minP = minimumPressureForFullStroke(s.config);
+  const hyd = isHydraulic(s.config.family);
+  const minP = minimumPressureForFullStroke(s.config) / (hyd ? HYD.scale : 1);
   const electric = isElectric(s.config.family);
   const gas = isGas(s.config.family);
   const eh = s.config.family === "electro-hydraulic";
@@ -44,14 +46,14 @@ export function ConfigPanel() {
           {sr
             ? eh
               ? "The pump drives one direction against a spring. The dump valve lets the spring drive the other direction, and gives the fail action."
-              : `${gas ? "Gas" : "Air"} drives one direction against a spring. The spring drives the other direction and provides the fail action.`
+              : `${gas ? "Gas" : isHydraulic(s.config.family) ? "Oil" : "Air"} drives one direction against a spring. The spring drives the other direction and provides the fail action.`
             : eh
               ? "The pump drives both directions through a directional valve. There is no spring, so it fails in place."
               : gas
               ? isGasOverOil(s.config.family)
                 ? "Gas pushes oil to either side of the piston. With no spring, stored gas is what closes the valve after a trip."
                 : "Gas drives both directions. With no spring, the reserve tank is the stored energy that closes the valve after a line break."
-              : "Air drives both directions. There is no spring, so there is no stored energy to reach a fail position."}
+              : `${isHydraulic(s.config.family) ? "Oil" : "Air"} drives both directions. There is no spring, so there is no stored energy to reach a fail position.`}
         </p>
       </fieldset>
 
@@ -113,8 +115,16 @@ export function ConfigPanel() {
           tone="air"
           checked={s.supplyAvailable}
           onChange={(v) => engine.dispatch({ type: "set-supply", available: v })}
-          label="Supply available"
-          description={sr ? "Turn off to simulate loss of instrument air. The spring will act." : "Turn off to simulate loss of instrument air. Nothing will drive the piston."}
+          label={hyd ? "Hydraulic supply available" : "Supply available"}
+          description={
+            hyd
+              ? sr
+                ? "Turn off to simulate loss of the hydraulic power unit. The cylinder drains to tank and the spring acts."
+                : "Turn off to simulate loss of the hydraulic power unit. The trapped oil holds the valve in place."
+              : sr
+                ? "Turn off to simulate loss of instrument air. The spring will act."
+                : "Turn off to simulate loss of instrument air. Nothing will drive the piston."
+          }
         />
 
         <div>
@@ -122,26 +132,36 @@ export function ConfigPanel() {
             <label htmlFor="pressure" className="text-[14px] font-medium text-fg">
               Supply pressure
             </label>
-            <span className="num text-[14px] text-fg">{s.supplyPressure.toFixed(1)} bar</span>
+            <span className="num text-[14px] text-fg">{s.supplyPressure.toFixed(hyd ? 0 : 1)} bar</span>
           </div>
           <Range
             id="pressure"
             label="Supply pressure"
-            valueText={`${s.supplyPressure.toFixed(1)} bar`}
-            min={MODEL.pressureMin}
-            max={MODEL.pressureMax}
-            step={0.1}
+            valueText={`${s.supplyPressure.toFixed(hyd ? 0 : 1)} bar`}
+            min={hyd ? HYD.pressureMin : MODEL.pressureMin}
+            max={hyd ? HYD.pressureMax : MODEL.pressureMax}
+            step={hyd ? 1 : 0.1}
             value={s.supplyPressure}
             onChange={(v) => engine.dispatch({ type: "set-pressure", bar: v })}
           />
           <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             <span>
-              This model needs about <span className="num text-fg-2">{minP.toFixed(1)} bar</span> to complete the air stroke. Below that it stalls part-way.{" "}
+              This model needs about <span className="num text-fg-2">{minP.toFixed(hyd ? 0 : 1)} bar</span> to complete the {hyd ? "powered" : "air"} stroke. Below that it stalls part-way.{" "}
               <Illustrative>Illustrative model</Illustrative>
             </span>
           </p>
         </div>
+        {hyd && (
+          <div>
+            <div className="mb-1 flex items-baseline justify-between text-[13px]">
+              <label htmlFor="hyd-flow" className="text-fg">Flow-control setting</label>
+              <span className="num text-fg">{(HYD.strokeTime / Math.max(GAS.flowMin, s.gas.flow)).toFixed(1)} s stroke</span>
+            </div>
+            <Range id="hyd-flow" label="Flow-control setting" min={GAS.flowMin} max={1} step={0.01} value={s.gas.flow} onChange={(v) => engine.dispatch({ type: "set-flow", value: v })} />
+            <p className="mt-1.5 text-[12.5px] leading-snug text-muted">Oil is metered, so speed is steady and set here, while pressure sets the available torque.</p>
+          </div>
+        )}
       </div>
       )}
 

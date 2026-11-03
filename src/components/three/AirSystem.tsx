@@ -268,8 +268,8 @@ export function AirSystem({
 
       {active && (
         <>
-          <SceneLabel position={layout.labels.supply} className="sim-label sim-label--air">Supply in</SceneLabel>
-          <SceneLabel position={layout.labels.exhaust} className="sim-label">Exhaust</SceneLabel>
+          <SceneLabel position={layout.labels.supply} className="sim-label sim-label--air">{oil ? "Oil in" : "Supply in"}</SceneLabel>
+          <SceneLabel position={layout.labels.exhaust} className="sim-label">{oil ? "Return to tank" : "Exhaust"}</SceneLabel>
           {springReturn && (
             <SceneLabel position={layout.labels.breather} className="sim-label">Breather</SceneLabel>
           )}

@@ -17,7 +17,7 @@ export function ModeSelector() {
   const { engine, camera } = useEngine();
   const mode = useSimSelector((s) => s.mode);
   const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
-  const fluid = useSimSelector((s) => (s.config.family === "gas-over-oil" || s.config.family === "electro-hydraulic" ? "Oil flow" : s.config.family === "gas-scotch-yoke" ? "Gas flow" : null));
+  const fluid = useSimSelector((s) => (s.config.family === "gas-over-oil" || s.config.family === "electro-hydraulic" || s.config.family.startsWith("hydraulic") ? "Oil flow" : s.config.family === "gas-scotch-yoke" ? "Gas flow" : null));
   return (
     <Segmented
       label="Visualisation mode"

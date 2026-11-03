@@ -15,6 +15,7 @@
  */
 import { MODEL, computeTorques, strokeFromValvePosition, valvePositionFromStroke } from "./model";
 import { EH, isElectroHydraulic } from "./electroHydraulic";
+import { HYD, isHydraulic } from "./hydraulic";
 import { GAS, goStrokeTime, isGas, isGasOverOil, pipelineToModel } from "./gas";
 import { COMPACT, ELECTRIC, MULTI_TURN, electricDemand, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "./electric";
 import type {
@@ -67,7 +68,7 @@ export function createInitialState(config: Partial<ActuatorConfiguration> = {}):
     outputAngle: 0,
     velocity: 0,
     direction: "stopped",
-    supplyPressure: MODEL.pressureDefault,
+    supplyPressure: isHydraulic(cfg.family) ? HYD.pressureDefault : MODEL.pressureDefault,
     supplyAvailable: true,
     commandedStroke: null,
     chamberA: "idle",
@@ -154,7 +155,7 @@ function derive(s: SimulationState) {
 
 function pressures(s: SimulationState) {
   // Direct gas: the cylinder is fed from the reserve tank behind the check valve.
-  const p = isGas(s.config.family) ? pipelineToModel(s.gas.tank) : s.supplyPressure;
+  const p = isGas(s.config.family) ? pipelineToModel(s.gas.tank) : isHydraulic(s.config.family) ? s.supplyPressure * HYD.scale : s.supplyPressure;
   return {
     pA: s.chamberA === "supply" ? p : 0,
     pB: s.chamberB === "supply" ? p : 0,
@@ -285,9 +286,10 @@ export class SimulationEngine {
     let vTarget = 0;
     if (dir !== 0 && !atEnd(dir)) {
       const distToEnd = dir > 0 ? 1 - s.stroke : s.stroke;
-      if (isGasOverOil(s.config.family)) {
+      if (isGasOverOil(s.config.family) || isHydraulic(s.config.family)) {
         // Oil is metered through the flow controls: steady speed set by the valve opening.
-        vTarget = (dir / goStrokeTime(s.gas.flow)) * (0.5 + 0.5 * smoothstep(0, 0.04, distToEnd));
+        const t = isHydraulic(s.config.family) ? HYD.strokeTime / Math.max(GAS.flowMin, s.gas.flow) : goStrokeTime(s.gas.flow);
+        vTarget = (dir / t) * (0.5 + 0.5 * smoothstep(0, 0.04, distToEnd));
       } else {
         const vmax = 1 / MODEL.nominalStrokeTime;
         const margin = Math.min(1.25, 0.35 + 0.65 * Math.sqrt(excess / MODEL.referenceMargin));
@@ -744,7 +746,9 @@ export class SimulationEngine {
           Object.assign(s.gas, { pipelineSet: p, pipeline: s.gas.ruptured ? s.gas.pipeline : p, tank: s.gas.ruptured ? s.gas.tank : p, rate: 0, overFor: 0 });
           break;
         }
-        s.supplyPressure = Math.min(MODEL.pressureMax, Math.max(MODEL.pressureMin, cmd.bar));
+        s.supplyPressure = isHydraulic(s.config.family)
+          ? Math.min(HYD.pressureMax, Math.max(HYD.pressureMin, cmd.bar))
+          : Math.min(MODEL.pressureMax, Math.max(MODEL.pressureMin, cmd.bar));
         break;
       case "set-rupture":
         s.gas.ruptured = cmd.value;
@@ -952,8 +956,11 @@ export class SimulationEngine {
     if (!s.playing) msg = `Paused at ${pct(s.position)} open.`;
     else if (s.airFlowing) {
       const verb = s.direction === "opening" ? "Opening" : "Closing";
-      if (sr && s.chamberA !== "supply") msg = `${verb}: spring stroke. Cylinder air is exhausting while the spring extends.`;
-      else if (sr) msg = `${verb}: air stroke. Air pressure drives the piston and compresses the spring.`;
+      const med = isHydraulic(s.config.family) || isGasOverOil(s.config.family) ? "oil" : isGas(s.config.family) ? "gas" : "air";
+      const Med = med[0].toUpperCase() + med.slice(1);
+      if (sr && s.chamberA !== "supply") msg = `${verb}: spring stroke. Cylinder ${med} is ${med === "oil" ? "returning to tank" : "exhausting"} while the spring extends.`;
+      else if (sr) msg = `${verb}: ${med === "air" ? "air" : "powered"} stroke. ${Med} pressure drives the piston and compresses the spring.`;
+      else if (isHydraulic(s.config.family)) msg = `${verb}: oil from the power unit drives the piston; oil from the other side returns to tank.`;
       else if (isGasOverOil(s.config.family)) msg = `${verb}: gas pushes oil into one side of the piston; oil from the other side returns to its tank.`;
       else if (isGas(s.config.family)) msg = `${verb}: pipeline gas drives the piston; the opposite chamber exhausts.`;
       else msg = `${verb}: air drives the piston; the opposite chamber exhausts.`;
@@ -966,7 +973,7 @@ export class SimulationEngine {
     } else if (s.commandedStroke === null) {
       msg = sr ? "At rest on the spring. Issue an Open or Close command." : "Idle. Issue an Open or Close command.";
     } else {
-      msg = `Holding ${s.position > 0.5 ? "open" : "closed"}.${sr && s.chamberA === "supply" ? " Air pressure holds the spring compressed." : sr ? " The spring holds this position." : " Supply pressure holds the piston at its end stop."}`;
+      msg = `Holding ${s.position > 0.5 ? "open" : "closed"}.${sr && s.chamberA === "supply" ? ` ${isHydraulic(s.config.family) || isGasOverOil(s.config.family) ? "Oil" : isGas(s.config.family) ? "Gas" : "Air"} pressure holds the spring compressed.` : sr ? " The spring holds this position." : " Supply pressure holds the piston at its end stop."}`;
     }
     s.status = msg;
   }

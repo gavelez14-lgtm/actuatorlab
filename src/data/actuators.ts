@@ -331,7 +331,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Scotch yoke",
     powerSource: "Hydraulic",
     movement: "Quarter-turn (90°)",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=hydraulic-scotch-yoke",
     summary: "Hydraulic fluid drives the piston instead of air. The yoke converts the stroke to a quarter turn exactly as in the pneumatic version.",
     operation: [
       "Hydraulic pressure on a piston produces linear force. Hydraulic systems typically run at much higher pressure than plant air, so a smaller cylinder produces a large force.",
@@ -355,7 +356,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Rack and pinion",
     powerSource: "Hydraulic",
     movement: "Quarter-turn (90°)",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=hydraulic-rack-pinion",
     summary: "The rack-and-pinion mechanism driven by hydraulic pressure for high force from a compact body.",
     operation: ["Hydraulic pressure drives the rack pistons; the pinion converts rack movement into rotation with a constant lever arm."],
     configurations: [
