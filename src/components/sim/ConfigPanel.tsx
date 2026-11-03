@@ -91,6 +91,25 @@ export function ConfigPanel() {
         </>
       )}
 
+      <fieldset className="space-y-2">
+        <legend className="mb-2 text-[13px] font-medium text-fg">Valve</legend>
+        <Segmented
+          label="Valve"
+          className="w-full"
+          value={s.config.valve ?? "ball"}
+          onChange={(v) => engine.dispatch({ type: "set-config", config: { valve: v } })}
+          options={[
+            { value: "ball", label: "Ball" },
+            { value: "butterfly", label: "Butterfly" },
+          ]}
+        />
+        <p className="text-[12.5px] leading-snug text-muted">
+          {(s.config.valve ?? "ball") === "butterfly"
+            ? "Seating torque at closed, then a flow-induced dynamic torque that peaks part-way open. See the dashed demand in Engineering mode."
+            : "Highest torque at the seats (closed), lower while the ball turns."}
+        </p>
+      </fieldset>
+
       {yokeFamily && (
         <fieldset className="space-y-2">
           <legend className="mb-2 text-[13px] font-medium text-fg">Yoke</legend>

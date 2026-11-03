@@ -100,7 +100,11 @@ export interface ActuatorConfiguration {
   failPosition: FailPosition;
   /** Scotch yoke only: symmetric (default) or canted torque characteristic. */
   yoke?: "symmetric" | "canted";
+  /** Quarter-turn valve driven (default ball). */
+  valve?: ValveKind;
 }
+
+export type ValveKind = "ball" | "butterfly";
 
 /** Illustrative torque values, normalised (dimensionless). NOT manufacturer data. */
 export interface TorqueSnapshot {

@@ -6,6 +6,10 @@ import { BRACKET, VALVE } from "@/lib/sim/geometry";
 import type { CutawayStyle } from "@/lib/sim/types";
 import { SECTION_PLANE, VALVE_SECTION_PLANE, makeShellRaycast, type MaterialSet } from "./materials";
 import { Label, Pick, type PickHandlers } from "./parts";
+import { useSimSelector } from "@/components/sim/SimulationProvider";
+
+/** Butterfly wafer proportions (original, illustrative). */
+const WAFER = { halfLength: 0.13, outerR: 0.42, discR: VALVE.pipeRadius - 0.008, discT: 0.045 } as const;
 
 /**
  * Mounting bracket, coupling interface and sectioned quarter-turn ball valve.
@@ -78,6 +82,7 @@ export function ValveAssembly({
     },
     [geo],
   );
+  const butterfly = useSimSelector((s) => s.config.valve === "butterfly");
   const cutRef = useRef<CutawayStyle>(cutaway);
   cutRef.current = cutaway;
   const valveRaycast = useMemo(
@@ -106,7 +111,60 @@ export function ValveAssembly({
         ))}
       </Pick>
 
-      {/* ---------------- Ball valve ---------------- */}
+      {butterfly ? (
+        <group position={[0, VALVE.centerY, 0]}>
+          <Pick id="valve-body" {...pick}>
+            {/* wafer body: short ring between the pipe flanges */}
+            <mesh rotation={[Math.PI / 2, 0, 0]} material={mats.valveBody} raycast={valveRaycast}>
+              <cylinderGeometry args={[WAFER.outerR, WAFER.outerR, WAFER.halfLength * 2, 48, 1, true]} />
+            </mesh>
+            {/* liner (seat) */}
+            <mesh rotation={[Math.PI / 2, 0, 0]} material={mats.seat}>
+              <cylinderGeometry args={[VALVE.pipeRadius, VALVE.pipeRadius, WAFER.halfLength * 2 - 0.02, 48, 1, true]} />
+            </mesh>
+            {[-1, 1].map((sgn) => (
+              <mesh key={sgn} position={[0, 0, sgn * (WAFER.halfLength + 0.04)]} rotation={[Math.PI / 2, 0, 0]} material={mats.valveBody} raycast={valveRaycast}>
+                <cylinderGeometry args={[VALVE.flangeRadius, VALVE.flangeRadius, 0.08, 40, 1, true]} />
+              </mesh>
+            ))}
+            {/* neck up to the mounting pad */}
+            <mesh position={[0, (WAFER.outerR + 0.6) / 2, 0]} material={mats.valveBody} raycast={valveRaycast}>
+              <cylinderGeometry args={[0.1, 0.12, 0.6 - WAFER.outerR, 24, 1, true]} />
+            </mesh>
+            <mesh position={[0, 0.6, 0]} material={mats.valveBody} raycast={valveRaycast}>
+              <cylinderGeometry args={[0.26, 0.26, 0.04, 28]} />
+            </mesh>
+            {[-1, 1].map((sgn) => (
+              <mesh
+                key={`pipe${sgn}`}
+                position={[0, 0, sgn * (WAFER.halfLength + 0.08 + (VALVE.pipeHalfLength - WAFER.halfLength - 0.08) / 2)]}
+                rotation={[Math.PI / 2, 0, 0]}
+                material={mats.pipe}
+                raycast={valveRaycast}
+              >
+                <cylinderGeometry args={[VALVE.pipeRadius, VALVE.pipeRadius, VALVE.pipeHalfLength - WAFER.halfLength - 0.08, 36, 1, true]} />
+              </mesh>
+            ))}
+          </Pick>
+          <group ref={ballRef} rotation={[0, ballRotation, 0]}>
+            <Pick id="ball" {...pick}>
+              {/* disc in the local YZ plane: edge-on to the flow when the ball bore would be open */}
+              <mesh rotation={[0, 0, Math.PI / 2]} material={mats.ball}>
+                <cylinderGeometry args={[WAFER.discR, WAFER.discR, WAFER.discT, 48]} />
+              </mesh>
+              <mesh rotation={[0, 0, Math.PI / 2]} material={mats.bore}>
+                <cylinderGeometry args={[0.07, 0.07, WAFER.discT + 0.03, 24]} />
+              </mesh>
+            </Pick>
+            <Pick id="stem" {...pick}>
+              <mesh position={[0, 0.27, 0]} material={mats.stem}>
+                <cylinderGeometry args={[0.05, 0.05, 1.08, 16]} />
+              </mesh>
+            </Pick>
+            {showLabels && <Label position={[0.0, -0.45, 0]}>Disc turns with the shaft</Label>}
+          </group>
+        </group>
+      ) : (
       <group position={[0, VALVE.centerY, 0]}>
         <Pick id="valve-body" {...pick}>
           <mesh geometry={geo.valveBody} material={mats.valveBody} raycast={valveRaycast} />
@@ -159,6 +217,7 @@ export function ValveAssembly({
           {showLabels && <Label position={[0.0, -0.55, 0]}>Ball turns with the shaft</Label>}
         </group>
       </group>
+      )}
 
     </>
   );

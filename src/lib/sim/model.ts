@@ -8,7 +8,7 @@
  * T = F * d / cos^2(phi), rack and pinion T = F * r.
  */
 import { leverForConfig } from "./mechanisms";
-import type { ActuatorConfiguration } from "./types";
+import type { ActuatorConfiguration, ValveKind } from "./types";
 
 export const MODEL = {
   /** Effective piston area, normalised so force = bar x 1. */
@@ -44,6 +44,9 @@ export function strokeFromValvePosition(config: ActuatorConfiguration, position:
   return valvePositionFromStroke(config, position);
 }
 
+/** Illustrative butterfly-valve demand shape (normalised; not valve-maker data). */
+export const BUTTERFLY = { running: 0.25, seat: 0.95, seatWidth: 0.05, dynamic: 0.42, dynamicAt: 0.75, dynamicWidth: 0.14 } as const;
+
 export function springForce(stroke: number): number {
   return MODEL.springPreload + MODEL.springRate * stroke;
 }
@@ -53,7 +56,16 @@ export function springForce(stroke: number): number {
  * lower while the ball is running. Real valve torque depends on size, seat
  * material, pressure, media and service, and must come from the valve maker.
  */
-export function valveDemand(valvePosition: number): number {
+export function valveDemand(valvePosition: number, valve: ValveKind = "ball"): number {
+  if (valve === "butterfly") {
+    // Illustrative butterfly: seating torque at closed, low bearing friction,
+    // and a flow-induced dynamic torque that peaks part-way open.
+    return (
+      BUTTERFLY.running +
+      (BUTTERFLY.seat - BUTTERFLY.running) * Math.exp(-valvePosition / BUTTERFLY.seatWidth) +
+      BUTTERFLY.dynamic * Math.exp(-(((valvePosition - BUTTERFLY.dynamicAt) / BUTTERFLY.dynamicWidth) ** 2))
+    );
+  }
   return (
     MODEL.valveRunning +
     (MODEL.valveSeat - MODEL.valveRunning) * Math.exp(-valvePosition / MODEL.valveSeatWidth)
@@ -87,7 +99,7 @@ export function computeTorques({ config, stroke, pA, pB }: ForceInputs): ForceRe
     active,
     air: Math.abs(airForce) * lever,
     spring: spring * lever,
-    demand: valveDemand(valvePositionFromStroke(config, stroke)),
+    demand: valveDemand(valvePositionFromStroke(config, stroke), config.valve),
   };
 }
 
@@ -114,7 +126,7 @@ export function torqueCurves(config: ActuatorConfiguration, pressure: number, sa
       position,
       airStroke: pressure * MODEL.pistonArea * lever - spring,
       springStroke: config.actionType === "spring-return" ? spring : null,
-      demand: valveDemand(position),
+      demand: valveDemand(position, config.valve),
     });
   }
   return pts;
@@ -127,7 +139,7 @@ export function minimumPressureForFullStroke(config: ActuatorConfiguration): num
     const s = i / 200;
     const lever = leverForConfig(config, s);
     const spring = config.actionType === "spring-return" ? springForce(s) : 0;
-    const demand = valveDemand(valvePositionFromStroke(config, s));
+    const demand = valveDemand(valvePositionFromStroke(config, s), config.valve);
     worst = Math.max(worst, spring + demand / lever);
   }
   return worst / MODEL.pistonArea;

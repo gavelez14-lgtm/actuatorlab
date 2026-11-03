@@ -104,6 +104,7 @@ export function SimulatorWorkbench() {
   const eh = family === "electro-hydraulic";
   const hydSY = family === "hydraulic-scotch-yoke";
   const vane = family === "pneumatic-vane";
+  const valveKind = useSimSelector((s) => s.config.valve ?? "ball");
   const hydRP = family === "hydraulic-rack-pinion";
   const electric = family === "electric-part-turn" || multiTurn || compact;
   const router = useRouter();
@@ -202,7 +203,7 @@ export function SimulatorWorkbench() {
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">
-            {configLabel}, {multiTurn ? "on a rising-stem wedge gate valve" : "on a quarter-turn ball valve"}. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
+            {configLabel}, {multiTurn ? "on a rising-stem wedge gate valve" : valveKind === "butterfly" ? "on a butterfly valve" : "on a quarter-turn ball valve"}. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

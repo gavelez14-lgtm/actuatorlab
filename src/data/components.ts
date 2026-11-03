@@ -853,6 +853,35 @@ export const VANE_COMPONENTS: ComponentInfo[] = [
   ...VALVE_PARTS,
 ];
 
+const DISC_INFO: ComponentInfo = {
+  id: "ball",
+  name: "Disc",
+  role: "Flow control",
+  function: "A disc on the stem that turns edge-on to open and across the bore to close.",
+  description:
+    "A butterfly valve's disc stays in the flow even when open, so flowing fluid pushes on it. That dynamic torque peaks part-way open, usually well before fully open, and can matter as much as the seating torque at closed.",
+  caveat: "Disc shape (concentric, double or triple offset) changes the seating and dynamic torque a lot. Real values come from the valve maker.",
+  focus: [0, VALVE.centerY, 0],
+  distance: 2.2,
+  group: "valve",
+};
+const WAFER_INFO: ComponentInfo = {
+  id: "valve-body",
+  name: "Valve body (wafer)",
+  role: "Pressure containment",
+  function: "A short ring clamped between pipe flanges, with a liner the disc seals against.",
+  description: "Butterfly valves are short and light for their size compared with ball valves, which is a main reason they are used on large lines.",
+  focus: [0, VALVE.centerY, 0],
+  distance: 2.4,
+  group: "valve",
+};
+
+/** Swap ball-valve parts for butterfly ones when that valve is fitted. */
+export function adaptForValve(list: ComponentInfo[], valve: "ball" | "butterfly" | undefined): ComponentInfo[] {
+  if (valve !== "butterfly") return list;
+  return list.map((c) => (c.id === "ball" ? DISC_INFO : c.id === "valve-body" ? WAFER_INFO : c));
+}
+
 export function componentsFor(kind: MechanismKind, gasFamily: ActuatorFamilyId | null = null): ComponentInfo[] {
   if (kind === "vane") return VANE_COMPONENTS;
   if (gasFamily === "electro-hydraulic") {

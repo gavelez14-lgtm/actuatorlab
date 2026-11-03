@@ -2,7 +2,7 @@
 
 import { isGas } from "@/lib/sim/gas";
 import { Crosshair, MousePointerClick, X } from "lucide-react";
-import { componentInfo, componentsFor, type ComponentRole } from "@/data/components";
+import { adaptForValve, componentsFor, type ComponentRole } from "@/data/components";
 import { mechanismFor } from "@/lib/sim/mechanisms";
 import { Button, Tag } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -26,8 +26,10 @@ export function ComponentInspector() {
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const kind = useSimSelector((s) => mechanismFor(s.config.family));
   const gas = useSimSelector((s) => (isGas(s.config.family) || s.config.family === "electro-hydraulic" ? s.config.family : null));
-  const info = selected ? (componentInfo(kind, selected, gas) ?? null) : null;
-  const list = componentsFor(kind, gas).filter((c) => !c.springReturnOnly || sr);
+  const valve = useSimSelector((s) => s.config.valve);
+  const all = adaptForValve(componentsFor(kind, gas), valve);
+  const info = selected ? (all.find((c) => c.id === selected) ?? null) : null;
+  const list = all.filter((c) => !c.springReturnOnly || sr);
 
   return (
     <div className="space-y-5">

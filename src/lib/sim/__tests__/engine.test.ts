@@ -143,3 +143,17 @@ describe("timing", () => {
     expect(valvePositionFromStroke({ family: "pneumatic-scotch-yoke", actionType: "spring-return", failPosition: "fail-open" }, 0.25)).toBe(0.75);
   });
 });
+
+import { valveDemand as vd } from "../model";
+describe("butterfly valve demand", () => {
+  it("peaks at the seat and has a dynamic hump part-way open", () => {
+    const at = (p: number) => vd(p, "butterfly");
+    expect(at(0)).toBeGreaterThan(at(0.3));
+    expect(at(0.75)).toBeGreaterThan(at(0.4));
+    expect(at(0.75)).toBeGreaterThan(at(1));
+  });
+  it("electric families keep the ball valve", () => {
+    const e = new SimulationEngine({ family: "electric-part-turn", valve: "butterfly" });
+    expect(e.getState().config.valve).toBe("ball");
+  });
+});

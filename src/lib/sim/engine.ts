@@ -48,7 +48,8 @@ const MODE_PRESETS: Record<VisualizationMode, Partial<SimulationState>> = {
 
 function normaliseConfig(c: ActuatorConfiguration): ActuatorConfiguration {
   // Electric actuators have no spring and no coupling flip in this model.
-  if (isElectric(c.family) || c.family === "pneumatic-vane") return { ...c, actionType: "double-acting", failPosition: "fail-in-place" };
+  if (isElectric(c.family)) return { ...c, actionType: "double-acting", failPosition: "fail-in-place", valve: "ball" };
+  if (c.family === "pneumatic-vane") return { ...c, actionType: "double-acting", failPosition: "fail-in-place" };
   if (c.actionType === "double-acting") return { ...c, failPosition: "fail-in-place" };
   if (c.failPosition === "fail-in-place") return { ...c, failPosition: "fail-closed" };
   return c;
