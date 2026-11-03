@@ -101,10 +101,13 @@ export function ConfigPanel() {
           options={[
             { value: "ball", label: "Ball" },
             { value: "butterfly", label: "Butterfly" },
+            { value: "plug", label: "Plug" },
           ]}
         />
         <p className="text-[12.5px] leading-snug text-muted">
-          {(s.config.valve ?? "ball") === "butterfly"
+          {s.config.valve === "plug"
+            ? "High break-out at closed and a high running torque all the way, because the plug rubs on its body throughout the turn."
+            : (s.config.valve ?? "ball") === "butterfly"
             ? "Seating torque at closed, then a flow-induced dynamic torque that peaks part-way open. See the dashed demand in Engineering mode."
             : "Highest torque at the seats (closed), lower while the ball turns."}
         </p>

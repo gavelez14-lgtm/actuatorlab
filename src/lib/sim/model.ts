@@ -44,6 +44,9 @@ export function strokeFromValvePosition(config: ActuatorConfiguration, position:
   return valvePositionFromStroke(config, position);
 }
 
+/** Illustrative plug-valve demand shape (normalised; not valve-maker data). */
+export const PLUG = { running: 0.6, breakout: 1.15, breakWidth: 0.07 } as const;
+
 /** Illustrative butterfly-valve demand shape (normalised; not valve-maker data). */
 export const BUTTERFLY = { running: 0.25, seat: 0.95, seatWidth: 0.05, dynamic: 0.42, dynamicAt: 0.75, dynamicWidth: 0.14 } as const;
 
@@ -57,6 +60,11 @@ export function springForce(stroke: number): number {
  * material, pressure, media and service, and must come from the valve maker.
  */
 export function valveDemand(valvePosition: number, valve: ValveKind = "ball"): number {
+  if (valve === "plug") {
+    // Illustrative plug valve: sliding seal contact all the way round, so the
+    // running torque is high, with a large break-out at the closed end.
+    return PLUG.running + (PLUG.breakout - PLUG.running) * Math.exp(-valvePosition / PLUG.breakWidth);
+  }
   if (valve === "butterfly") {
     // Illustrative butterfly: seating torque at closed, low bearing friction,
     // and a flow-induced dynamic torque that peaks part-way open.

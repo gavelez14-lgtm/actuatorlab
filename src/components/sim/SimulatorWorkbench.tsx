@@ -203,7 +203,7 @@ export function SimulatorWorkbench() {
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">
-            {configLabel}, {multiTurn ? "on a rising-stem wedge gate valve" : valveKind === "butterfly" ? "on a butterfly valve" : "on a quarter-turn ball valve"}. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
+            {configLabel}, {multiTurn ? "on a rising-stem wedge gate valve" : valveKind === "butterfly" ? "on a butterfly valve" : valveKind === "plug" ? "on a plug valve" : "on a quarter-turn ball valve"}. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

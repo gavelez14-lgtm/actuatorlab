@@ -876,8 +876,22 @@ const WAFER_INFO: ComponentInfo = {
   group: "valve",
 };
 
-/** Swap ball-valve parts for butterfly ones when that valve is fitted. */
-export function adaptForValve(list: ComponentInfo[], valve: "ball" | "butterfly" | undefined): ComponentInfo[] {
+const PLUG_INFO: ComponentInfo = {
+  id: "ball",
+  name: "Plug",
+  role: "Flow control",
+  function: "A tapered plug with a port through it, turned a quarter turn in a matching tapered body.",
+  description:
+    "The plug seals by contact over a large area all the way round, so it needs torque throughout the stroke, not just at the seats. After sitting still, especially in dirty or sticky service, break-out can be well above the running torque. Lubricated and sleeved designs reduce it.",
+  caveat: "Lubricated, sleeved and eccentric plug valves behave quite differently. Real torque values come from the valve maker.",
+  focus: [0, VALVE.centerY, 0],
+  distance: 2.2,
+  group: "valve",
+};
+
+/** Swap ball-valve parts for the fitted valve type. */
+export function adaptForValve(list: ComponentInfo[], valve: "ball" | "butterfly" | "plug" | undefined): ComponentInfo[] {
+  if (valve === "plug") return list.map((c) => (c.id === "ball" ? PLUG_INFO : c));
   if (valve !== "butterfly") return list;
   return list.map((c) => (c.id === "ball" ? DISC_INFO : c.id === "valve-body" ? WAFER_INFO : c));
 }

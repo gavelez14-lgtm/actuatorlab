@@ -175,3 +175,12 @@ describe("canted yoke kinematics", () => {
     expect(Math.abs(pinX(0, k))).toBeGreaterThan(Math.abs(pinX(1, k)));
   });
 });
+
+describe("plug valve demand", () => {
+  it("runs high all the way and breaks out higher at closed", () => {
+    const at = (p: number) => vd(p, "plug");
+    expect(at(0)).toBeGreaterThan(at(0.5) * 1.5);
+    expect(at(0.5)).toBeGreaterThan(vd(0.5, "ball"));
+    expect(Math.abs(at(0.5) - at(1))).toBeLessThan(0.01);
+  });
+});

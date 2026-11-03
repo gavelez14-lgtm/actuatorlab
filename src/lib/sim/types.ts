@@ -104,7 +104,7 @@ export interface ActuatorConfiguration {
   valve?: ValveKind;
 }
 
-export type ValveKind = "ball" | "butterfly";
+export type ValveKind = "ball" | "butterfly" | "plug";
 
 /** Illustrative torque values, normalised (dimensionless). NOT manufacturer data. */
 export interface TorqueSnapshot {

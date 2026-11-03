@@ -83,6 +83,7 @@ export function ValveAssembly({
     [geo],
   );
   const butterfly = useSimSelector((s) => s.config.valve === "butterfly");
+  const plug = useSimSelector((s) => s.config.valve === "plug");
   const cutRef = useRef<CutawayStyle>(cutaway);
   cutRef.current = cutaway;
   const valveRaycast = useMemo(
@@ -180,8 +181,8 @@ export function ValveAssembly({
           <mesh position={[0, 0.6, 0]} material={mats.valveBody} raycast={valveRaycast}>
             <cylinderGeometry args={[0.26, 0.26, 0.04, 28]} />
           </mesh>
-          {/* seats */}
-          {[-1, 1].map((sgn) => (
+          {/* seats (ball valve only) */}
+          {!plug && [-1, 1].map((sgn) => (
             <mesh key={`seat${sgn}`} position={[0, 0, sgn * 0.29]} material={mats.seat}>
               <torusGeometry args={[0.23, 0.026, 10, 40]} />
             </mesh>
@@ -202,8 +203,22 @@ export function ValveAssembly({
 
         <group ref={ballRef} rotation={[0, ballRotation, 0]}>
           <Pick id="ball" {...pick}>
-            <mesh geometry={geo.ball.outer} material={mats.ball} />
-            <mesh geometry={geo.ball.bore} material={mats.bore} />
+            {plug ? (
+              <>
+                {/* tapered plug; the dark box is the rectangular port running through it */}
+                <mesh material={mats.ball}>
+                  <cylinderGeometry args={[0.33, 0.25, 0.68, 48]} />
+                </mesh>
+                <mesh material={mats.bore}>
+                  <boxGeometry args={[0.15, 0.3, 0.7]} />
+                </mesh>
+              </>
+            ) : (
+              <>
+                <mesh geometry={geo.ball.outer} material={mats.ball} />
+                <mesh geometry={geo.ball.bore} material={mats.bore} />
+              </>
+            )}
           </Pick>
           <Pick id="stem" {...pick}>
             <mesh position={[0, 0.55, 0]} material={mats.stem}>
@@ -214,7 +229,7 @@ export function ValveAssembly({
               <boxGeometry args={[0.04, 0.08, 0.16]} />
             </mesh>
           </Pick>
-          {showLabels && <Label position={[0.0, -0.55, 0]}>Ball turns with the shaft</Label>}
+          {showLabels && <Label position={[0.0, -0.55, 0]}>{plug ? "Plug turns with the shaft" : "Ball turns with the shaft"}</Label>}
         </group>
       </group>
       )}

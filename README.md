@@ -113,7 +113,7 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 ## Known limitations
 
 - Vane actuators are modelled double acting only.
-- Quarter-turn actuators can drive a ball or a butterfly valve (`?valve=butterfly`); plug valves are not modelled. Electric part-turn types use the ball valve.
+- Quarter-turn actuators can drive a ball, butterfly or plug valve (`?valve=butterfly|plug`), each with an illustrative demand shape. Electric part-turn types use the ball valve.
 - The air flow view is illustrative, not CFD.
 - Progress lives in one browser; clearing site data resets it.
 - In headless or software-rendered browsers the 3D view is slow; the simulation clock clamps long frames to 0.25 s.
