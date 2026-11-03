@@ -1,14 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Pause, Play } from "lucide-react";
+import { useState } from "react";
+import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Pause, Play, Timer } from "lucide-react";
 import type { ActuatorConfiguration, VisualizationMode } from "@/lib/sim/types";
+import { GAS } from "@/lib/sim/gas";
 import { SimulationProvider, useEngine, useSimState } from "@/components/sim/SimulationProvider";
 import { Button, ButtonLink } from "@/components/ui/primitives";
-import { Switch } from "@/components/ui/controls";
+import { Range, Segmented, Switch } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
 import { LazyMount } from "@/components/ui/LazyMount";
-import { simulatorHref } from "@/components/sim/familyUi";
+import { FAMILY_UI, modelPressure, simulatorHref } from "@/components/sim/familyUi";
+import { TorqueChart } from "@/components/sim/TorqueChart";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
   ssr: false,
@@ -19,9 +22,149 @@ const SimViewport = dynamic(() => import("@/components/three/SimViewport").then(
   ),
 });
 
-export type ExtraControl = "rupture" | "esd" | "jam";
+/** Lesson-specific controls an embedded simulator can show. */
+export type ExtraControl =
+  | "rupture" // pipeline rupture and trip reset (gas)
+  | "esd" // ESD switch and partial-stroke test (electro-hydraulic)
+  | "jam" // valve jam (electric)
+  | "valve" // ball / butterfly / plug
+  | "pressure" // supply pressure slider
+  | "coupling" // fail closed / fail open (spring return)
+  | "action" // spring return (3/2) / double acting (5/2)
+  | "flow"; // flow-control setting (oil)
 
-function MiniControls({ supplyToggle, href, extra }: { supplyToggle: boolean; href: string; extra?: ExtraControl }) {
+function Row({ children }: { children: React.ReactNode }) {
+  return <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2">{children}</div>;
+}
+
+function ExtraControls({ extras }: { extras: ExtraControl[] }) {
+  const { engine } = useEngine();
+  const s = useSimState();
+  const ui = FAMILY_UI[s.config.family];
+  const sup = ui.supply;
+  const has = (x: ExtraControl) => extras.includes(x);
+  return (
+    <>
+      {has("valve") && (
+        <Row>
+          <span className="text-[12.5px] text-muted">Valve</span>
+          <Segmented
+            label="Valve"
+            value={s.config.valve ?? "ball"}
+            onChange={(v) => engine.dispatch({ type: "set-config", config: { valve: v } })}
+            options={[
+              { value: "ball", label: "Ball" },
+              { value: "butterfly", label: "Butterfly" },
+              { value: "plug", label: "Plug" },
+            ]}
+          />
+        </Row>
+      )}
+      {has("action") && (
+        <Row>
+          <span className="text-[12.5px] text-muted">Solenoid</span>
+          <Segmented
+            label="Action type"
+            value={s.config.actionType}
+            onChange={(v) => engine.dispatch({ type: "set-config", config: { actionType: v } })}
+            options={[
+              { value: "spring-return", label: "3/2, spring return" },
+              { value: "double-acting", label: "5/2, double acting" },
+            ]}
+          />
+        </Row>
+      )}
+      {has("coupling") && (
+        <Row>
+          <span className="text-[12.5px] text-muted">Coupling</span>
+          <Segmented
+            label="Fail action"
+            value={s.config.failPosition}
+            onChange={(v) => engine.dispatch({ type: "set-config", config: { failPosition: v } })}
+            options={[
+              { value: "fail-closed", label: "Fail closed" },
+              { value: "fail-open", label: "Fail open (turned 90°)" },
+            ]}
+          />
+        </Row>
+      )}
+      {has("pressure") && sup && (
+        <Row>
+          <label htmlFor="emb-pressure" className="text-[12.5px] text-muted">
+            Supply pressure
+          </label>
+          <div className="min-w-[160px] flex-1">
+            <Range id="emb-pressure" label="Supply pressure" min={sup.min} max={sup.max} step={sup.step} value={s.supplyPressure} onChange={(v) => engine.dispatch({ type: "set-pressure", bar: v })} />
+          </div>
+          <span className="num text-[13px] text-fg">{s.supplyPressure.toFixed(sup.decimals)} bar</span>
+        </Row>
+      )}
+      {has("flow") && (
+        <Row>
+          <label htmlFor="emb-flow" className="text-[12.5px] text-muted">
+            Flow control
+          </label>
+          <div className="min-w-[160px] flex-1">
+            <Range id="emb-flow" label="Flow-control setting" min={GAS.flowMin} max={1} step={0.01} value={s.gas.flow} onChange={(v) => engine.dispatch({ type: "set-flow", value: v })} />
+          </div>
+          <span className="num text-[13px] text-fg">{Math.round(s.gas.flow * 100)}% open</span>
+        </Row>
+      )}
+      {has("rupture") && (
+        <Button size="sm" variant={s.gas.ruptured ? "secondary" : "primary"} onClick={() => engine.dispatch({ type: "set-rupture", value: !s.gas.ruptured })}>
+          {s.gas.ruptured ? "Repair pipeline" : "Rupture pipeline"}
+        </Button>
+      )}
+      {has("rupture") && s.gas.tripped && !s.gas.ruptured && (
+        <Button size="sm" onClick={() => engine.dispatch({ type: "reset-line-break" })}>
+          Reset trip
+        </Button>
+      )}
+      {has("esd") && (
+        <div className="min-w-[120px]">
+          <Switch checked={s.eh.esd} onChange={(v) => engine.dispatch({ type: "set-esd", value: v })} label="ESD" />
+        </div>
+      )}
+      {has("esd") && (
+        <Button size="sm" onClick={() => engine.dispatch({ type: "start-pst" })}>
+          Partial-stroke test
+        </Button>
+      )}
+      {has("jam") && (
+        <div className="min-w-[150px]">
+          <Switch checked={s.electric.obstruction} onChange={(v) => engine.dispatch({ type: "set-obstruction", value: v })} label="Jam valve" />
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Measures each stroke in simulation time (start of motion to stop). */
+function StrokeTimer() {
+  const s = useSimState();
+  const [flowing, setFlowing] = useState(s.airFlowing);
+  const [start, setStart] = useState<number | null>(null);
+  const [last, setLast] = useState<number | null>(null);
+  // Adjust state during render when motion starts or stops (no effect needed).
+  if (s.airFlowing !== flowing) {
+    setFlowing(s.airFlowing);
+    if (s.airFlowing) setStart(s.time);
+    else if (start !== null) setLast(s.time - start);
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[13px] text-fg-2" aria-live="polite">
+      <Timer className="size-3.5" aria-hidden />
+      {s.airFlowing && start !== null ? "Timing…" : last !== null ? <span className="num">Last stroke {last.toFixed(1)} s</span> : "Stroke time appears here"}
+    </span>
+  );
+}
+
+function LiveChart() {
+  const s = useSimState();
+  return <TorqueChart config={s.config} pressure={modelPressure(s)} position={s.position} showAxisNote={false} />;
+}
+
+function MiniControls({ supplyToggle, href, extras, strokeTimer }: { supplyToggle: boolean; href: string; extras: ExtraControl[]; strokeTimer: boolean }) {
   const { engine } = useEngine();
   const s = useSimState();
   return (
@@ -38,39 +181,20 @@ function MiniControls({ supplyToggle, href, extra }: { supplyToggle: boolean; hr
       <span className="num ml-1 text-[13px] text-fg-2">
         {Math.round(s.position * 100)}% open, {s.outputAngle.toFixed(0)}°
       </span>
+      {strokeTimer && <StrokeTimer />}
       {supplyToggle && (
         <div className="min-w-[150px]">
           <Switch tone="air" checked={s.supplyAvailable} onChange={(v) => engine.dispatch({ type: "set-supply", available: v })} label="Supply" />
         </div>
       )}
-      {extra === "rupture" && (
-        <Button size="sm" variant={s.gas.ruptured ? "secondary" : "primary"} onClick={() => engine.dispatch({ type: "set-rupture", value: !s.gas.ruptured })}>
-          {s.gas.ruptured ? "Repair pipeline" : "Rupture pipeline"}
-        </Button>
-      )}
-      {extra === "rupture" && s.gas.tripped && !s.gas.ruptured && (
-        <Button size="sm" onClick={() => engine.dispatch({ type: "reset-line-break" })}>
-          Reset trip
-        </Button>
-      )}
-      {extra === "esd" && (
-        <div className="min-w-[120px]">
-          <Switch checked={s.eh.esd} onChange={(v) => engine.dispatch({ type: "set-esd", value: v })} label="ESD" />
-        </div>
-      )}
-      {extra === "esd" && (
-        <Button size="sm" onClick={() => engine.dispatch({ type: "start-pst" })}>
-          Partial-stroke test
-        </Button>
-      )}
-      {extra === "jam" && (
-        <div className="min-w-[150px]">
-          <Switch checked={s.electric.obstruction} onChange={(v) => engine.dispatch({ type: "set-obstruction", value: v })} label="Jam valve" />
-        </div>
-      )}
       <ButtonLink href={href} size="sm" variant="ghost" className="ml-auto">
         Full simulator <ExternalLink aria-hidden />
       </ButtonLink>
+      {extras.length > 0 && (
+        <div className="flex w-full flex-wrap items-center gap-2 border-t border-rule pt-2.5">
+          <ExtraControls extras={extras} />
+        </div>
+      )}
       <p className="w-full text-[12.5px] text-muted" aria-live="polite">
         {s.notice ?? s.status}
       </p>
@@ -86,27 +210,44 @@ export function EmbeddedSim({
   autoCycle = false,
   ariaLabel,
   extra,
+  extras = [],
+  chart = false,
+  strokeTimer = false,
 }: {
-  extra?: ExtraControl;
   config: Partial<ActuatorConfiguration>;
   mode?: VisualizationMode;
   supplyToggle?: boolean;
   className?: string;
   autoCycle?: boolean;
   ariaLabel?: string;
+  /** Single extra control (shorthand for `extras`). */
+  extra?: ExtraControl;
+  extras?: ExtraControl[];
+  /** Show the live torque chart under the model. */
+  chart?: boolean;
+  /** Time each stroke. */
+  strokeTimer?: boolean;
 }) {
   const params = new URLSearchParams({ action: config.actionType ?? "spring-return", mode });
   if (config.failPosition === "fail-open") params.set("fail", "open");
-
+  if (config.valve && config.valve !== "ball") params.set("valve", config.valve);
+  const all = extra ? [extra, ...extras] : extras;
   return (
     <SimulationProvider initialConfig={config} initialMode={mode} autoCycle={autoCycle}>
       <div className={cn("overflow-hidden rounded-2xl bg-viewport", className)}>
-        <div className="relative h-[320px] sm:h-[380px]">
-          <LazyMount className="absolute inset-0">
-            <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel={ariaLabel} />
-          </LazyMount>
+        <div className={cn("grid", chart && "md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]")}>
+          <div className="relative h-[320px] sm:h-[380px]">
+            <LazyMount className="absolute inset-0">
+              <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel={ariaLabel} />
+            </LazyMount>
+          </div>
+          {chart && (
+            <div className="flex flex-col justify-center border-t border-rule bg-panel p-3 md:border-l md:border-t-0">
+              <LiveChart />
+            </div>
+          )}
         </div>
-        <MiniControls supplyToggle={supplyToggle} href={simulatorHref(config.family ?? "pneumatic-scotch-yoke", params)} extra={extra} />
+        <MiniControls supplyToggle={supplyToggle} href={simulatorHref(config.family ?? "pneumatic-scotch-yoke", params)} extras={all} strokeTimer={strokeTimer} />
       </div>
     </SimulationProvider>
   );

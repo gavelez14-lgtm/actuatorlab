@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 import { useSimSelector, useSimState } from "./SimulationProvider";
 import { MULTI_TURN, isCompact, isMultiTurn, torqueLimitValue } from "@/lib/sim/electric";
 import { ElectricTorqueChart, TorqueChart } from "./TorqueChart";
-import { isGasOverOil, pipelineToModel } from "@/lib/sim/gas";
+import { isGasOverOil } from "@/lib/sim/gas";
 import type { SimulationState } from "@/lib/sim/types";
-import { FAMILY_UI, type ReadoutsKind } from "./familyUi";
+import { FAMILY_UI, modelPressure, type ReadoutsKind } from "./familyUi";
 
 function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
   return (
@@ -65,13 +65,6 @@ function ElectricEngineering() {
 export function EngineeringOverlay() {
   const readouts = useSimSelector((s) => FAMILY_UI[s.config.family].readouts);
   return readouts === "electric" ? <ElectricEngineering /> : <FluidEngineering />;
-}
-
-/** Pressure in model force units that drives the torque chart. */
-function modelPressure(s: SimulationState) {
-  const ui = FAMILY_UI[s.config.family];
-  if (ui.readouts === "gas") return pipelineToModel(s.gas.tank);
-  return s.supplyPressure * (ui.supply?.scale ?? 1);
 }
 
 /** Family-specific rows between the common position and torque rows. */

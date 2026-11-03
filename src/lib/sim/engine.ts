@@ -152,7 +152,11 @@ export class SimulationEngine {
       derive: () => derive(s),
       forces: () => this.family.forces(s),
       flash: (m) => this.flash(m),
-      emit: () => this.emit(),
+      // Discrete events (stall, trip, PST result) emit mid-step: refresh the status first.
+      emit: () => {
+        this.updateStatus();
+        this.emit();
+      },
       command: (kind, silent = false) => this.family.command(this.ctx(), kind, silent),
       cycle: (dt, idle, fire) => {
         if (s.autoCycle && idle) {

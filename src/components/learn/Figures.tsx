@@ -228,6 +228,55 @@ export function LessonFigure({ id }: { id: FigureId }) {
           <figcaption className="mt-2 text-[12.5px] text-muted">Open the valve and run a partial-stroke test: it moves a little toward closed and back. Then trigger ESD: the dump valve opens and the spring closes the valve, whatever the demand.</figcaption>
         </figure>
       );
+    case "valve-demand-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "spring-return", failPosition: "fail-closed" }} mode="cutaway" extras={["valve"]} chart ariaLabel="Live 3D Scotch yoke with a valve selector and a live torque chart." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Switch the valve between ball, butterfly and plug and watch the dashed demand change shape against the same air and spring curves. The tightest gap sets the size. The orange line follows the valve as it moves. Normalised illustrative units.</figcaption>
+        </figure>
+      );
+    case "pressure-stall-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "spring-return", failPosition: "fail-closed" }} mode="cutaway" extras={["pressure"]} chart ariaLabel="Live 3D spring-return Scotch yoke with a supply pressure slider and a live torque chart." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Lower the supply pressure to about 4 bar and press Open: the actuator stalls part-way, where the air curve drops below valve demand plus spring. Lower still and it cannot even break the valve out of its seat. Illustrative model.</figcaption>
+        </figure>
+      );
+    case "coupling-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "spring-return", failPosition: "fail-closed" }} mode="cutaway" extras={["coupling"]} supplyToggle ariaLabel="Live 3D spring-return actuator with a coupling orientation control." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Change the coupling and watch the ball: the actuator still rests at its spring end, but that end is now valve open. Turn the supply off in each case to see where it fails.</figcaption>
+        </figure>
+      );
+    case "solenoid-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "spring-return", failPosition: "fail-closed" }} mode="energy" extras={["action"]} supplyToggle ariaLabel="Live 3D actuator in air-flow view with a 3/2 or 5/2 solenoid choice." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">With a 3/2 valve only chamber A is fed and vented; the spring does the return. With a 5/2 valve one chamber fills while the other exhausts, and they swap. Blue is supply, grey is exhaust. Illustrative.</figcaption>
+        </figure>
+      );
+    case "limit-switch-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ family: "electric-compact-part-turn" }} mode="mechanical" ariaLabel="Live 3D compact electric actuator in section showing cams and limit switches." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Open and close and watch the cams on the output: each presses its limit switch only at the end of travel. Between the ends, the switches report nothing.</figcaption>
+        </figure>
+      );
+    case "stroke-time-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "double-acting" }} mode="normal" extras={["pressure"]} strokeTimer ariaLabel="Live 3D pneumatic actuator with a supply pressure slider and a stroke timer." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Time a stroke, lower the pressure and time it again. On air, less pressure means less torque margin and a slower stroke. Simulation time; illustrative.</figcaption>
+        </figure>
+      );
+    case "flow-control-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ family: "hydraulic-scotch-yoke", actionType: "double-acting" }} mode="normal" extras={["flow", "pressure"]} strokeTimer ariaLabel="Live 3D hydraulic actuator with flow-control and pressure sliders and a stroke timer." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Now on metered oil: change the flow control and the stroke time follows it; change the pressure and it barely moves. Pressure sets torque, flow sets speed. Illustrative.</figcaption>
+        </figure>
+      );
     case "yoke-compare":
       return (
         <Frame caption="Double acting at 5.5 bar. Left: symmetric yoke. Right: canted yoke, with the peak moved to the closed end. Normalised illustrative units, not manufacturer data.">

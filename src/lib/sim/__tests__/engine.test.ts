@@ -184,3 +184,14 @@ describe("plug valve demand", () => {
     expect(Math.abs(at(0.5) - at(1))).toBeLessThan(0.01);
   });
 });
+
+describe("snapshot status stays in step with discrete events", () => {
+  it("reports a stall at break-out in the snapshot the UI receives", () => {
+    const e = new SimulationEngine({ actionType: "spring-return", failPosition: "fail-closed" });
+    e.dispatch({ type: "set-pressure", bar: 3 });
+    e.dispatch({ type: "open" });
+    for (let i = 0; i < 120; i++) e.advance(1 / 60);
+    expect(e.getState().stalled).toBe(true);
+    expect(e.getSnapshot().status).toMatch(/^Stalled at 0%/);
+  });
+});

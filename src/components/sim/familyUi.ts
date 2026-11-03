@@ -6,7 +6,8 @@
  */
 import { MODEL } from "@/lib/sim/model";
 import { HYD } from "@/lib/sim/hydraulic";
-import type { ActionType, ActuatorFamilyId, FailPosition } from "@/lib/sim/types";
+import { pipelineToModel } from "@/lib/sim/gas";
+import type { ActionType, ActuatorFamilyId, FailPosition, SimulationState } from "@/lib/sim/types";
 
 /** Which family-specific control section the Configure panel shows. */
 export type ControlsKind = "fluid" | "gas" | "electric" | "electro-hydraulic";
@@ -219,4 +220,11 @@ export function simulatorHref(family: ActuatorFamilyId, params?: URLSearchParams
   if (t) p.set("type", t);
   else p.delete("type");
   return `/simulator${p.size ? `?${p}` : ""}`;
+}
+
+/** Pressure in model force units that drives the torque chart. */
+export function modelPressure(s: SimulationState) {
+  const ui = FAMILY_UI[s.config.family];
+  if (ui.readouts === "gas") return pipelineToModel(s.gas.tank);
+  return s.supplyPressure * (ui.supply?.scale ?? 1);
 }

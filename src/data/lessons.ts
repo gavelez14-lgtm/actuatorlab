@@ -21,7 +21,14 @@ export type FigureId =
   | "yoke-compare-sr"
   | "electric-live"
   | "line-break-live"
-  | "esd-pst-live";
+  | "esd-pst-live"
+  | "valve-demand-live"
+  | "pressure-stall-live"
+  | "coupling-live"
+  | "solenoid-live"
+  | "limit-switch-live"
+  | "stroke-time-live"
+  | "flow-control-live";
 
 export interface Question {
   id: string;
@@ -702,10 +709,10 @@ export const LESSONS: Lesson[] = [
       {
         heading: "Overlaying the curves",
         body: [
-          "Sizing is a comparison at every point in the stroke: **actuator output must exceed valve demand times a margin**, everywhere, in both directions. The smallest gap decides the size.",
+          "Sizing is a comparison at every point in the stroke (try the valve types below): **actuator output must exceed valve demand times a margin**, everywhere, in both directions. The smallest gap decides the size.",
           "In the chart, compare the actuator curve with the illustrative demand. With a Scotch yoke the tightest point is usually near an end; with a rack and pinion it is wherever the valve's peak is.",
         ],
-        figure: "torque-curves",
+        figure: "valve-demand-live",
       },
       {
         heading: "Margins and conditions",
@@ -756,8 +763,9 @@ export const LESSONS: Lesson[] = [
         heading: "Force from pressure",
         body: [
           "Piston force is pressure times effective area. Halve the supply pressure and the air torque halves too. That is why the **minimum** pressure at the actuator, after regulators, filters and long tubing, is the one that matters.",
-          "In the simulator, lower the supply pressure until the Scotch yoke stalls part-way. The point where it stalls is where the actuator curve drops below the valve demand.",
+          "Try it below: lower the supply pressure and press Open. The actuator stalls where its curve drops below the valve demand plus the spring.",
         ],
+        figure: "pressure-stall-live",
       },
       {
         heading: "Spring-return checks",
@@ -830,8 +838,9 @@ export const LESSONS: Lesson[] = [
         heading: "Alignment and orientation",
         body: [
           "Misalignment between actuator shaft and valve stem adds side load and wear, and can make a valve stick. Brackets should be rigid and concentric.",
-          "Coupling orientation decides which actuator end of travel is valve open. That is how one spring-return actuator can be fail open or fail closed (lesson 9). Check the position indicator agrees with the valve after any re-mounting.",
+          "Coupling orientation decides which actuator end of travel is valve open. That is how one spring-return actuator can be fail open or fail closed (lesson 9). Check the position indicator agrees with the valve after any re-mounting. Try both couplings below.",
         ],
+        figure: "coupling-live",
       },
     ],
     terms: [
@@ -890,6 +899,7 @@ export const LESSONS: Lesson[] = [
         body: [
           "A shutdown function should not depend on the same parts as normal control. A common pattern is a dedicated ESD solenoid that vents the actuator regardless of what the positioner is doing. The electro-hydraulic simulator's ESD input shows the result.",
         ],
+        figure: "esd-pst-live",
       },
     ],
     terms: [
@@ -934,8 +944,9 @@ export const LESSONS: Lesson[] = [
         body: [
           "A **3/2** valve (three ports, two positions) connects one chamber to supply or to exhaust. It suits **spring return**: energise to fill the cylinder, de-energise to vent it and let the spring act.",
           "A **5/2** valve (five ports, two positions) feeds one chamber while venting the other, and swaps them when switched. It suits **double acting**.",
-          "In the simulator's Air flow mode, the blue and grey paths are exactly what these valves do.",
+          "Switch between them below and watch which chambers fill and exhaust.",
         ],
+        figure: "solenoid-live",
       },
       {
         heading: "Volume boosters",
@@ -948,6 +959,7 @@ export const LESSONS: Lesson[] = [
         body: [
           "Cams on the actuator shaft operate switches at the open and closed ends. The control system uses them to confirm the valve got there. Between the ends they say nothing, which is why the compact electric simulator reports only 'made' or 'clear'.",
         ],
+        figure: "limit-switch-live",
       },
     ],
     terms: [
@@ -992,6 +1004,7 @@ export const LESSONS: Lesson[] = [
           "A pneumatic actuator strokes as fast as air can fill one chamber and empty the other. Port and tubing size, solenoid and booster capacity, supply pressure and the torque margin all play a part. That is why the simulator's Scotch yoke slows when you lower the pressure.",
           "Oil is metered precisely, so **gas-over-oil** and **electro-hydraulic** actuators keep a steady, adjustable speed. **Electric** actuators run at the motor and gear speed.",
         ],
+        figure: "stroke-time-live",
       },
       {
         heading: "Restricting the exhaust",
@@ -1002,8 +1015,9 @@ export const LESSONS: Lesson[] = [
       {
         heading: "Not too fast, not too slow",
         body: [
-          "A shutdown valve may have a **maximum** closing time set by the safety case. A valve in a long liquid line may need a **minimum** closing time, because slamming it shut causes pressure surge (water hammer). Try the gas-over-oil flow-control setting to see how speed is set independently of pressure.",
+          "A shutdown valve may have a **maximum** closing time set by the safety case. A valve in a long liquid line may need a **minimum** closing time, because slamming it shut causes pressure surge (water hammer). The oil-driven demo below shows speed set independently of pressure.",
         ],
+        figure: "flow-control-live",
       },
     ],
     terms: [
