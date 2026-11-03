@@ -3,8 +3,7 @@
  * (lever arm vs stroke) and its own description of the torque relationship.
  * The engine and the torque model stay mechanism-agnostic.
  */
-import { HALF_SWING, YOKE_OFFSET, leverFactor } from "./geometry";
-import { yokeLever } from "./gas";
+import { leverFactor, yokeKinematics } from "./geometry";
 import { RP } from "./rackPinionGeometry";
 import type { ActuatorConfiguration, ActuatorFamilyId } from "./types";
 
@@ -31,7 +30,7 @@ export const MECHANISMS: Record<MechanismKind, Mechanism> = {
   "scotch-yoke": {
     kind: "scotch-yoke",
     name: "Scotch yoke",
-    lever: leverFactor,
+    lever: (stroke) => leverFactor(stroke),
     formula: "T = F·d / cos²φ",
     formulaNote: "Symmetric yoke: lowest at mid-stroke, twice as high at ±45°.",
   },
@@ -86,6 +85,6 @@ export function leverFor(family: ActuatorFamilyId, stroke: number): number {
 
 /** Lever including configuration options (canted yoke). */
 export function leverForConfig(config: ActuatorConfiguration, stroke: number): number {
-  if (config.yoke === "canted" && mechanismFor(config.family) === "scotch-yoke") return yokeLever(config, stroke, YOKE_OFFSET, HALF_SWING);
+  if (config.yoke === "canted" && mechanismFor(config.family) === "scotch-yoke") return leverFactor(stroke, yokeKinematics(config));
   return leverFor(config.family, stroke);
 }

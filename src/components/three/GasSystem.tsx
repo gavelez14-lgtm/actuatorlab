@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
-import { CYLINDER, PISTON, VALVE, YOKE_OFFSET } from "@/lib/sim/geometry";
+import { CYLINDER, PISTON, VALVE, YOKE_OFFSET, pinXFromStroke, yokeKinematics } from "@/lib/sim/geometry";
 import { GAS } from "@/lib/sim/gas";
 import type { ComponentId } from "@/lib/sim/types";
 import { useEngine } from "@/components/sim/SimulationProvider";
@@ -19,7 +19,7 @@ import { Label, Pick } from "./parts";
  */
 const Z = -YOKE_OFFSET;
 /** Override cylinder, coaxial beyond the gas cylinder's outer cap. */
-export const OVERRIDE = { x0: 2.5, x1: 3.72, outer: 0.2, bore: 0.16, pistonOffset: 3.1 } as const;
+export const OVERRIDE = { x0: 2.5, x1: 3.8, outer: 0.2, bore: 0.16, pistonOffset: 3.14 } as const;
 /** Tanks and controls stand on the operator side (+Z), clear of the valve and pipe. */
 export const GAS_FRONT_Z = 0.8;
 const TANK = { x: 1.67, z: GAS_FRONT_Z, y0: -1.3, y1: -0.48, r: 0.2 } as const;
@@ -30,15 +30,15 @@ type PickProps = { onSelect: (id: ComponentId) => void; onHover: (id: ComponentI
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
 /** Parts that move with the piston: tail rod and override piston (mounted inside the slider group). */
-export function OverrideSliderParts({ mats, pick }: { mats: MaterialSet; pick: PickProps }) {
-  const rodStart = PISTON.rodLength + PISTON.thickness / 2;
-  const rodEnd = OVERRIDE.pistonOffset;
+export function OverrideSliderParts({ mats, pick, shift = 0 }: { mats: MaterialSet; pick: PickProps; shift?: number }) {
+  const rodStart = PISTON.rodLength + PISTON.thickness / 2 + shift;
+  const rodEnd = OVERRIDE.pistonOffset + shift;
   return (
     <Pick id="hydraulic-override" {...pick}>
       <mesh position={[(rodStart + rodEnd) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.rod}>
         <cylinderGeometry args={[0.035, 0.035, rodEnd - rodStart, 14]} />
       </mesh>
-      <mesh position={[OVERRIDE.pistonOffset, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.hydPiston}>
+      <mesh position={[OVERRIDE.pistonOffset + shift, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.hydPiston}>
         <cylinderGeometry args={[OVERRIDE.bore - 0.006, OVERRIDE.bore - 0.006, 0.08, 32]} />
       </mesh>
     </Pick>
@@ -87,7 +87,8 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
     if (needle.current) needle.current.rotation.z = Math.PI * 0.75 - (s.gas.pipeline / GAS.pipelineMax) * Math.PI * 1.5;
     if (oilA.current) {
       // Oil column between the override cap and piston (shows when the housing is ghosted or sectioned).
-      const px = OVERRIDE.pistonOffset + YOKE_OFFSET * Math.tan(-Math.PI / 4 + s.stroke * (Math.PI / 2));
+      const k = yokeKinematics(s.config);
+      const px = OVERRIDE.pistonOffset + k.shift + pinXFromStroke(s.stroke, k);
       const len = Math.max(0.01, OVERRIDE.x1 - 0.02 - (px + 0.04));
       oilA.current.scale.x = len;
       oilA.current.position.x = px + 0.04 + len / 2;

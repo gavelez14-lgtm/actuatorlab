@@ -157,3 +157,21 @@ describe("butterfly valve demand", () => {
     expect(e.getState().config.valve).toBe("ball");
   });
 });
+
+import { SYMMETRIC, yokeKinematics, checkGeometry as checkYoke, pinXFromStroke as pinX, shaftRotationY as shaftRot } from "../geometry";
+describe("canted yoke kinematics", () => {
+  const configs = [
+    { yoke: "canted" as const, actionType: "spring-return", failPosition: "fail-closed" },
+    { yoke: "canted" as const, actionType: "spring-return", failPosition: "fail-open" },
+    { yoke: "canted" as const, actionType: "double-acting", failPosition: "fail-in-place" },
+  ];
+  it("clears the cylinder, slot, housing and spring for every coupling", () => {
+    expect(checkYoke(SYMMETRIC)).toEqual([]);
+    for (const c of configs) expect(checkYoke(yokeKinematics(c)), JSON.stringify(c)).toEqual([]);
+  });
+  it("still turns the yoke exactly 90 degrees, with asymmetric pin travel", () => {
+    const k = yokeKinematics(configs[0]);
+    expect(Math.abs(shaftRot(1, k) - shaftRot(0, k))).toBeCloseTo(Math.PI / 2, 9);
+    expect(Math.abs(pinX(0, k))).toBeGreaterThan(Math.abs(pinX(1, k)));
+  });
+});

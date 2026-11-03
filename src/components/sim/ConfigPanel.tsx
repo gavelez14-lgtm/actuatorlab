@@ -125,7 +125,7 @@ export function ConfigPanel() {
           />
           <p className="text-[12.5px] leading-snug text-muted">
             {(s.config.yoke ?? "symmetric") === "canted"
-              ? "The slot is angled so torque is highest at the start of the stroke, where the valve breaks out of its seat, and lower at the end. Compare the curves in Engineering mode. (The 3D yoke is drawn symmetric; the torque curve changes.)"
+              ? "The yoke's 90° swing is offset 6° from square, so torque is highest where the valve breaks out of its seat and lower at the other end. The piston and spring shift to centre the longer pin travel. Watch the swing arc shift in Mechanism mode, and compare the curves in Engineering mode."
               : "Torque is high at both ends of the stroke and lowest in the middle, which suits a ball valve's high seating torque at both ends."}
           </p>
         </fieldset>

@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { SceneLabel } from "./SceneLabel";
-import { CYLINDER, PISTON, YOKE_OFFSET, pistonXFromStroke } from "@/lib/sim/geometry";
-import type { ChamberCondition } from "@/lib/sim/types";
+import { CYLINDER, PISTON, YOKE_OFFSET, pistonXFromStroke, yokeKinematics } from "@/lib/sim/geometry";
+import type { ChamberCondition, SimulationState } from "@/lib/sim/types";
 import { useEngine } from "@/components/sim/SimulationProvider";
 import { usePrefersReducedMotion } from "@/lib/hooks";
 import type { MaterialSet } from "./materials";
@@ -36,7 +36,7 @@ export interface AirLayout {
   /** All curves run "from the control block outward". */
   curves: Record<CurveKey, THREE.CatmullRomCurve3>;
   /** Chamber A (drives stroke 0 -> 1) and chamber B volumes at a stroke. */
-  chambers: (stroke: number) => { a: ChamberSegment[]; b: ChamberSegment[] };
+  chambers: (stroke: number, config: SimulationState["config"]) => { a: ChamberSegment[]; b: ChamberSegment[] };
   block: { position: THREE.Vector3; size: [number, number, number] };
   mountPlate?: { position: THREE.Vector3; size: [number, number, number] };
   portA: THREE.Vector3;
@@ -60,8 +60,8 @@ export const SCOTCH_YOKE_AIR: AirLayout = {
     exhaust: new THREE.CatmullRomCurve3([v(1.67, 0.53, Z + 0.15), v(1.67, 0.53, Z + 0.4), v(1.67, 0.6, Z + 0.75)]),
     breather: new THREE.CatmullRomCurve3([SY_PORT_B.clone().setY(0.5), SY_PORT_B.clone().setY(0.68), SY_PORT_B.clone().setY(0.9)]),
   },
-  chambers: (stroke) => {
-    const px = pistonXFromStroke(stroke);
+  chambers: (stroke, config) => {
+    const px = pistonXFromStroke(stroke, yokeKinematics(config));
     const r = CYLINDER.boreRadius - 0.012;
     return {
       a: [{ x0: CYLINDER.tubeStart, x1: px - PISTON.thickness / 2, y: 0, z: Z, r }],
@@ -162,7 +162,7 @@ export function AirSystem({
 
   useFrame((_, delta) => {
     const s = engine.getState();
-    const ch = layout.chambers(s.stroke);
+    const ch = layout.chambers(s.stroke, s.config);
     const paintChamber = (segs: ChamberSegment[], cond: ChamberCondition, offset: number) => {
       for (let i = 0; i < MAX_SEGMENTS; i++) {
         const mesh = fillRefs.current[offset + i];

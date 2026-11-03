@@ -19,6 +19,8 @@ import {
   pinXFromStroke,
   shaftRotationY,
   springLengthFromStroke,
+  yokeKinematics,
+  type YokeKinematics,
 } from "@/lib/sim/geometry";
 import type { ComponentId, CutawayStyle } from "@/lib/sim/types";
 import { useEngine, useSimSelector } from "@/components/sim/SimulationProvider";
@@ -131,6 +133,10 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
   const mode = useSimSelector((s) => s.mode);
   const springReturn = actionType === "spring-return";
   const gas = useSimSelector((s) => isGas(s.config.family));
+  const yoke = useSimSelector((s) => s.config.yoke);
+  // Canted yoke: offset swing, centring shift on piston and spring, compensated coupling.
+  const k = useMemo(() => yokeKinematics({ yoke, actionType, failPosition }), [yoke, actionType, failPosition]);
+  const sh = k.shift;
   const overOil = useSimSelector((s) => isGasOverOil(s.config.family));
   const eh = useSimSelector((s) => s.config.family === "electro-hydraulic");
   const hydraulic = useSimSelector((s) => s.config.family === "hydraulic-scotch-yoke");
@@ -184,12 +190,13 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
   useFrame(() => {
     const s = engine.getState();
-    const x = pinXFromStroke(s.stroke);
-    const rot = shaftRotationY(s.stroke);
+    const x = pinXFromStroke(s.stroke, k);
+    const rot = shaftRotationY(s.stroke, k);
     if (slider.current) slider.current.position.x = x;
     if (shaft.current) shaft.current.rotation.y = rot;
-    if (ball.current) ball.current.rotation.y = rot + couplingOffset;
-    if (springReturn) helix.setLength(springLengthFromStroke(s.stroke));
+    // The valve sees the uncanted 0..90 deg: the coupling is keyed to cancel the cant.
+    if (ball.current) ball.current.rotation.y = shaftRotationY(s.stroke) + couplingOffset;
+    if (springReturn) helix.setLength(springLengthFromStroke(s.stroke, k));
   });
 
   const pick = { onSelect, onHover };
@@ -296,7 +303,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
       )}
 
       {/* ---------------- Linear slider: everything that translates with the pin ---------------- */}
-      <group ref={slider} position={[pinXFromStroke(0), 0, AXIS_Z]}>
+      <group ref={slider} position={[pinXFromStroke(0, k), 0, AXIS_Z]}>
         <Pick id="connecting-mechanism" {...pick}>
           <mesh material={mats.block}>
             <boxGeometry args={[GUIDE_BLOCK.sizeX, GUIDE_BLOCK.sizeY, GUIDE_BLOCK.sizeZ]} />
@@ -309,21 +316,21 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
             <cylinderGeometry args={[0.075, 0.075, 0.26, 20]} />
           </mesh>
           {/* piston rod */}
-          <mesh position={[(rodStart + rodEnd) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.rod}>
-            <cylinderGeometry args={[PISTON.rodRadius, PISTON.rodRadius, rodEnd - rodStart, 20]} />
+          <mesh position={[(rodStart + rodEnd + sh) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.rod}>
+            <cylinderGeometry args={[PISTON.rodRadius, PISTON.rodRadius, rodEnd + sh - rodStart, 20]} />
           </mesh>
           {springReturn && (
-            <mesh position={[(springRodStart + springRodEnd) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.rod}>
-              <cylinderGeometry args={[0.05, 0.05, springRodStart - springRodEnd, 18]} />
+            <mesh position={[(springRodStart + springRodEnd + sh) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.rod}>
+              <cylinderGeometry args={[0.05, 0.05, springRodStart - springRodEnd - sh, 18]} />
             </mesh>
           )}
         </Pick>
 
         <Pick id="piston" {...pick}>
-          <mesh position={[PISTON.rodLength, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.piston}>
+          <mesh position={[PISTON.rodLength + sh, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.piston}>
             <cylinderGeometry args={[PISTON.radius, PISTON.radius, PISTON.thickness, 40]} />
           </mesh>
-          <mesh position={[PISTON.rodLength, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.pistonSeal}>
+          <mesh position={[PISTON.rodLength + sh, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.pistonSeal}>
             <cylinderGeometry args={[PISTON.radius + 0.006, PISTON.radius + 0.006, 0.03, 40]} />
           </mesh>
         </Pick>
@@ -341,24 +348,24 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
         {springReturn && (
           <Pick id="spring" {...pick}>
-            <mesh position={[springRodEnd, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.springPlate}>
+            <mesh position={[springRodEnd + sh, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.springPlate}>
               <cylinderGeometry args={[SPRING_MODULE.plateRadius, SPRING_MODULE.plateRadius, SPRING_MODULE.plateThickness, 40]} />
             </mesh>
           </Pick>
         )}
 
-        {gas && <OverrideSliderParts mats={mats} pick={pick} />}
+        {gas && <OverrideSliderParts mats={mats} pick={pick} shift={sh} />}
 
         {showLabels && (
           <>
-            <Label position={[PISTON.rodLength, 0.62, 0]}>Piston: linear stroke</Label>
+            <Label position={[PISTON.rodLength + sh, 0.62, 0]}>Piston: linear stroke</Label>
             <Label position={[0, 0.5, 0.05]}>Pin slides in yoke slot</Label>
           </>
         )}
       </group>
 
       {/* ---------------- Rotating output: yoke + shaft + coupling + indicator ---------------- */}
-      <group ref={shaft} rotation={[0, shaftRotationY(0), 0]}>
+      <group ref={shaft} rotation={[0, shaftRotationY(0, k), 0]}>
         <Pick id="yoke" {...pick}>
           <mesh material={mats.yoke}>
             <cylinderGeometry args={[YOKE.hubRadius, YOKE.hubRadius, YOKE.hubHeight, 32]} />
@@ -375,7 +382,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
             <cylinderGeometry args={[0.13, 0.13, 0.24, 6]} />
           </mesh>
           {/* position indicator: stripe aligns with the ball bore */}
-          <group position={[0, HOUSING.halfY + 0.12, 0]} rotation={[0, couplingOffset, 0]}>
+          <group position={[0, HOUSING.halfY + 0.12, 0]} rotation={[0, couplingOffset + k.cant, 0]}>
             <mesh material={mats.indicator}>
               <cylinderGeometry args={[0.23, 0.23, 0.07, 40]} />
             </mesh>
@@ -392,7 +399,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
       {showLabels && <Label position={[0, 0.82, 0]}>Output shaft: 90° turn</Label>}
 
       {/* mechanical-mode guides: pin travel line and yoke swing arc */}
-      {showLabels && <MotionGuides />}
+      {showLabels && <MotionGuides k={k} />}
 
       <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={shaftRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
 
@@ -404,20 +411,19 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 }
 
 /** Dashed pin travel line and the yoke's 90-degree swing arc. */
-function MotionGuides() {
+function MotionGuides({ k }: { k: YokeKinematics }) {
   const arc = useMemo(() => {
     const pts: [number, number, number][] = [];
     const r = YOKE.plateLength + 0.06;
     for (let i = 0; i <= 40; i++) {
-      const phi = -Math.PI / 4 + (i / 40) * (Math.PI / 2);
-      pts.push([r * Math.sin(phi), 0.24, -r * Math.cos(phi)]);
+      const psi = -Math.PI / 4 + k.cant + (i / 40) * (Math.PI / 2);
+      pts.push([r * Math.sin(psi), 0.24, -r * Math.cos(psi)]);
     }
     return pts;
-  }, []);
-  const travel = pinXFromStroke(1);
+  }, [k]);
   return (
     <>
-      <Line points={[[-travel, 0.24, AXIS_Z], [travel, 0.24, AXIS_Z]]} color="#E8641B" lineWidth={1.5} dashed dashSize={0.05} gapSize={0.035} />
+      <Line points={[[pinXFromStroke(0, k), 0.24, AXIS_Z], [pinXFromStroke(1, k), 0.24, AXIS_Z]]} color="#E8641B" lineWidth={1.5} dashed dashSize={0.05} gapSize={0.035} />
       <Line points={arc} color="#8FC7EA" lineWidth={1.5} />
     </>
   );

@@ -5,7 +5,7 @@
  * ILLUSTRATIVE VALUES ONLY. Pipeline pressures, drop rates, set points and
  * delays are generic teaching numbers, not any manufacturer's ratings.
  */
-import type { ActuatorConfiguration, ActuatorFamilyId } from "./types";
+import type { ActuatorFamilyId } from "./types";
 
 export const GAS = {
   /** Illustrative pipeline pressure range, bar(g). */
@@ -42,8 +42,6 @@ export const GAS = {
   lowMin: 10,
   lowMax: 60,
   lowDefault: 30,
-  /** Canted yoke: slot angle offset that moves the torque peak to the breakout end, rad. */
-  cant: (-6 * Math.PI) / 180,
 } as const;
 
 /** Pipeline-gas powered families (direct gas and gas over oil). */
@@ -58,19 +56,6 @@ export function isGasOverOil(family: ActuatorFamilyId) {
 /** Gas over oil: oil flow, not force margin, sets the speed. */
 export function goStrokeTime(flow: number) {
   return GAS.goStrokeTime / Math.max(GAS.flowMin, flow);
-}
-
-/**
- * Scotch yoke lever with optional cant (illustrative shape). The cant always
- * favours the valve-closed end, where a ball valve needs its break-out and
- * re-seat torque; with a fail-open coupling that is the other stroke end.
- */
-export function yokeLever(config: ActuatorConfiguration, stroke: number, d: number, halfSwing: number): number {
-  const closedAtStrokeEnd = config.actionType === "spring-return" && config.failPosition === "fail-open";
-  const cant = config.yoke === "canted" ? (closedAtStrokeEnd ? -GAS.cant : GAS.cant) : 0;
-  const phi = -halfSwing + stroke * 2 * halfSwing + cant;
-  const c = Math.cos(phi);
-  return d / (c * c);
 }
 
 export function pipelineToModel(bar: number) {
