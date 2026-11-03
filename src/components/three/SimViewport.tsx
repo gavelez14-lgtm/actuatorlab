@@ -14,6 +14,7 @@ import { ActuatorModel } from "./ActuatorModel";
 import { RackPinionModel } from "./RackPinionModel";
 import { ElectricPartTurnModel } from "./ElectricPartTurnModel";
 import { ElectricMultiTurnModel } from "./ElectricMultiTurnModel";
+import { CompactElectricModel } from "./CompactElectricModel";
 import { applyCutaway, applyHighlight, applyPaint, createMaterials, disposeMaterials } from "./materials";
 import { WebGLFallback } from "./WebGLFallback";
 
@@ -58,7 +59,17 @@ const MULTI_TURN_VIEWS: Record<VisualizationMode, View> = {
   engineering: { target: [0.1, -0.3, 0], dir: [0.5, 0.32, 0.8], distance: 6.6 },
 };
 
+/** Compact electromechanical part-turn: small case on the ball valve. */
+const COMPACT_VIEWS: Record<VisualizationMode, View> = {
+  normal: { target: [0.05, -0.55, 0], dir: [0.55, 0.4, 0.73], distance: 4.4 },
+  cutaway: { target: [0.05, -0.25, 0], dir: [0.35, 0.8, 0.48], distance: 3.4 },
+  mechanical: { target: [0.05, 0.06, -0.08], dir: [0.62, 0.42, 0.66], distance: 1.9 },
+  energy: { target: [0.15, -0.25, 0], dir: [0.5, 0.42, 0.75], distance: 4.2 },
+  engineering: { target: [0.05, -0.55, 0], dir: [0.55, 0.4, 0.73], distance: 4.4 },
+};
+
 function viewsFor(kind: MechanismKind) {
+  if (kind === "compact-electric") return COMPACT_VIEWS;
   if (kind === "multi-turn") return MULTI_TURN_VIEWS;
   if (kind === "worm-gear") return ELECTRIC_VIEWS;
   return kind === "rack-pinion" ? RACK_PINION_VIEWS : SCOTCH_YOKE_VIEWS;
@@ -265,7 +276,14 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
         <Lightformer form="ring" intensity={0.6} position={[0, -3, 0]} scale={4} />
       </Environment>
 
-      {mechanism === "multi-turn" ? (
+      {mechanism === "compact-electric" ? (
+        <CompactElectricModel
+          mats={mats}
+          rootRef={root}
+          onSelect={(id) => interactive && engine.dispatch({ type: "select", id })}
+          onHover={(id) => interactive && setHovered(id)}
+        />
+      ) : mechanism === "multi-turn" ? (
         <ElectricMultiTurnModel
           mats={mats}
           rootRef={root}

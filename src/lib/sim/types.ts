@@ -15,7 +15,8 @@ export type ActuatorFamilyId =
   | "rising-stem-linear"
   | "hydraulic-scotch-yoke"
   | "hydraulic-rack-pinion"
-  | "electro-hydraulic";
+  | "electro-hydraulic"
+  | "electric-compact-part-turn";
 
 /** How motive energy drives the actuator. */
 export type ActionType = "double-acting" | "spring-return";
@@ -77,7 +78,11 @@ export type ComponentId =
   | "stem-nut"
   | "stem-cover"
   | "gate"
-  | "bonnet";
+  | "bonnet"
+  | "limit-switches"
+  | "torque-switch"
+  | "dome-indicator"
+  | "spur-gears";
 
 export interface ActuatorConfiguration {
   family: ActuatorFamilyId;

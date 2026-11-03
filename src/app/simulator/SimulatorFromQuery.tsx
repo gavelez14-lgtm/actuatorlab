@@ -21,7 +21,7 @@ export function SimulatorFromQuery() {
   const modeParam = q.get("mode") as VisualizationMode | null;
   const mode = modeParam && MODES.includes(modeParam) ? modeParam : "normal";
   const type = q.get("type");
-  const family = type === "rack-pinion" ? "pneumatic-rack-pinion" : type === "electric-part-turn" ? "electric-part-turn" : type === "electric-multi-turn" ? "electric-multi-turn" : "pneumatic-scotch-yoke";
+  const family = type === "rack-pinion" ? "pneumatic-rack-pinion" : type === "electric-part-turn" ? "electric-part-turn" : type === "electric-multi-turn" ? "electric-multi-turn" : type === "electric-compact-part-turn" ? "electric-compact-part-turn" : "pneumatic-scotch-yoke";
   const config: Partial<ActuatorConfiguration> = { family, actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail };
   return (
     <SimulationProvider key={`${family}-${action}-${fail}-${mode}`} initialConfig={config} initialMode={mode}>

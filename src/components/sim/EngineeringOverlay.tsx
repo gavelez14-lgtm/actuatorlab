@@ -3,7 +3,7 @@
 import { Illustrative } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useSimSelector, useSimState } from "./SimulationProvider";
-import { MULTI_TURN, isElectric, isMultiTurn, torqueLimitValue } from "@/lib/sim/electric";
+import { MULTI_TURN, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "@/lib/sim/electric";
 import { ElectricTorqueChart, TorqueChart } from "./TorqueChart";
 
 function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
@@ -37,9 +37,20 @@ function ElectricEngineering() {
         {isMultiTurn(s.config.family) ? <Row label="Output turns" value={(s.stroke * MULTI_TURN.outputTurns).toFixed(1)} /> : <Row label="Output angle" value={s.outputAngle.toFixed(1)} unit="°" />}
         <Row label="Power" value={s.supplyAvailable ? "on" : "off"} tone={s.supplyAvailable ? "ok" : "danger"} />
         <Row label="Motor" value={e.motorRunning ? "running" : e.tripped ? "tripped" : "stopped"} tone={e.tripped ? "danger" : e.motorRunning ? "ok" : undefined} />
-        <Row label="Output torque" value={e.outputTorque.toFixed(2)} tone="air" />
-        <Row label="Torque limit" value={torqueLimitValue(e.torqueLimit).toFixed(2)} tone="warn" />
-        <Row label="Selector" value={e.selector} />
+        {isCompact(s.config.family) ? (
+          <>
+            <Row label="Torque switch" value={e.tripped ? "tripped" : "made"} tone={e.tripped ? "danger" : "ok"} />
+            <Row label="Switch setting" value={torqueLimitValue(e.torqueLimit).toFixed(2)} tone="warn" />
+            <Row label="Open limit" value={s.stroke >= 0.995 ? "made" : "clear"} tone={s.stroke >= 0.995 ? "ok" : undefined} />
+            <Row label="Close limit" value={s.stroke <= 0.005 ? "made" : "clear"} tone={s.stroke <= 0.005 ? "ok" : undefined} />
+          </>
+        ) : (
+          <>
+            <Row label="Output torque" value={e.outputTorque.toFixed(2)} tone="air" />
+            <Row label="Torque limit" value={torqueLimitValue(e.torqueLimit).toFixed(2)} tone="warn" />
+            <Row label="Selector" value={e.selector} />
+          </>
+        )}
         <Row label="Drive" value={e.handMode ? "hand" : "motor"} />
         {isMultiTurn(s.config.family) && <Row label="Stem thrust" value={(e.outputTorque * MULTI_TURN.thrustFactor).toFixed(2)} tone="air" />}
       </dl>

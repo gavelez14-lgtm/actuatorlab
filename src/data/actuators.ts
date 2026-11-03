@@ -163,6 +163,38 @@ export const FAMILIES: ActuatorFamily[] = [
     relatedLessons: ["power-sources", "quarter-turn-valves"],
   },
   {
+    id: "electric-compact-part-turn",
+    short: "Compact",
+    name: "Compact electric part-turn",
+    technology: "Electric gearbox",
+    powerSource: "Electric",
+    movement: "Quarter-turn (90°)",
+    status: "interactive",
+    simulatorHref: "/simulator?type=electric-compact-part-turn",
+    summary: "A small electromechanical actuator: two-stage self-locking gearing, cam limit switches and a mechanical torque switch, with a domed position indicator.",
+    operation: [
+      "A motor drives a two-stage self-locking gear train to the output.",
+      "Cams on the output press limit switches at open and closed, cutting the motor. A spring-set torque switch cuts it if the load is excessive.",
+      "A domed indicator on top shows position mechanically. A handwheel with a lockable manual/auto lever gives hand operation.",
+    ],
+    configurations: [
+      { name: "On-off", note: "Driven to the limit switches on command." },
+      { name: "Modulating", note: "With a proportional control unit and a position transmitter." },
+      { name: "Spring return (separate range)", note: "Electric fail-safe versions use a spring to drive to a set position on power loss." },
+    ],
+    objectives: [
+      "Compare electromechanical switches with intelligent sensing.",
+      "Explain why limit switches only tell you about the ends of travel.",
+      "Explain the difference between a torque switch and a torque sensor.",
+    ],
+    principles: [
+      "Electromechanical actuators are simple, compact and economical, suited to smaller valves and dampers.",
+      "Without a position transmitter, the control system only knows 'open', 'closed' or 'neither'.",
+      "A mechanical torque switch protects the valve, but cannot record torque profiles for diagnostics.",
+    ],
+    relatedLessons: ["power-sources", "quarter-turn-valves"],
+  },
+  {
     id: "electric-multi-turn",
     short: "Multi-turn",
     name: "Electric multi-turn",

@@ -2,7 +2,7 @@
 
 import { Info } from "lucide-react";
 import { MODEL, minimumPressureForFullStroke } from "@/lib/sim/model";
-import { ELECTRIC, isElectric, isMultiTurn } from "@/lib/sim/electric";
+import { ELECTRIC, isCompact, isElectric, isMultiTurn } from "@/lib/sim/electric";
 import { Button } from "@/components/ui/primitives";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { Segmented, Switch, Range } from "@/components/ui/controls";
@@ -203,6 +203,9 @@ function ElectricConfig() {
         />
       </div>
 
+      {isCompact(s.config.family) ? (
+        <p className="border-t border-rule pt-5 text-[12.5px] leading-snug text-muted">No local controls are fitted on this compact actuator, so Open and Close are remote commands. A local control unit is an option on real units.</p>
+      ) : (
       <div className="border-t border-rule pt-5">
       <fieldset className="space-y-2">
         <legend className="mb-2 text-[13px] font-medium text-fg">Local selector</legend>
@@ -226,6 +229,7 @@ function ElectricConfig() {
         </p>
       </fieldset>
       </div>
+      )}
 
       <div className="space-y-3 border-t border-rule pt-5">
         <Switch checked={e.handMode} onChange={(v) => engine.dispatch({ type: "set-hand", value: v })} label="Hand/auto lever locked in hand" description="Declutches the motor so the handwheel drives the valve. Works with no power." />
@@ -246,7 +250,7 @@ function ElectricConfig() {
         <div>
           <div className="mb-1 flex items-baseline justify-between">
             <label htmlFor="torque-limit" className="text-[15px] text-fg">
-              Torque limit
+              {isCompact(s.config.family) ? "Torque switch setting" : "Torque limit"}
             </label>
             <span className="num text-[14px] text-fg">{Math.round(e.torqueLimit * 100)}% of rated</span>
           </div>
@@ -263,7 +267,7 @@ function ElectricConfig() {
           <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             <span>
-              The motor switches off when sensed torque reaches this setting. Set it below the valve&apos;s break-out torque and it trips at the seat. <Illustrative>Illustrative model</Illustrative>
+              The motor switches off when torque reaches this setting. Set it below the valve&apos;s break-out torque and it trips at the seat. <Illustrative>Illustrative model</Illustrative>
             </span>
           </p>
         </div>

@@ -3,6 +3,7 @@ import { CYLINDER, SPRING_MODULE, VALVE, YOKE_OFFSET } from "@/lib/sim/geometry"
 import { RP } from "@/lib/sim/rackPinionGeometry";
 import { EPT } from "@/lib/sim/electricGeometry";
 import { MT } from "@/lib/sim/multiTurnGeometry";
+import { CPT } from "@/lib/sim/compactGeometry";
 import type { MechanismKind } from "@/lib/sim/mechanisms";
 
 export type ComponentRole =
@@ -551,7 +552,119 @@ export const MULTI_TURN_COMPONENTS: ComponentInfo[] = [
   },
 ];
 
+/**
+ * Compact electromechanical part-turn. Layout after the public Noah NA
+ * brochure; proportions are original.
+ */
+export const COMPACT_COMPONENTS: ComponentInfo[] = [
+  {
+    id: "motor",
+    name: "Motor",
+    role: "Motive power",
+    function: "Small motor inside the case, protected by a thermal cut-out.",
+    description: "A built-in thermal protector switches the motor off if it overheats, for example when it is stalled or run too often. That protects the winding, not the valve.",
+    focus: [0.1, CPT.motor.y, CPT.motor.z],
+    distance: 1.4,
+    group: "actuator",
+  },
+  {
+    id: "spur-gears",
+    name: "Stage 1: spur gears",
+    role: "Torque conversion",
+    function: "Motor pinion drives a larger gear on the worm shaft.",
+    description: "The first reduction stage. A small pinion driving a larger gear trades speed for torque by the ratio of their sizes before the worm stage multiplies it again.",
+    caveat: "Two-stage self-locking gearing is documented; the exact gear types inside a given model are not. A spur-then-worm train is shown as an illustration.",
+    focus: [CPT.spur.x, 0.07, CPT.worm.z],
+    distance: 1.1,
+    group: "actuator",
+  },
+  {
+    id: "worm",
+    name: "Stage 2: worm",
+    role: "Torque conversion",
+    function: "Drives the wheel segment; makes the train self-locking.",
+    description: "The worm stage gives most of the reduction and stops the valve back-driving the actuator, so it holds position with no power.",
+    focus: [0, CPT.worm.y, CPT.worm.z],
+    distance: 1.1,
+    group: "actuator",
+  },
+  {
+    id: "worm-wheel",
+    name: "Wheel segment",
+    role: "Torque conversion",
+    function: "Turns the output shaft through its quarter turn.",
+    description: "Only about 90° of travel is needed, so a segment of a wheel is enough.",
+    focus: [0, CPT.wheel.y, -0.06],
+    distance: 1.1,
+    group: "actuator",
+  },
+  {
+    id: "limit-switches",
+    name: "Cam limit switches",
+    role: "Sensing and control",
+    function: "Cams on the output press switches that stop the motor at open and closed.",
+    description: "Each cam is set so its lobe presses a microswitch exactly at one end of travel, opening the motor circuit. Simple and adjustable, but the actuator only 'knows' the two ends; anything in between is unknown unless a position transmitter is fitted.",
+    focus: [0.12, 0.19, 0],
+    distance: 1.0,
+    group: "actuator",
+  },
+  {
+    id: "torque-switch",
+    name: "Mechanical torque switch",
+    role: "Sensing and control",
+    function: "Spring-set switch that cuts the motor on excessive torque.",
+    description: "When the load resists, the worm pushes against preset springs. Past the set point it operates a switch and cuts the motor. It protects the valve and actuator, but gives only 'tripped' or 'not tripped', not a torque value.",
+    caveat: "Some small sizes have no torque switch at all.",
+    focus: [CPT.worm.x0 + 0.05, CPT.worm.y + 0.04, CPT.worm.z],
+    distance: 1.0,
+    group: "actuator",
+  },
+  {
+    id: "dome-indicator",
+    name: "Domed position indicator",
+    role: "Sensing and control",
+    function: "Mechanical pointer on the output shaft, visible through a dome.",
+    description: "Connected directly to the centre column, so it always shows the true valve position, with or without power.",
+    focus: [0, CPT.dome.y + 0.04, 0],
+    distance: 1.2,
+    group: "actuator",
+  },
+  {
+    id: "handwheel",
+    name: "Handwheel and manual/auto lever",
+    role: "Output transmission",
+    function: "Manual operation, selected with a lockable lever.",
+    description: "Handwheel drive is independent of the motor drive and selected with a lever that can be locked in either position.",
+    focus: [CPT.handwheel.x, CPT.worm.y, CPT.worm.z],
+    distance: 1.6,
+    group: "actuator",
+  },
+  {
+    id: "housing",
+    name: "Case",
+    role: "Structure and alignment",
+    function: "Compact cast aluminium case with sealed cable entries.",
+    description: "A powder-coated aluminium casting with O-ring-sealed joints and a heater to prevent condensation inside. Valve mounting follows ISO 5211.",
+    focus: [CPT.case.centre[0], CPT.case.centre[1], CPT.case.centre[2]],
+    distance: 2.0,
+    group: "actuator",
+  },
+  {
+    id: "travel-stops",
+    name: "Stop bolts",
+    role: "Structure and alignment",
+    function: "Mechanical backstop beyond the limit switch settings.",
+    description: "If a limit switch fails to stop the motor, the stop bolts physically prevent the output going past its end positions.",
+    focus: [0.1, CPT.wheel.y, -0.05],
+    distance: 1.1,
+    group: "actuator",
+  },
+  { ...pt("output-shaft"), focus: [0, -0.3, 0] },
+  ...VALVE_PARTS,
+];
+
 export function componentsFor(kind: MechanismKind): ComponentInfo[] {
+  if (kind === "compact-electric") return COMPACT_COMPONENTS;
   if (kind === "multi-turn") return MULTI_TURN_COMPONENTS;
   if (kind === "worm-gear") return ELECTRIC_PART_TURN_COMPONENTS;
   return kind === "rack-pinion" ? RACK_PINION_COMPONENTS : COMPONENTS;

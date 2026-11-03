@@ -7,7 +7,7 @@ import { leverFactor } from "./geometry";
 import { RP } from "./rackPinionGeometry";
 import type { ActuatorFamilyId } from "./types";
 
-export type MechanismKind = "scotch-yoke" | "rack-pinion" | "worm-gear" | "multi-turn";
+export type MechanismKind = "scotch-yoke" | "rack-pinion" | "worm-gear" | "multi-turn" | "compact-electric";
 
 export interface Mechanism {
   kind: MechanismKind;
@@ -41,6 +41,13 @@ export const MECHANISMS: Record<MechanismKind, Mechanism> = {
     formula: "T = motor torque × ratio × efficiency",
     formulaNote: "Speed is constant; the motor is switched off when sensed torque reaches the limit.",
   },
+  "compact-electric": {
+    kind: "compact-electric",
+    name: "Compact electric part-turn",
+    lever: () => RACK_PINION_LEVER,
+    formula: "T = motor torque × two-stage ratio × efficiency",
+    formulaNote: "Stopped by mechanical cam limit switches, or by a spring-set mechanical torque switch.",
+  },
   "multi-turn": {
     kind: "multi-turn",
     name: "Electric multi-turn",
@@ -60,6 +67,7 @@ export const MECHANISMS: Record<MechanismKind, Mechanism> = {
 export function mechanismFor(family: ActuatorFamilyId): MechanismKind {
   if (family === "electric-part-turn") return "worm-gear";
   if (family === "electric-multi-turn") return "multi-turn";
+  if (family === "electric-compact-part-turn") return "compact-electric";
   return family.includes("rack-pinion") ? "rack-pinion" : "scotch-yoke";
 }
 

@@ -47,6 +47,14 @@ const SPECS = {
   thrustBase: { color: "#3C434C", metalness: 0.4, roughness: 0.5, component: "thrust-base", shell: true },
   coverTube: { color: "#8E969F", metalness: 0.8, roughness: 0.3, component: "stem-cover", shell: true },
   bonnet: { color: "#545A62", metalness: 0.45, roughness: 0.6, component: "bonnet", shell: true, side: THREE.DoubleSide },
+  spurGear: { color: "#C9A66B", metalness: 0.85, roughness: 0.3, component: "spur-gears" },
+  cam: { color: "#BFC6CD", metalness: 0.9, roughness: 0.25, component: "limit-switches" },
+  switchBody: { color: "#2A2E34", metalness: 0.2, roughness: 0.6, component: "limit-switches" },
+  switchLever: { color: "#E3B341", metalness: 0.3, roughness: 0.5, component: "limit-switches" },
+  torqueSwitch: { color: "#7FA7C9", metalness: 0.5, roughness: 0.4, component: "torque-switch" },
+  dome: { color: "#DCE7F0", metalness: 0, roughness: 0.05, component: "dome-indicator" },
+  domeDisc: { color: "#F1F3F5", metalness: 0, roughness: 0.6, component: "dome-indicator" },
+  domeArrow: { color: "#FF9F0A", metalness: 0, roughness: 0.5, component: "dome-indicator" },
   piston: { color: "#8C959E", metalness: 0.8, roughness: 0.35, component: "piston" },
   pistonSeal: { color: "#1E2126", metalness: 0, roughness: 0.8, component: "piston" },
   rod: { color: "#D8DDE2", metalness: 1, roughness: 0.14, component: "connecting-mechanism" },
@@ -95,6 +103,9 @@ export function createMaterials(): MaterialSet {
   out.valveBody.clippingPlanes = [VALVE_SECTION_PLANE];
   out.pipe.clippingPlanes = [VALVE_SECTION_PLANE];
   out.bonnet.clippingPlanes = [VALVE_SECTION_PLANE];
+  out.dome.transparent = true;
+  out.dome.opacity = 0.28;
+  out.dome.depthWrite = false;
   return out;
 }
 

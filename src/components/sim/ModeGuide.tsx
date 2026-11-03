@@ -157,6 +157,39 @@ const MT_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   },
 };
 
+/** Compact electromechanical part-turn. */
+const CPT_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "A compact electromechanical actuator on the ball valve. There is no display and no local selector: Open and Close come from the control system, and the domed indicator on top shows position mechanically.",
+      "Compare it with the intelligent part-turn: the same job, with switches instead of sensors.",
+    ],
+  },
+  mechanical: {
+    title: "Switches, not sensors",
+    body: [
+      "Two reduction stages drive the output: a motor pinion turns a larger spur gear on the worm shaft, and the worm turns the wheel segment. The worm stage makes the train self-locking.",
+      "Two cams on the output each press a limit switch at one end of travel. That is how the motor stops at open and closed. Between the ends the actuator itself does not know the position.",
+      "The worm shaft end works against preset springs. If the load is too high it moves far enough to trip the torque switch, which cuts the motor. You get 'tripped', not a torque reading. Animation is slowed to 0.35× in this mode.",
+    ],
+  },
+  energy: {
+    title: "Power flow (illustrative)",
+    body: [
+      "Yellow: electrical power in through the cable entries to the motor. Orange: mechanical power through the spur stage, the worm, and down the output shaft to the valve.",
+      "Markers show direction only, and only while the motor runs.",
+    ],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: [
+      "Instead of a measured torque, this actuator reports switch states: torque switch made or tripped, open limit made or clear, close limit made or clear. That is all the control system would see without optional transmitters.",
+      "The chart shows the illustrative valve demand against the torque switch setting. Enable the jam to see the switch trip.",
+    ],
+  },
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
@@ -164,7 +197,8 @@ export function ModeGuide() {
   const rp = useSimSelector((s) => s.config.family.includes("rack-pinion"));
   const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
   const multi = useSimSelector((s) => s.config.family === "electric-multi-turn");
-  const t = (multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const compact = useSimSelector((s) => s.config.family === "electric-compact-part-turn");
+  const t = (compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>

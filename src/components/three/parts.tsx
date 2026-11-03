@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { SceneLabel } from "./SceneLabel";
 import type { ComponentId } from "@/lib/sim/types";
 
 /* Shared picking and labelling helpers for all mechanism models. */
@@ -35,11 +35,7 @@ export function Pick({ id, children, onSelect, onHover }: PickProps) {
 }
 
 export function Label({ children, position }: { children: ReactNode; position: [number, number, number] }) {
-  return (
-    <Html position={position} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-      <div className="sim-label">{children}</div>
-    </Html>
-  );
+  return <SceneLabel position={position}>{children}</SceneLabel>;
 }
 
 

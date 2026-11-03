@@ -14,7 +14,7 @@
  * throttled rate during motion to avoid re-rendering on every frame.
  */
 import { MODEL, computeTorques, strokeFromValvePosition, valvePositionFromStroke } from "./model";
-import { ELECTRIC, MULTI_TURN, electricDemand, isElectric, isMultiTurn, torqueLimitValue } from "./electric";
+import { COMPACT, ELECTRIC, MULTI_TURN, electricDemand, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "./electric";
 import type {
   ActuatorConfiguration,
   ChamberCondition,
@@ -298,8 +298,9 @@ export class SimulationEngine {
     let running = false;
     const prevTrip = e.tripped;
     const multi = isMultiTurn(s.config.family);
-    const strokeTime = multi ? MULTI_TURN.strokeTime : ELECTRIC.strokeTime;
-    const handTime = multi ? MULTI_TURN.handStrokeTime : ELECTRIC.handStrokeTime;
+    const compact = isCompact(s.config.family);
+    const strokeTime = multi ? MULTI_TURN.strokeTime : compact ? COMPACT.strokeTime : ELECTRIC.strokeTime;
+    const handTime = multi ? MULTI_TURN.handStrokeTime : compact ? COMPACT.handStrokeTime : ELECTRIC.handStrokeTime;
     const prevSeated = e.seated;
 
     if (e.handMode) {
@@ -480,7 +481,9 @@ export class SimulationEngine {
               ? s.commandedStroke === null
                 ? "Power restored. No command is active, so nothing moves."
                 : "Power restored. The actuator responds to the command that is still active."
-              : "Power lost. The motor stops and the self-locking worm holds the valve where it is. The absolute encoder keeps the position, and the battery keeps the display alive.",
+              : isCompact(s.config.family)
+                ? "Power lost. The motor stops and the self-locking gearing holds the valve where it is. The domed indicator still shows the position mechanically."
+                : "Power lost. The motor stops and the self-locking worm holds the valve where it is. The absolute encoder keeps the position, and the battery keeps the display alive.",
           );
           break;
         }
@@ -543,6 +546,7 @@ export class SimulationEngine {
         derive(s);
         break;
       case "set-selector":
+        if (isCompact(s.config.family)) break; // no local selector fitted
         s.electric.selector = cmd.value;
         if (cmd.value === "stop") {
           s.commandedStroke = null;
@@ -630,15 +634,22 @@ export class SimulationEngine {
           ? `Hand operation engaged at ${pct(s.position)} open. Turn the handwheel; any motor command re-engages motor drive.`
           : `Hand operation locked. Motor declutched at ${pct(s.position)} open; turn the handwheel.`;
     }
+    if (e.tripped && isCompact(s.config.family))
+      return `Torque switch tripped while ${e.tripped} at ${pct(s.position)}: the spring-set mechanical switch opened the motor circuit. There is no torque value to read, only "tripped".`;
     if (e.tripped) return `Torque trip while ${e.tripped} at ${pct(s.position)}: output torque reached the limit, so the motor stopped to protect the valve.`;
     if (s.airFlowing) return `${s.direction === "opening" ? "Opening" : "Closing"} on the motor at constant speed, until a limit or a torque trip.`;
-    if (!s.supplyAvailable) return `Power lost. Stopped at ${pct(s.position)} open (fails in place). The encoder still knows the position.`;
+    if (!s.supplyAvailable)
+      return isCompact(s.config.family)
+        ? `Power lost. Stopped at ${pct(s.position)} open (fails in place). Only the mechanical indicator shows where.`
+        : `Power lost. Stopped at ${pct(s.position)} open (fails in place). The encoder still knows the position.`;
     if (e.selector === "stop") return "Local selector at Stop. Commands are ignored.";
     if (s.commandedStroke === null) return `Idle at ${pct(s.position)} open. Issue an Open or Close command.`;
     if (isMultiTurn(s.config.family) && s.position < 0.005)
       return e.seated
         ? "Closed on torque: the wedge was driven into its seats until torque reached the limit, then the motor stopped."
         : "Closed on the position limit: the motor stopped at the set position as the wedge reached its seats.";
+    if (isCompact(s.config.family))
+      return `Stopped by the ${s.position > 0.5 ? "open" : "closed"} cam limit switch. The self-locking gearing holds the valve with the motor off.`;
     return `Stopped at the ${s.position > 0.5 ? "open" : "closed"} limit. The self-locking worm holds the valve with the motor off.`;
   }
 

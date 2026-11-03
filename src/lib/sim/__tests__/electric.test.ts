@@ -79,3 +79,24 @@ describe("electric part-turn", () => {
     expect(e.getState().position).toBeGreaterThan(0.1);
   });
 });
+
+describe("compact electromechanical part-turn", () => {
+  const cfam = { family: "electric-compact-part-turn" as const };
+  it("opens on limit switches and has no local selector", () => {
+    const e = new SimulationEngine(cfam);
+    e.dispatch({ type: "set-selector", value: "stop" });
+    expect(e.getState().electric.selector).toBe("remote");
+    e.dispatch({ type: "open" });
+    run(e, 9);
+    expect(e.getState().position).toBe(1);
+    expect(e.getState().status).toMatch(/cam limit switch/);
+  });
+  it("trips the mechanical torque switch at a jam", () => {
+    const e = new SimulationEngine(cfam);
+    e.dispatch({ type: "set-obstruction", value: true });
+    e.dispatch({ type: "open" });
+    run(e, 9);
+    expect(e.getState().electric.tripped).toBe("opening");
+    expect(e.getState().status).toMatch(/Torque switch tripped/);
+  });
+});

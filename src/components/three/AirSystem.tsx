@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { SceneLabel } from "./SceneLabel";
 import { CYLINDER, PISTON, YOKE_OFFSET, pistonXFromStroke } from "@/lib/sim/geometry";
 import type { ChamberCondition } from "@/lib/sim/types";
 import { useEngine } from "@/components/sim/SimulationProvider";
@@ -263,16 +263,10 @@ export function AirSystem({
 
       {active && (
         <>
-          <Html position={layout.labels.supply} center style={{ pointerEvents: "none" }}>
-            <div className="sim-label sim-label--air">Supply in</div>
-          </Html>
-          <Html position={layout.labels.exhaust} center style={{ pointerEvents: "none" }}>
-            <div className="sim-label">Exhaust</div>
-          </Html>
+          <SceneLabel position={layout.labels.supply} className="sim-label sim-label--air">Supply in</SceneLabel>
+          <SceneLabel position={layout.labels.exhaust} className="sim-label">Exhaust</SceneLabel>
           {springReturn && (
-            <Html position={layout.labels.breather} center style={{ pointerEvents: "none" }}>
-              <div className="sim-label">Breather</div>
-            </Html>
+            <SceneLabel position={layout.labels.breather} className="sim-label">Breather</SceneLabel>
           )}
         </>
       )}

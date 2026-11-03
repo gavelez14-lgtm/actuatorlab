@@ -55,7 +55,26 @@ export const MULTI_TURN = {
 } as const;
 
 export function isElectric(family: ActuatorFamilyId): boolean {
-  return family === "electric-part-turn" || family === "electric-multi-turn";
+  return family === "electric-part-turn" || family === "electric-multi-turn" || family === "electric-compact-part-turn";
+}
+
+/**
+ * Compact electromechanical part-turn (after the public Noah NA brochure):
+ * two-stage self-locking gearing, mechanical cam limit switches, mechanical
+ * open/close torque switch, domed position indicator, handwheel with a
+ * lockable manual/auto lever, stop bolts. No encoder, torque sensor, display
+ * or local selector: control is remote, and position is only "known" at the
+ * limit switches unless a position transmitter is fitted.
+ */
+export const COMPACT = {
+  strokeTime: 7,
+  handStrokeTime: 20,
+  /** Limit switch cams make within this distance of each end of travel. */
+  limitBand: 0.005,
+} as const;
+
+export function isCompact(family: ActuatorFamilyId): boolean {
+  return family === "electric-compact-part-turn";
 }
 
 export function isMultiTurn(family: ActuatorFamilyId): boolean {
