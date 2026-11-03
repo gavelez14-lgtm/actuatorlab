@@ -143,6 +143,72 @@ export const ASSESSMENTS: Assessment[] = [
       },
     ],
   },
+  {
+    slug: "power-and-safety",
+    title: "Power sources and safety functions",
+    level: "Intermediate",
+    description: "Pipeline gas, gas over oil, electro-hydraulic and electric actuators: line break, ESD, partial-stroke testing and fail positions.",
+    passMark: 0.7,
+    relatedLessons: ["power-sources", "fail-open-vs-fail-closed", "symmetric-vs-canted-yoke"],
+    questions: [
+      {
+        id: "p1",
+        prompt: "Why might a remote pipeline valve use a direct-gas actuator?",
+        options: ["Gas is cheaper than air", "The site has pipeline gas but no instrument air or reliable power", "Gas actuators need no maintenance", "Gas gives a flat torque curve"],
+        answer: 1,
+        explanation: "The pipeline's own gas is the energy source that is always there.",
+      },
+      {
+        id: "p2",
+        prompt: "A rate-of-drop line-break control only trips after the drop has lasted a set delay. Why?",
+        options: ["To save gas", "So short transients do not shut the line", "To let the tank empty", "Because the gauge is slow"],
+        answer: 1,
+        explanation: "Normal operations can cause brief pressure dips. The delay filters them out; a rupture keeps falling.",
+      },
+      {
+        id: "p3",
+        prompt: "After a line break, what lets a double-acting direct-gas actuator still close the valve?",
+        options: ["A spring", "Gas stored in a tank behind a check valve", "The hand pump", "Pipeline pressure"],
+        answer: 1,
+        explanation: "The check valve stops the stored gas draining back into the collapsing line.",
+      },
+      {
+        id: "p4",
+        prompt: "Pipeline pressure falls slowly but stays very low. Which trip catches it?",
+        options: ["Rate of drop", "Low pressure", "Torque", "Partial-stroke test"],
+        answer: 1,
+        explanation: "A slow fall never exceeds the rate set point. A low-pressure trip covers that case.",
+      },
+      {
+        id: "p5",
+        prompt: "What mainly sets stroke speed on a gas-over-oil actuator?",
+        options: ["Pipeline pressure", "Oil flow-control valves", "The spring", "Motor speed"],
+        answer: 1,
+        explanation: "Oil is metered, so speed is steady and adjustable and changes little with gas pressure.",
+      },
+      {
+        id: "p6",
+        prompt: "A spring-return electro-hydraulic actuator loses power. What happens?",
+        options: ["It stays in place", "The dump solenoid opens and the spring drives to the fail position", "The pump runs on battery", "It moves to 50%"],
+        answer: 1,
+        explanation: "The dump solenoid is held closed by power. Losing power releases the oil and lets the spring act.",
+      },
+      {
+        id: "p7",
+        prompt: "What does a partial-stroke test prove?",
+        options: ["The valve seals tightly", "The valve and actuator can still move toward the fail position, without stopping the process", "The torque switch setting", "The supply pressure"],
+        answer: 1,
+        explanation: "A short move and return shows the valve is not stuck. It does not prove tight shut-off.",
+      },
+      {
+        id: "p8",
+        prompt: "An intelligent electric part-turn actuator with no stored-energy option loses power at 30% open. What happens?",
+        options: ["It closes", "It opens", "It stays at about 30%, and still knows its position", "It loses its position"],
+        answer: 2,
+        explanation: "The self-locking gearing holds it and the absolute encoder keeps the position.",
+      },
+    ],
+  },
 ];
 
 export const ASSESSMENT_MAP = Object.fromEntries(ASSESSMENTS.map((a) => [a.slug, a])) as Record<string, Assessment>;

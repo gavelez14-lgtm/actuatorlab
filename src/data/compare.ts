@@ -47,7 +47,7 @@ export const COMPARE_ROWS: CompareRow[] = [
   {
     aspect: "Power source",
     values: {
-      scotchYoke: "Pneumatic or hydraulic.",
+      scotchYoke: "Pneumatic, pipeline gas, gas over oil, hydraulic or electro-hydraulic. Five of them are in the simulator.",
       rackPinion: "Pneumatic or hydraulic.",
     },
   },
@@ -63,6 +63,88 @@ export const COMPARE_ROWS: CompareRow[] = [
     values: {
       scotchYoke: "Separate cylinder and housing; spring module usually on the opposite side of the housing; guide bar takes side load.",
       rackPinion: "Compact, symmetrical body; often opposed pistons; springs commonly fitted inside the end caps.",
+    },
+  },
+];
+
+/* ---------------- Power sources ---------------- */
+
+export type PowerKey = "pneumatic" | "directGas" | "gasOverOil" | "electroHydraulic" | "electricIntelligent" | "electricCompact";
+
+export const POWER_SOURCES: Record<PowerKey, { name: string; simulator: string }> = {
+  pneumatic: { name: "Pneumatic", simulator: "/simulator" },
+  directGas: { name: "Direct gas", simulator: "/simulator?type=gas-scotch-yoke" },
+  gasOverOil: { name: "Gas over oil", simulator: "/simulator?type=gas-over-oil" },
+  electroHydraulic: { name: "Electro-hydraulic", simulator: "/simulator?type=electro-hydraulic" },
+  electricIntelligent: { name: "Electric, intelligent", simulator: "/simulator?type=electric-part-turn" },
+  electricCompact: { name: "Electric, compact", simulator: "/simulator?type=electric-compact-part-turn" },
+};
+
+export const POWER_ROWS: { aspect: string; values: Record<PowerKey, string> }[] = [
+  {
+    aspect: "Motive energy",
+    values: {
+      pneumatic: "Instrument air from a plant compressor system.",
+      directGas: "Pipeline gas, at line pressure, straight to the cylinder.",
+      gasOverOil: "Pipeline gas pressurising oil; the oil drives the cylinder.",
+      electroHydraulic: "Electrical power to an on-board motor and pump.",
+      electricIntelligent: "Electrical power to a motor and self-locking gearing.",
+      electricCompact: "Electrical power to a motor and self-locking gearing.",
+    },
+  },
+  {
+    aspect: "Where it is typical",
+    values: {
+      pneumatic: "Process plants with an air supply.",
+      directGas: "Remote gas pipeline valve sites with no air or reliable power.",
+      gasOverOil: "Large pipeline block valves where controlled stroke speed matters.",
+      electroHydraulic: "Sites with power but no air, needing hydraulic force and spring fail-safe.",
+      electricIntelligent: "Plants wanting digital control, diagnostics and no air system.",
+      electricCompact: "Smaller valves and dampers where simple on-off is enough.",
+    },
+  },
+  {
+    aspect: "On loss of power",
+    values: {
+      pneumatic: "Spring return goes to its fail position; double acting stays put.",
+      directGas: "Spring return fails safe; double acting uses stored gas after a trip.",
+      gasOverOil: "Stored gas closes on a line-break or low-pressure trip.",
+      electroHydraulic: "Spring return: dump solenoid opens and the spring fails safe.",
+      electricIntelligent: "Stays in place unless a stored-energy option is fitted.",
+      electricCompact: "Stays in place unless a spring-return version is used.",
+    },
+  },
+  {
+    aspect: "Speed control",
+    values: {
+      pneumatic: "Restrictors and exhaust control; speed varies with load and pressure.",
+      directGas: "Gas restrictors; speed varies with pipeline pressure.",
+      gasOverOil: "Oil flow controls: steady, adjustable, insensitive to gas pressure.",
+      electroHydraulic: "Set by pump flow and the dump-valve restriction.",
+      electricIntelligent: "Constant motor speed; some designs vary it electronically.",
+      electricCompact: "Constant motor speed.",
+    },
+  },
+  {
+    aspect: "Position and diagnostics",
+    values: {
+      pneumatic: "Added with switches, positioners and controllers.",
+      directGas: "Added with switches and line-break controls.",
+      gasOverOil: "Added with switches and line-break controls.",
+      electroHydraulic: "Integral controller: positioning, ESD, partial-stroke testing.",
+      electricIntelligent: "Built in: absolute position, measured torque, data logging.",
+      electricCompact: "Limit and torque switches only, unless options are fitted.",
+    },
+  },
+  {
+    aspect: "Watch out for",
+    values: {
+      pneumatic: "Air quality and supply pressure at the actuator.",
+      directGas: "Gas venting, gas quality, and set-point trade-offs.",
+      gasOverOil: "Oil and gas tanks to maintain; more complex.",
+      electroHydraulic: "Oil condition and seals; motor duty.",
+      electricIntelligent: "Duty rating, and that it fails in place by default.",
+      electricCompact: "No torque or position data between the ends of travel.",
     },
   },
 ];

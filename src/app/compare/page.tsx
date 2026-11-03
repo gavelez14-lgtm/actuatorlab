@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Box } from "lucide-react";
-import { COMPARE_ROWS, MECHANISMS, type MechanismKey } from "@/data/compare";
+import Link from "next/link";
+import { COMPARE_ROWS, MECHANISMS, POWER_ROWS, POWER_SOURCES, type MechanismKey, type PowerKey } from "@/data/compare";
 import { ButtonLink, Illustrative, Page, PageHeader, Tag } from "@/components/ui/primitives";
 
 export const metadata: Metadata = { title: "Compare Actuators" };
@@ -55,8 +56,8 @@ export default function ComparePage() {
   return (
     <Page>
       <PageHeader
-        title="Scotch yoke and rack and pinion"
-        lead="Two common ways to turn a piston's straight-line force into a quarter turn. This page compares typical characteristics of each mechanism, not any manufacturer's products."
+        title="Compare actuators"
+        lead="Two ways to turn a piston's force into a quarter turn, then six ways to power an actuator. Typical characteristics of each technology, not any manufacturer's products."
       />
 
       <section aria-labelledby="shape" className="mb-12 grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
@@ -123,6 +124,48 @@ export default function ComparePage() {
         <p className="mt-3 text-[12.5px] text-muted">
           These are general characteristics of each mechanism. Torque outputs, sizes and ratings for any specific actuator must come from the manufacturer&apos;s documentation.
         </p>
+      </section>
+
+      <section aria-labelledby="power" className="mt-16">
+        <div className="mb-3 flex items-baseline justify-between gap-4">
+          <h2 id="power" className="text-[26px] text-fg">
+            Power sources
+          </h2>
+          <span className="text-[12.5px] text-muted">Each column opens in the simulator</span>
+        </div>
+        <div className="overflow-x-auto rounded-2xl bg-panel">
+          <table className="w-full min-w-[980px] border-collapse text-left">
+            <thead>
+              <tr className="border-b border-rule">
+                <th scope="col" className="w-[150px] px-4 py-3 text-[12.5px] font-medium text-muted">
+                  Aspect
+                </th>
+                {(Object.keys(POWER_SOURCES) as PowerKey[]).map((k) => (
+                  <th key={k} scope="col" className="px-3 py-3">
+                    <Link href={POWER_SOURCES[k].simulator} className="font-display text-[16px] font-semibold text-fg underline-offset-4 hover:underline">
+                      {POWER_SOURCES[k].name}
+                    </Link>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-rule">
+              {POWER_ROWS.map((r) => (
+                <tr key={r.aspect} className="align-top">
+                  <th scope="row" className="px-4 py-3 text-[13.5px] font-medium text-fg">
+                    {r.aspect}
+                  </th>
+                  {(Object.keys(POWER_SOURCES) as PowerKey[]).map((k) => (
+                    <td key={k} className="px-3 py-3 text-[13px] leading-snug text-fg-2">
+                      {r.values[k]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-[12.5px] text-muted">General characteristics. Real products add options (stored-energy modules, positioners, diagnostics) that change several of these rows.</p>
       </section>
 
       <section className="mt-12 grid gap-4 md:grid-cols-2">
