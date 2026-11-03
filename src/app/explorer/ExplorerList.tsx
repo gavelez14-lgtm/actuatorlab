@@ -25,7 +25,7 @@ export function ExplorerList() {
         (tech === "all" || f.technology === tech) &&
         (power === "all" || f.powerSource === power) &&
         (status === "all" || f.status === status) &&
-        (!q || [f.code, f.name, f.technology, f.powerSource, f.summary].join(" ").toLowerCase().includes(q)),
+        (!q || [f.short, f.name, f.technology, f.powerSource, f.summary].join(" ").toLowerCase().includes(q)),
     );
   }, [query, tech, power, status]);
 
@@ -41,7 +41,7 @@ export function ExplorerList() {
     <div>
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
         <label className="relative block lg:w-72">
-          <span className="sr-only">Search actuator families</span>
+          <span className="sr-only">Search actuator types</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <input
             type="search"
@@ -94,22 +94,21 @@ export function ExplorerList() {
       </div>
 
       <p className="sr-only" aria-live="polite">
-        {results.length} families shown
+        {results.length} actuator types shown
       </p>
 
       {results.length === 0 ? (
         <div className="rounded-2xl bg-panel p-8 text-center">
-          <p className="font-medium text-fg">No families match these filters.</p>
+          <p className="font-medium text-fg">No actuator types match these filters.</p>
           <button type="button" onClick={clear} className="mt-2 text-[14px] text-accent underline underline-offset-2">
             Clear filters
           </button>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl bg-panel">
-          <div className="hidden grid-cols-[120px_1.4fr_1fr_1fr_1fr_120px] gap-4 border-b border-rule px-4 py-2.5 text-[12.5px] text-muted md:grid">
-            <span>Code</span>
-            <span>Family</span>
-            <span>Technology</span>
+          <div className="hidden grid-cols-[1.8fr_1fr_1fr_1fr_120px] gap-4 border-b border-rule px-4 py-2.5 text-[12.5px] text-muted md:grid">
+            <span>Technology type</span>
+            <span>Mechanism</span>
             <span>Power source</span>
             <span>Movement</span>
             <span className="text-right">Simulation</span>
@@ -119,9 +118,8 @@ export function ExplorerList() {
               <li key={f.id}>
                 <Link
                   href={`/explorer/${f.id}`}
-                  className="grid gap-1 px-4 py-3.5 transition-colors hover:bg-panel-2 md:grid-cols-[120px_1.4fr_1fr_1fr_1fr_120px] md:items-center md:gap-4"
+                  className="grid gap-1 px-4 py-3.5 transition-colors hover:bg-panel-2 md:grid-cols-[1.8fr_1fr_1fr_1fr_120px] md:items-center md:gap-4"
                 >
-                  <span className="font-display text-[22px] font-semibold leading-none text-fg">{f.code}</span>
                   <span className="min-w-0">
                     <span className="block text-[15px] font-medium text-fg">{f.name}</span>
                     <span className="block truncate text-[13px] text-muted">{f.summary}</span>
@@ -137,7 +135,7 @@ export function ExplorerList() {
         </div>
       )}
       <p className="mt-3 text-[12.5px] text-muted">
-        Family codes are listed as scoped for this programme. Product data is not shown until verified against official Rotork documentation.
+        General characteristics of each technology. Ratings and sizes for a specific actuator come from its manufacturer.
       </p>
     </div>
   );

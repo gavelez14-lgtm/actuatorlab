@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { VisualizationMode } from "@/lib/sim/types";
 import { SimulationProvider, useEngine, useSimSelector } from "./SimulationProvider";
 import { cn } from "@/lib/utils";
+import { LazyMount } from "@/components/ui/LazyMount";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
   ssr: false,
@@ -124,7 +125,9 @@ export function ScrollStory() {
       <SimulationProvider initialConfig={{ actionType: "spring-return", failPosition: "fail-closed" }}>
         <StoryDriver progress={progress} />
         <div className="sticky top-12 h-[calc(100dvh-3rem)] overflow-hidden bg-viewport lg:top-0 lg:h-dvh">
-          <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel="Actuator stroke controlled by page scroll." />
+          <LazyMount className="absolute inset-0" rootMargin="0px 0px -2px 0px">
+            <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel="Actuator stroke controlled by page scroll." />
+          </LazyMount>
 
           {/* chapter rail */}
           <ol className="absolute left-5 top-6 flex gap-1.5 sm:left-10 sm:top-10" aria-hidden>

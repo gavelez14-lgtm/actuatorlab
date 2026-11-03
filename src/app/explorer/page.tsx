@@ -11,7 +11,7 @@ export default function ExplorerPage() {
     <Page>
       <PageHeader
         title="Actuator explorer"
-        lead="Actuator families in the training scope, grouped by technology and power source. Only the CP-style Scotch yoke has a working simulation so far. The others are marked as planned."
+        lead="Actuator technologies grouped by mechanism and power source. The pneumatic Scotch yoke has a working 3D simulation; the others are being built one at a time and are marked as coming soon."
       />
       <ExplorerList />
 

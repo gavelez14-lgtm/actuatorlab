@@ -7,14 +7,13 @@ const sections: { title: string; body: string[] }[] = [
   {
     title: "Independent and educational",
     body: [
-      "ActuatorLab is an independent educational project. It is not a Rotork product and is not affiliated with, endorsed by or sponsored by Rotork. Product family names are used only to identify the technologies covered by the training scope. Trademarks belong to their owners.",
+      "ActuatorLab is an independent educational project. It is not affiliated with, endorsed by or sponsored by any actuator or valve manufacturer. Content is organised by technology, not by product range. Any trademarks belong to their owners.",
     ],
   },
   {
     title: "What the 3D model is",
     body: [
-      "The simulator uses original procedural geometry generated in code. Proportions were chosen so the mechanism reads clearly and stays mechanically consistent through the stroke. It is not a manufacturing model, does not reproduce CP dimensions or internal geometry, and no proprietary CAD, drawings or photographs were used.",
-      "\"CP-style\" means the same technology class: a pneumatic Scotch yoke, double acting or spring return.",
+      "The simulator uses original procedural geometry generated in code. Proportions were chosen so the mechanism reads clearly and stays mechanically consistent through the stroke. It is not a manufacturing model, does not reproduce any manufacturer's dimensions or internal geometry, and no proprietary CAD, drawings or photographs were used.",
     ],
   },
   {
@@ -28,7 +27,7 @@ const sections: { title: string; body: string[] }[] = [
   {
     title: "Manufacturer-specific information",
     body: [
-      "No product ratings, torque outputs, pressure limits, sizes or option lists are shown for any family, because none have yet been verified against current Rotork documentation. Family pages separate general engineering principles from manufacturer-specific details for this reason.",
+      "No product ratings, torque outputs, pressure limits, sizes or option lists are shown for any actuator type. Those differ between manufacturers and models, and must come from the specific manufacturer's documentation.",
     ],
   },
   {

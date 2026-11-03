@@ -2,7 +2,7 @@
  * Illustrative force / torque model.
  *
  * Every number here is a NORMALISED, ILLUSTRATIVE value chosen to make the
- * behaviour of the mechanism understandable. None of it is Rotork data, and
+ * behaviour of the mechanism understandable. None of it is manufacturer data, and
  * none of it should be used for sizing. The one relationship taken from
  * engineering texts is the Scotch-yoke lever factor T = F * d / cos^2(phi).
  */

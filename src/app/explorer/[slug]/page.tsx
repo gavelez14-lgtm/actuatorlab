@@ -16,7 +16,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/explorer/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const f = FAMILY_MAP[slug as ActuatorFamilyId];
-  return { title: f ? `${f.code} ${f.name}` : "Actuator" };
+  return { title: f ? f.name : "Actuator" };
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -36,18 +36,18 @@ async function FamilyPageContent({ params }: { params: PageProps<"/explorer/[slu
 
   return (
     <Page>
-      <TrackVisit id={`family-${f.id}`} title={`${f.code} ${f.name}`} href={`/explorer/${f.id}`} />
+      <TrackVisit id={`family-${f.id}`} title={f.name} href={`/explorer/${f.id}`} />
       <Link href="/explorer" className="mb-6 inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg">
         <ArrowLeft className="size-3.5" aria-hidden /> Actuator explorer
       </Link>
 
       <header className="mb-10 grid gap-6 border-b border-rule pb-8 lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
-          <div className="flex items-baseline gap-4">
-            <span className="font-display text-[64px] font-semibold leading-none text-fg sm:text-[80px]">{f.code}</span>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="text-[15px] text-muted">{f.powerSource}</span>
             {live ? <Tag tone="live">Interactive simulation</Tag> : <Tag>Simulation coming soon</Tag>}
           </div>
-          <h1 className="mt-2 text-[28px] text-fg-2">{f.name}</h1>
+          <h1 className="text-[44px] leading-[1] tracking-[-0.04em] text-fg sm:text-[72px]">{f.name}</h1>
           <p className="mt-2 max-w-[62ch] text-[16px] text-fg-2">{f.summary}</p>
         </div>
         {live ? (
@@ -130,10 +130,11 @@ async function FamilyPageContent({ params }: { params: PageProps<"/explorer/[slu
 
           <Panel className="p-5">
             <h2 className="flex items-center gap-2 text-[19px] text-fg">
-              <FileWarning className="size-4 text-warn" aria-hidden /> Manufacturer-specific data
+              <FileWarning className="size-4 text-warn" aria-hidden /> Ratings and sizing
             </h2>
-            <p className="mt-2 text-[13.5px] text-fg-2">{f.manufacturer.note}</p>
-            <p className="mt-2 text-[12.5px] text-muted">Status: not verified in this build.</p>
+            <p className="mt-2 text-[13.5px] text-fg-2">
+              This page covers the technology in general. Torque or thrust outputs, sizes, pressure limits and options differ between manufacturers and models. Take them from the specific manufacturer&apos;s documentation.
+            </p>
           </Panel>
 
           {f.relatedLessons.length > 0 && (

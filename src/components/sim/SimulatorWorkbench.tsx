@@ -99,7 +99,7 @@ export function SimulatorWorkbench() {
   const { touchRecent } = useProgress();
 
   useEffect(() => {
-    touchRecent({ id: "sim-cp", title: "CP-style Scotch yoke simulator", href: "/simulator" });
+    touchRecent({ id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" });
   }, [touchRecent]);
 
   // Selecting a part in the scene brings the Components tab forward
@@ -149,7 +149,7 @@ export function SimulatorWorkbench() {
       <header className="flex flex-col gap-3 border-b border-rule bg-panel px-4 py-3 md:flex-row md:items-center md:justify-between lg:px-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] text-fg">CP-style pneumatic Scotch yoke</h1>
+            <h1 className="text-[24px] text-fg">Pneumatic Scotch yoke</h1>
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">

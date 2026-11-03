@@ -29,7 +29,7 @@ const END_EPS = 1e-4;
 const AUTO_CYCLE_DWELL = 1.1; // seconds (simulation time)
 
 export const DEFAULT_CONFIG: ActuatorConfiguration = {
-  family: "cp",
+  family: "pneumatic-scotch-yoke",
   actionType: "spring-return",
   failPosition: "fail-closed",
 };

@@ -36,7 +36,7 @@ export function Dashboard() {
     <>
     <Page className="max-w-[1320px] pb-0 lg:pb-0">
       {/* Opening spread: one statement, set large, with the practical next steps beside it */}
-      <section aria-labelledby="hero" className="grid gap-8 pb-14 pt-6 lg:grid-cols-12 lg:items-end lg:gap-10 lg:pb-20 lg:pt-16">
+      <section aria-labelledby="hero" className="grid min-h-[calc(100dvh-3rem-2rem)] content-end gap-8 pb-14 pt-6 lg:min-h-[calc(100dvh-3.5rem)] lg:grid-cols-12 lg:items-end lg:gap-10 lg:pb-20 lg:pt-16">
         <h1 id="hero" className="text-[52px] leading-[0.95] tracking-[-0.045em] text-fg sm:text-[88px] lg:col-span-12 lg:text-[128px]">
           Understand the mechanism.
         </h1>
@@ -138,7 +138,7 @@ export function Dashboard() {
           {FAMILIES.map((f) => (
             <li key={f.id} className="w-[150px] shrink-0 snap-start sm:w-auto">
               <Link href={`/explorer/${f.id}`} className="flex h-full flex-col rounded-2xl bg-panel p-5 transition-colors hover:bg-panel-2">
-                <span className="font-display text-[28px] font-semibold leading-none tracking-[-0.03em] text-fg">{f.code.replace("Skilmatic ", "")}</span>
+                <span className="font-display text-[28px] font-semibold leading-none tracking-[-0.03em] text-fg">{f.short}</span>
                 <span className="mt-3 text-[13px] leading-snug text-fg-2">{f.technology}</span>
                 {f.powerSource !== f.technology && <span className="text-[13px] text-muted">{f.powerSource}</span>}
                 <span className={cn("mt-4 text-[12px] font-medium", f.status === "interactive" ? "text-accent" : "text-muted")}>

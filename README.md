@@ -2,9 +2,9 @@
 
 **Understand the mechanism. Visualize the movement. Master the application.**
 
-ActuatorLab is an interactive training platform for industrial valve actuators. Its centrepiece is a real-time 3D CP-style pneumatic Scotch yoke actuator on a quarter-turn ball valve. Every part of the mechanism moves: piston, rod, guide block, pin, yoke, shaft, spring and ball.
+ActuatorLab is an interactive training platform for industrial valve actuators. Its centrepiece is a real-time 3D pneumatic Scotch yoke actuator on a quarter-turn ball valve. Every part of the mechanism moves: piston, rod, guide block, pin, yoke, shaft, spring and ball.
 
-> Independent educational project. Not affiliated with, endorsed by or sponsored by Rotork. The 3D model is original procedural geometry, not manufacturer CAD. Numerical values in the simulator are illustrative and must not be used for sizing.
+> Independent educational project. Not affiliated with, endorsed by or sponsored by any actuator or valve manufacturer. The 3D model is original procedural geometry, not manufacturer CAD. Numerical values in the simulator are illustrative and must not be used for sizing.
 
 ## Quick start
 
@@ -37,8 +37,8 @@ Import the repository in Vercel. The framework preset (Next.js) and default buil
 | Section | Status |
 | --- | --- |
 | Dashboard | Scroll-driven stroke story (scroll scrubs the real simulation; camera moves through exterior, air, mechanism views), continue learning, progress, families, recent topics, recommendations |
-| Actuator Explorer | Searchable and filterable list of 7 families, detail pages, valve library. Only CP is interactive; the rest are marked *coming soon*. |
-| 3D Simulator | CP-style Scotch yoke on a ball valve. 5 modes, 3 configurations, supply loss, component inspection |
+| Actuator Explorer | Technology library (9 actuator types by mechanism and power source), detail pages, valve library. The pneumatic Scotch yoke is interactive; others are marked *coming soon* until their simulation is built. Old product-code URLs redirect. |
+| 3D Simulator | Pneumatic Scotch yoke on a ball valve. 5 modes, 3 configurations, supply loss, component inspection |
 | Compare | Scotch yoke vs rack and pinion: torque shape and typical characteristics |
 | Academy | 16-lesson curriculum. Lessons 1–6 and 8 are written, with embedded live 3D demos and knowledge checks; the rest are marked *coming soon*. |
 | Assessments | Two scored quizzes with explanations |
@@ -79,12 +79,17 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 
 ## Assumptions and decisions
 
-- *CP-style* means the technology class only. No CP dimensions, ratings or internal geometry are claimed.
+- Content is organised by technology, not manufacturer product ranges. No manufacturer dimensions, ratings or internal geometry are claimed.
 - **Fail open** is represented by turning the actuator-to-valve coupling 90°, a common way to change the fail action with the same mechanism.
 - **Play/Pause** controls the simulation clock. **Auto-cycle** issues open and close commands automatically.
 - After supply returns, the actuator follows whichever control signal is still active. This is noted in the UI because real behaviour depends on the control circuit.
 - Family pages show only technology class and general principles. Manufacturer data is marked *not verified in this build*.
 - `eslint.config.mjs` relaxes two React Compiler rules (`immutability`, `refs`) for `src/components/three/**` only, because React Three Fiber mutates Three.js objects in frame callbacks by design.
+
+## Performance and security
+
+- The 3D engine (~1 MB uncompressed) is loaded only when a 3D view scrolls into view (`LazyMount`); the dashboard's first screen ships without it.
+- `next.config.ts` sets baseline security headers (frame-ancestors/X-Frame-Options, nosniff, referrer and permissions policies). A full nonce-based CSP is still to do.
 
 ## Known limitations
 

@@ -51,7 +51,7 @@ function SidebarFooter() {
     <div className="mt-auto space-y-2 pt-4">
       <ThemeToggle />
       <p className="px-2.5 text-[11.5px] leading-snug text-muted">
-        Independent educational project. Not affiliated with or endorsed by Rotork. Models are simplified and illustrative.{" "}
+        Independent educational project, not affiliated with any actuator manufacturer. Models are simplified and illustrative.{" "}
         <Link href="/about" className="underline decoration-rule-strong underline-offset-2 hover:text-fg">
           About and sources
         </Link>

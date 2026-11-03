@@ -7,6 +7,7 @@ import { SimulationProvider, useEngine, useSimState } from "@/components/sim/Sim
 import { Button, ButtonLink } from "@/components/ui/primitives";
 import { Switch } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
+import { LazyMount } from "@/components/ui/LazyMount";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
   ssr: false,
@@ -70,7 +71,9 @@ export function EmbeddedSim({
     <SimulationProvider initialConfig={config} initialMode={mode} autoCycle={autoCycle}>
       <div className={cn("overflow-hidden rounded-2xl bg-viewport", className)}>
         <div className="relative h-[320px] sm:h-[380px]">
-          <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel={ariaLabel} />
+          <LazyMount className="absolute inset-0">
+            <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel={ariaLabel} />
+          </LazyMount>
         </div>
         <MiniControls supplyToggle={supplyToggle} href={`/simulator?${params.toString()}`} />
       </div>

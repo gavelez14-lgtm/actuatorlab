@@ -1,10 +1,10 @@
 /**
- * Simplified, mechanically coherent reference geometry for a CP-style
- * pneumatic Scotch Yoke actuator.
+ * Simplified, mechanically coherent reference geometry for a pneumatic
+ * Scotch yoke actuator.
  *
  * EDUCATIONAL REPRESENTATION ONLY. These are original proportions chosen so
- * the mechanism reads clearly. They are NOT Rotork CP dimensions and do not
- * reproduce any proprietary internal geometry.
+ * the mechanism reads clearly. They are not any manufacturer's dimensions and do
+ * not reproduce any proprietary internal geometry.
  *
  * Coordinate frame (scene units, Y up):
  *  - Output shaft axis = world Y axis through the origin.

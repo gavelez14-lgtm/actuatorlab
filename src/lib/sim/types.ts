@@ -6,7 +6,16 @@
  * the engine.
  */
 
-export type ActuatorFamilyId = "cp" | "gp" | "gh" | "gt" | "rh" | "si" | "iq";
+export type ActuatorFamilyId =
+  | "pneumatic-scotch-yoke"
+  | "pneumatic-rack-pinion"
+  | "pneumatic-vane"
+  | "electric-part-turn"
+  | "electric-multi-turn"
+  | "rising-stem-linear"
+  | "hydraulic-scotch-yoke"
+  | "hydraulic-rack-pinion"
+  | "electro-hydraulic";
 
 /** How motive energy drives the actuator. */
 export type ActionType = "double-acting" | "spring-return";

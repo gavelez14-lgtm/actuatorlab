@@ -54,7 +54,7 @@ export function sampleProgress(): ProgressData {
     quizzes: {},
     recent: [
       { id: "lesson-actuator-vs-valve", title: "Actuator versus valve", href: "/academy/actuator-vs-valve", at: d(5) },
-      { id: "family-cp", title: "CP pneumatic Scotch yoke", href: "/explorer/cp", at: d(5) },
+      { id: "family-pneumatic-scotch-yoke", title: "Pneumatic Scotch yoke", href: "/explorer/pneumatic-scotch-yoke", at: d(5) },
       { id: "lesson-what-is-an-actuator", title: "What is an actuator?", href: "/academy/what-is-an-actuator", at: d(6) },
     ],
     lastLesson: "power-sources",

@@ -4,7 +4,7 @@ import { SimulatorFromQuery } from "./SimulatorFromQuery";
 
 export const metadata: Metadata = {
   title: "3D Simulator",
-  description: "Interactive CP-style pneumatic Scotch yoke actuator on a quarter-turn ball valve.",
+  description: "Interactive pneumatic Scotch yoke actuator on a quarter-turn ball valve.",
 };
 
 export default function SimulatorPage() {

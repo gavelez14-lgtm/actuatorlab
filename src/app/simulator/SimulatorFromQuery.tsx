@@ -19,7 +19,7 @@ export function SimulatorFromQuery() {
   const fail = q.get("fail") === "open" ? "fail-open" : "fail-closed";
   const modeParam = q.get("mode") as VisualizationMode | null;
   const mode = modeParam && MODES.includes(modeParam) ? modeParam : "normal";
-  const config: Partial<ActuatorConfiguration> = { family: "cp", actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail };
+  const config: Partial<ActuatorConfiguration> = { family: "pneumatic-scotch-yoke", actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail };
   return (
     <SimulationProvider key={`${action}-${fail}-${mode}`} initialConfig={config} initialMode={mode}>
       <SimulatorWorkbench />

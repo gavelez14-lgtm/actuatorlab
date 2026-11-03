@@ -140,6 +140,6 @@ describe("timing", () => {
     }
   });
   it("maps valve position through the coupling", () => {
-    expect(valvePositionFromStroke({ family: "cp", actionType: "spring-return", failPosition: "fail-open" }, 0.25)).toBe(0.75);
+    expect(valvePositionFromStroke({ family: "pneumatic-scotch-yoke", actionType: "spring-return", failPosition: "fail-open" }, 0.25)).toBe(0.75);
   });
 });

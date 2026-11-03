@@ -194,7 +194,7 @@ export function LessonFigure({ id }: { id: FigureId }) {
           <div className="mb-2 flex justify-end">
             <Illustrative />
           </div>
-          <TorqueChart config={{ family: "cp", actionType: "double-acting", failPosition: "fail-in-place" }} pressure={5.5} className="mx-auto max-w-[540px]" />
+          <TorqueChart config={{ family: "pneumatic-scotch-yoke", actionType: "double-acting", failPosition: "fail-in-place" }} pressure={5.5} className="mx-auto max-w-[540px]" />
         </Frame>
       );
     case "fail-comparison":
@@ -203,7 +203,7 @@ export function LessonFigure({ id }: { id: FigureId }) {
           <div className="mb-2 flex justify-end">
             <Illustrative />
           </div>
-          <TorqueChart config={{ family: "cp", actionType: "spring-return", failPosition: "fail-closed" }} pressure={5.5} className="mx-auto max-w-[540px]" />
+          <TorqueChart config={{ family: "pneumatic-scotch-yoke", actionType: "spring-return", failPosition: "fail-closed" }} pressure={5.5} className="mx-auto max-w-[540px]" />
         </Frame>
       );
   }
