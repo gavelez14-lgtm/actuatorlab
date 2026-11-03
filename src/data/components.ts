@@ -663,15 +663,80 @@ export const COMPACT_COMPONENTS: ComponentInfo[] = [
   ...VALVE_PARTS,
 ];
 
-export function componentsFor(kind: MechanismKind): ComponentInfo[] {
+const GZ = -YOKE_OFFSET;
+/** Direct-gas additions and overrides on top of the Scotch yoke list. */
+export const GAS_COMPONENTS: ComponentInfo[] = [
+  {
+    id: "cylinder",
+    name: "High-pressure gas cylinder",
+    role: "Pressure containment",
+    function: "Contains pipeline gas acting on the piston.",
+    description:
+      "A direct-gas actuator is powered by the gas in the pipeline it controls, at pipeline pressure. Because that pressure is high, the cylinder can be smaller in bore than an instrument-air cylinder for the same torque, with walls and seals rated for the pressure.",
+    caveat: "Gas quality matters: pipeline gas may carry liquids or particles, so supply filters and materials suited to the gas are typical.",
+    focus: [(CYLINDER.tubeStart + CYLINDER.tubeEnd) / 2, 0, GZ],
+    distance: 3.2,
+    group: "actuator",
+  },
+  {
+    id: "hydraulic-override",
+    name: "Hydraulic override cylinder",
+    role: "Motive power",
+    function: "Moves the actuator by hand-pumped oil when gas operation is not available.",
+    description:
+      "A small hydraulic cylinder in line with the gas cylinder. Its piston is on a tail rod from the gas piston. Pumping oil into one side pushes the whole slider; the trapped oil then holds the position. A release valve returns oil to the reservoir.",
+    caveat: "Some designs use a mechanical (screw or gearbox) override instead; arrangements vary.",
+    focus: [3.1, 0, GZ],
+    distance: 2.6,
+    group: "actuator",
+  },
+  {
+    id: "hand-pump",
+    name: "Hand pump",
+    role: "Motive power",
+    function: "Lever pump that feeds oil to the override cylinder.",
+    description:
+      "Each stroke of the lever displaces a small volume of oil, so a full valve stroke takes many lever strokes. A direction valve selects which side of the override cylinder receives oil; a reservoir sits on top of the pump.",
+    focus: [3.1, 0.45, GZ],
+    distance: 2.2,
+    group: "actuator",
+  },
+  {
+    id: "gas-tank",
+    name: "Reserve gas tank",
+    role: "Energy storage",
+    function: "Stores pipeline gas behind a check valve for at least one stroke when the line pressure collapses.",
+    description:
+      "The check valve lets the tank fill from the pipeline but not drain back into it. When a line break drops pipeline pressure, the tank still holds enough gas to close the valve. Each stroke spends some of it, which is why the tank must be sized for the strokes it must guarantee.",
+    caveat: "Tank volume and the number of guaranteed strokes come from the actuator and valve sizing, not from this model.",
+    focus: [1.67, -0.9, GZ - 1.15],
+    distance: 2.6,
+    group: "actuator",
+  },
+  {
+    id: "gas-controls",
+    name: "Line-break control",
+    role: "Sensing and control",
+    function: "Watches the rate of pipeline pressure drop and closes the valve when it exceeds a set point.",
+    description:
+      "A pipeline rupture shows up as pressure falling much faster than normal operation ever causes. The control compares the rate of drop with a set point, and only trips if it stays above it for a delay, so short transients do not shut the line. Once tripped it latches until an operator resets it.",
+    caveat: "Real line-break systems may combine rate-of-drop with low-pressure and high-pressure trips, and can be mechanical or electronic.",
+    focus: [0.92, -0.78, GZ - 1.15],
+    distance: 2.4,
+    group: "actuator",
+  },
+];
+
+export function componentsFor(kind: MechanismKind, gas = false): ComponentInfo[] {
+  if (gas) return [...COMPONENTS.map((c) => GAS_COMPONENTS.find((g) => g.id === c.id) ?? c), ...GAS_COMPONENTS.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];
   if (kind === "compact-electric") return COMPACT_COMPONENTS;
   if (kind === "multi-turn") return MULTI_TURN_COMPONENTS;
   if (kind === "worm-gear") return ELECTRIC_PART_TURN_COMPONENTS;
   return kind === "rack-pinion" ? RACK_PINION_COMPONENTS : COMPONENTS;
 }
 
-export function componentInfo(kind: MechanismKind, id: ComponentId): ComponentInfo | undefined {
-  return componentsFor(kind).find((c) => c.id === id);
+export function componentInfo(kind: MechanismKind, id: ComponentId, gas = false): ComponentInfo | undefined {
+  return componentsFor(kind, gas).find((c) => c.id === id);
 }
 
 /** @deprecated Scotch yoke only; use componentInfo(kind, id). */

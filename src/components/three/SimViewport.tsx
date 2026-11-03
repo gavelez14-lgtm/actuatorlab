@@ -68,7 +68,17 @@ const COMPACT_VIEWS: Record<VisualizationMode, View> = {
   engineering: { target: [0.05, -0.55, 0], dir: [0.55, 0.4, 0.73], distance: 4.4 },
 };
 
-function viewsFor(kind: MechanismKind) {
+/** Direct gas: the override cylinder and hand pump extend the model to the right. */
+const GAS_VIEWS: Record<VisualizationMode, View> = {
+  normal: { target: [0.35, -0.45, -0.6], dir: [0.55, 0.38, 0.74], distance: 8.6 },
+  cutaway: { target: [0.35, -0.3, -0.55], dir: [0.4, 0.82, 0.42], distance: 7.8 },
+  mechanical: { target: [1.2, 0.05, -0.5], dir: [0.3, 0.82, 0.5], distance: 5.6 },
+  energy: { target: [0.9, -0.4, -1.0], dir: [0.45, 0.45, 0.77], distance: 6.8 },
+  engineering: { target: [0.35, -0.45, -0.6], dir: [0.55, 0.38, 0.74], distance: 8.6 },
+};
+
+function viewsFor(kind: MechanismKind, gas = false) {
+  if (gas) return GAS_VIEWS;
   if (kind === "compact-electric") return COMPACT_VIEWS;
   if (kind === "multi-turn") return MULTI_TURN_VIEWS;
   if (kind === "worm-gear") return ELECTRIC_VIEWS;
@@ -140,7 +150,7 @@ function CameraRig({
 
     cameraApi.current = {
       reset: () => {
-        const v = viewsFor(kind()).normal;
+        const v = viewsFor(kind(), eng.getState().config.family === "gas-scotch-yoke").normal;
         fromView(new THREE.Vector3(...v.target), new THREE.Vector3(...v.dir), v.distance);
       },
       fit: () => {
@@ -156,14 +166,14 @@ function CameraRig({
         flyTo(sphere.center.clone(), sphere.center.clone().add(dir.multiplyScalar(distance)));
       },
       focus: (id: ComponentId) => {
-        const info = componentInfo(kind(), id);
+        const info = componentInfo(kind(), id, eng.getState().config.family === "gas-scotch-yoke");
         const c = controls.current;
         if (!info || !c) return;
         const dir = camera.position.clone().sub(c.target).normalize();
         fromView(new THREE.Vector3(...info.focus), dir, info.distance);
       },
       preset: (mode: VisualizationMode, scale = 1) => {
-        const v = viewsFor(kind())[mode];
+        const v = viewsFor(kind(), eng.getState().config.family === "gas-scotch-yoke")[mode];
         fromView(new THREE.Vector3(...v.target), new THREE.Vector3(...v.dir), v.distance * scale);
       },
     };
@@ -181,7 +191,7 @@ function CameraRig({
     const mode = engine.getState().mode;
     const c = controls.current;
     if (!c) return;
-    const v = viewsFor(mechanismFor(engine.getState().config.family))[mode];
+    const v = viewsFor(mechanismFor(engine.getState().config.family), engine.getState().config.family === "gas-scotch-yoke")[mode];
     const target = new THREE.Vector3(...v.target);
     c.target.copy(target);
     camera.position.copy(target.clone().add(new THREE.Vector3(...v.dir).normalize().multiplyScalar(v.distance * frameScale(camera, compact))));

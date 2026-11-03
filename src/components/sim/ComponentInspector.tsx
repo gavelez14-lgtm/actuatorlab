@@ -24,8 +24,9 @@ export function ComponentInspector() {
   const selected = useSimSelector((s) => s.selectedComponent);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const kind = useSimSelector((s) => mechanismFor(s.config.family));
-  const info = selected ? (componentInfo(kind, selected) ?? null) : null;
-  const list = componentsFor(kind).filter((c) => !c.springReturnOnly || sr);
+  const gas = useSimSelector((s) => s.config.family === "gas-scotch-yoke");
+  const info = selected ? (componentInfo(kind, selected, gas) ?? null) : null;
+  const list = componentsFor(kind, gas).filter((c) => !c.springReturnOnly || sr);
 
   return (
     <div className="space-y-5">

@@ -8,6 +8,8 @@ import { RotateCcw, RotateCw } from "lucide-react";
 import { Segmented, Switch, Range } from "@/components/ui/controls";
 import { Illustrative } from "@/components/ui/primitives";
 import { useEngine, useSimState } from "./SimulationProvider";
+import { GAS, isGas } from "@/lib/sim/gas";
+import { mechanismFor } from "@/lib/sim/mechanisms";
 
 export function ConfigPanel() {
   const { engine } = useEngine();
@@ -15,6 +17,8 @@ export function ConfigPanel() {
   const sr = s.config.actionType === "spring-return";
   const minP = minimumPressureForFullStroke(s.config);
   const electric = isElectric(s.config.family);
+  const gas = isGas(s.config.family);
+  const yokeFamily = mechanismFor(s.config.family) === "scotch-yoke";
 
   return (
     <div className="space-y-6">
@@ -36,8 +40,10 @@ export function ConfigPanel() {
         />
         <p className="text-[12.5px] leading-snug text-muted">
           {sr
-            ? "Air drives one direction against a spring. The spring drives the other direction and provides the fail action."
-            : "Air drives both directions. There is no spring, so there is no stored energy to reach a fail position."}
+            ? `${gas ? "Gas" : "Air"} drives one direction against a spring. The spring drives the other direction and provides the fail action.`
+            : gas
+              ? "Gas drives both directions. With no spring, the reserve tank is the stored energy that closes the valve after a line break."
+              : "Air drives both directions. There is no spring, so there is no stored energy to reach a fail position."}
         </p>
       </fieldset>
 
@@ -66,6 +72,30 @@ export function ConfigPanel() {
         </p>
       </fieldset>
 
+      {yokeFamily && (
+        <fieldset className="space-y-2">
+          <legend className="mb-2 text-[13px] font-medium text-fg">Yoke</legend>
+          <Segmented
+            label="Yoke"
+            className="w-full"
+            value={s.config.yoke ?? "symmetric"}
+            onChange={(v) => engine.dispatch({ type: "set-config", config: { yoke: v } })}
+            options={[
+              { value: "symmetric", label: "Symmetric" },
+              { value: "canted", label: "Canted" },
+            ]}
+          />
+          <p className="text-[12.5px] leading-snug text-muted">
+            {(s.config.yoke ?? "symmetric") === "canted"
+              ? "The slot is angled so torque is highest at the start of the stroke, where the valve breaks out of its seat, and lower at the end. Compare the curves in Engineering mode. (The 3D yoke is drawn symmetric; the torque curve changes.)"
+              : "Torque is high at both ends of the stroke and lowest in the middle, which suits a ball valve's high seating torque at both ends."}
+          </p>
+        </fieldset>
+      )}
+
+      {gas ? (
+        <GasConfig sr={sr} />
+      ) : (
       <div className="space-y-4 border-t border-rule pt-5">
         <Switch
           tone="air"
@@ -101,6 +131,7 @@ export function ConfigPanel() {
           </p>
         </div>
       </div>
+      )}
 
         </>
       )}
@@ -158,24 +189,25 @@ export function ConfigPanel() {
   );
 }
 
-/** Hold-to-turn handwheel button: turns while pressed, stops on release. */
-function HandwheelButton({ dir, children }: { dir: -1 | 1; children: React.ReactNode }) {
+/** Hold-to-turn button (handwheel or hand pump): acts while pressed, stops on release. */
+function HandwheelButton({ dir, children, pump = false }: { dir: -1 | 1; children: React.ReactNode; pump?: boolean }) {
   const { engine } = useEngine();
-  const stop = () => engine.dispatch({ type: "handwheel", dir: 0 });
+  const send = (d: -1 | 0 | 1) => engine.dispatch(pump ? { type: "pump", dir: d } : { type: "handwheel", dir: d });
+  const stop = () => send(0);
   return (
     <Button
       size="sm"
       variant="secondary"
       onPointerDown={(e) => {
         (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-        engine.dispatch({ type: "handwheel", dir });
+        send(dir);
       }}
       onPointerUp={stop}
       onPointerCancel={stop}
       onKeyDown={(e) => {
         if ((e.key === " " || e.key === "Enter") && !e.repeat) {
           e.preventDefault();
-          engine.dispatch({ type: "handwheel", dir });
+          send(dir);
         }
       }}
       onKeyUp={(e) => {
@@ -280,6 +312,87 @@ function ElectricConfig() {
           />
         )}
         <Switch checked={e.obstruction} onChange={(v) => engine.dispatch({ type: "set-obstruction", value: v })} label="Jam the valve at about 55% open" description="Teaching aid: watch the torque protection stop the motor instead of forcing the valve." />
+      </div>
+    </>
+  );
+}
+
+function GasConfig({ sr }: { sr: boolean }) {
+  const { engine } = useEngine();
+  const s = useSimState();
+  const g = s.gas;
+  const minBar = minimumPressureForFullStroke(s.config) / GAS.scale;
+  return (
+    <>
+      <div className="space-y-4 border-t border-rule pt-5">
+        <Switch
+          tone="air"
+          checked={s.supplyAvailable}
+          onChange={(v) => engine.dispatch({ type: "set-supply", available: v })}
+          label="Power gas to controls"
+          description={sr ? "Isolate to vent the cylinder: the spring drives the valve to its fail position." : "Isolate to remove the gas supply: the valve stays where it is."}
+        />
+        <div>
+          <div className="mb-1 flex items-baseline justify-between">
+            <label htmlFor="pipeline" className="text-[14px] font-medium text-fg">
+              Pipeline pressure
+            </label>
+            <span className="num text-[14px] text-fg">{g.pipeline.toFixed(0)} bar</span>
+          </div>
+          <Range
+            id="pipeline"
+            label="Pipeline pressure"
+            valueText={`${g.pipeline.toFixed(0)} bar`}
+            min={GAS.pipelineMin}
+            max={GAS.pipelineMax}
+            step={1}
+            value={g.pipelineSet}
+            onChange={(v) => engine.dispatch({ type: "set-pressure", bar: v })}
+          />
+          <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
+            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            <span>
+              The actuator runs on the gas it controls. This model needs about <span className="num text-fg-2">{minBar.toFixed(0)} bar</span> in the reserve tank to complete a stroke. <Illustrative>Illustrative model</Illustrative>
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4 border-t border-rule pt-5">
+        <Switch checked={g.armed} onChange={(v) => engine.dispatch({ type: "set-line-break-armed", value: v })} label="Line-break detection armed" description="Close the valve automatically if pipeline pressure falls faster than the set point." />
+        <div>
+          <div className="mb-1 flex items-baseline justify-between text-[13px]">
+            <label htmlFor="lb-rate" className="text-fg">Rate-of-drop set point</label>
+            <span className="num text-fg">{g.setPoint.toFixed(1)} bar/s</span>
+          </div>
+          <Range id="lb-rate" label="Rate-of-drop set point" valueText={`${g.setPoint.toFixed(1)} bar per second`} min={GAS.rateMin} max={GAS.rateMax} step={0.1} value={g.setPoint} onChange={(v) => engine.dispatch({ type: "set-line-break-rate", value: v })} />
+          <p className="mt-1.5 text-[12.5px] leading-snug text-muted">The rate must stay above the set point for {GAS.tripDelay} s before it trips. Too low and normal transients cause spurious closures; too high and a small rupture is missed.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant={g.ruptured ? "secondary" : "primary"} onClick={() => engine.dispatch({ type: "set-rupture", value: !g.ruptured })}>
+            {g.ruptured ? "Repair pipeline" : "Rupture pipeline downstream"}
+          </Button>
+          {g.tripped && (
+            <Button size="sm" variant="secondary" onClick={() => engine.dispatch({ type: "reset-line-break" })}>
+              Reset trip
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-3 border-t border-rule pt-5">
+        <Switch checked={g.manual} onChange={(v) => engine.dispatch({ type: "set-manual", value: v })} label="Hydraulic manual override" description="Isolates the gas controls. The hand pump moves the actuator; trapped oil holds it." />
+        {g.manual && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[13px] text-muted">Hold to pump:</span>
+            <HandwheelButton dir={-1} pump>
+              <RotateCcw aria-hidden /> Toward closed
+            </HandwheelButton>
+            <HandwheelButton dir={1} pump>
+              <RotateCw aria-hidden /> Toward open
+            </HandwheelButton>
+          </div>
+        )}
       </div>
     </>
   );

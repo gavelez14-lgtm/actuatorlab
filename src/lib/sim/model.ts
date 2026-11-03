@@ -7,7 +7,7 @@
  * engineering texts are the lever relations in mechanisms.ts: Scotch yoke
  * T = F * d / cos^2(phi), rack and pinion T = F * r.
  */
-import { leverFor } from "./mechanisms";
+import { leverForConfig } from "./mechanisms";
 import type { ActuatorConfiguration } from "./types";
 
 export const MODEL = {
@@ -79,7 +79,7 @@ export interface ForceResult {
 }
 
 export function computeTorques({ config, stroke, pA, pB }: ForceInputs): ForceResult {
-  const lever = leverFor(config.family, stroke);
+  const lever = leverForConfig(config, stroke);
   const airForce = (pA - pB) * MODEL.pistonArea;
   const spring = config.actionType === "spring-return" ? springForce(stroke) : 0;
   const active = (airForce - spring) * lever;
@@ -108,7 +108,7 @@ export function torqueCurves(config: ActuatorConfiguration, pressure: number, sa
   for (let i = 0; i < samples; i++) {
     const position = i / (samples - 1);
     const stroke = strokeFromValvePosition(config, position);
-    const lever = leverFor(config.family, stroke);
+    const lever = leverForConfig(config, stroke);
     const spring = config.actionType === "spring-return" ? springForce(stroke) * lever : 0;
     pts.push({
       position,
@@ -125,7 +125,7 @@ export function minimumPressureForFullStroke(config: ActuatorConfiguration): num
   let worst = 0;
   for (let i = 0; i <= 200; i++) {
     const s = i / 200;
-    const lever = leverFor(config.family, s);
+    const lever = leverForConfig(config, s);
     const spring = config.actionType === "spring-return" ? springForce(s) : 0;
     const demand = valveDemand(valvePositionFromStroke(config, s));
     worst = Math.max(worst, spring + demand / lever);

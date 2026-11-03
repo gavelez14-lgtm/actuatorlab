@@ -16,7 +16,8 @@ export type ActuatorFamilyId =
   | "hydraulic-scotch-yoke"
   | "hydraulic-rack-pinion"
   | "electro-hydraulic"
-  | "electric-compact-part-turn";
+  | "electric-compact-part-turn"
+  | "gas-scotch-yoke";
 
 /** How motive energy drives the actuator. */
 export type ActionType = "double-acting" | "spring-return";
@@ -82,13 +83,19 @@ export type ComponentId =
   | "limit-switches"
   | "torque-switch"
   | "dome-indicator"
-  | "spur-gears";
+  | "spur-gears"
+  | "hydraulic-override"
+  | "hand-pump"
+  | "gas-controls"
+  | "gas-tank";
 
 export interface ActuatorConfiguration {
   family: ActuatorFamilyId;
   actionType: ActionType;
   /** For double-acting this is always "fail-in-place". */
   failPosition: FailPosition;
+  /** Scotch yoke only: symmetric (default) or canted torque characteristic. */
+  yoke?: "symmetric" | "canted";
 }
 
 /** Illustrative torque values, normalised (dimensionless). NOT manufacturer data. */
@@ -129,6 +136,34 @@ export interface ElectricState {
   closeOnTorque: boolean;
   /** Multi-turn: the last close finished by seating on torque. */
   seated: boolean;
+}
+
+/** Direct-gas actuator state. Present for every family; only used by gas ones. */
+export interface GasState {
+  /** Pipeline pressure upstream of the actuator, illustrative bar(g). */
+  pipeline: number;
+  /** Operator-set pipeline pressure the line returns to when intact. */
+  pipelineSet: number;
+  /** Reserve tank behind a check valve: follows the line up, never down. */
+  tank: number;
+  /** Filtered rate of pipeline pressure change, bar/s (negative = falling). */
+  rate: number;
+  /** A pipeline rupture downstream is in progress. */
+  ruptured: boolean;
+  /** Line-break detection armed. */
+  armed: boolean;
+  /** Rate-of-drop set point, bar/s. */
+  setPoint: number;
+  /** Seconds the drop rate has exceeded the set point. */
+  overFor: number;
+  /** Line-break control has tripped and latched a close. */
+  tripped: boolean;
+  /** Hydraulic manual override selected (gas controls isolated). */
+  manual: boolean;
+  /** Hand pump: +1 pumping toward open, -1 toward closed, 0 idle. */
+  pumpDir: -1 | 0 | 1;
+  /** Pump lever phase, radians (visual). */
+  pumpPhase: number;
 }
 
 export interface SimulationState {
@@ -184,6 +219,7 @@ export interface SimulationState {
   time: number;
 
   electric: ElectricState;
+  gas: GasState;
   paint: PaintFinish;
 }
 
@@ -212,4 +248,10 @@ export type SimulationCommand =
   | { type: "set-torque-limit"; value: number }
   | { type: "set-obstruction"; value: boolean }
   | { type: "set-close-on-torque"; value: boolean }
-  | { type: "set-paint"; value: PaintFinish };
+  | { type: "set-paint"; value: PaintFinish }
+  | { type: "set-rupture"; value: boolean }
+  | { type: "set-line-break-armed"; value: boolean }
+  | { type: "set-line-break-rate"; value: number }
+  | { type: "reset-line-break" }
+  | { type: "set-manual"; value: boolean }
+  | { type: "pump"; dir: -1 | 0 | 1 };

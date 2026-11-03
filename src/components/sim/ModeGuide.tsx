@@ -190,6 +190,39 @@ const CPT_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   },
 };
 
+/** Direct high-pressure gas Scotch yoke. */
+const GAS_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "A Scotch yoke actuator powered directly by the gas in the pipeline it controls. A tap on the pipe feeds a reserve tank through a check valve, and the tank feeds the control valves and the cylinder.",
+      "Behind the actuator, the line-break control watches the pipeline gauge. On the right, a hydraulic cylinder and hand pump give manual operation without gas.",
+      "Try it: open the valve, then press Rupture pipeline downstream in Configure and watch the rate of drop and the trip.",
+    ],
+  },
+  mechanical: {
+    title: "Yoke, gas cylinder and hydraulic override",
+    body: [
+      "The Scotch yoke works exactly as on the pneumatic actuator. Behind the gas piston a tail rod carries a second, small piston in the hydraulic override cylinder, so oil can push the same slider.",
+      "In manual override the gas controls are isolated. Each lever stroke of the hand pump pushes a little oil into the override cylinder; the trapped oil then holds the actuator, even against the spring. Animation is slowed to 0.35× in this mode.",
+    ],
+  },
+  energy: {
+    title: "Gas flow (illustrative)",
+    body: [
+      "Blue shows pressurised gas from the reserve tank to the cylinder. Grey shows exhaust. On real installations exhaust gas is piped to a safe area or recovered, not vented beside the actuator.",
+      "The check valve lets the tank follow the pipeline up but not down. That is what leaves gas to close the valve after a rupture.",
+    ],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: [
+      "Readouts show pipeline and tank pressure, the filtered rate of change, and the line-break state. A rupture drops the pipeline pressure fast. Once the drop rate has stayed above the set point for the delay, the valve closes on tank gas and the trip latches.",
+      "Switch the yoke to Canted in Configure to move the torque peak to the start of the stroke. Values are normalised and illustrative.",
+    ],
+  },
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
@@ -198,7 +231,8 @@ export function ModeGuide() {
   const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
   const multi = useSimSelector((s) => s.config.family === "electric-multi-turn");
   const compact = useSimSelector((s) => s.config.family === "electric-compact-part-turn");
-  const t = (compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const gasFamily = useSimSelector((s) => s.config.family === "gas-scotch-yoke");
+  const t = (gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>

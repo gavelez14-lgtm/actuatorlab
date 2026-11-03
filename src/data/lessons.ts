@@ -16,7 +16,9 @@ export type FigureId =
   | "spring-return-live"
   | "fail-comparison"
   | "rack-pinion-live"
-  | "rack-pinion-torque";
+  | "rack-pinion-torque"
+  | "yoke-compare"
+  | "yoke-compare-sr";
 
 export interface Question {
   id: string;
@@ -540,8 +542,138 @@ export const LESSONS: Lesson[] = [
       },
     ],
   },
-  { slug: "fail-open-vs-fail-closed", number: 9, title: "Fail-open versus fail-closed", level: "Intermediate", status: "planned", summary: "Choosing the safe position for a process, and how the actuator is arranged to achieve it." },
-  { slug: "symmetric-vs-canted-yoke", number: 10, title: "Symmetric versus canted yoke concepts", level: "Intermediate", status: "planned", summary: "Shaping the torque curve to match the valve." },
+  {
+    slug: "fail-open-vs-fail-closed",
+    number: 9,
+    title: "Fail-open versus fail-closed",
+    level: "Intermediate",
+    status: "available",
+    minutes: 10,
+    summary: "Choosing the safe position for a process, and how the actuator is arranged to achieve it.",
+    objectives: [
+      "Explain that the fail position is a process decision, not an actuator property.",
+      "Give examples where fail closed and fail open are each the safe choice.",
+      "Describe the ways an actuator can be arranged to reach its fail position.",
+    ],
+    sections: [
+      {
+        heading: "The process decides",
+        body: [
+          "A fail position answers one question: **if motive power or the control signal is lost, which valve position leaves the plant safest?** The answer comes from the process and its hazard review, not from the actuator catalogue.",
+          "A valve feeding fuel to a burner usually fails **closed**: with no control, stop the fuel. A valve supplying cooling water to an exothermic reactor usually fails **open**: with no control, keep cooling. A blowdown or vent valve often fails **open** so pressure can be released.",
+          "Sometimes neither end is safe, and the valve should **stay where it is**. That is fail in place, or fail last.",
+        ],
+      },
+      {
+        heading: "Same actuator, different arrangement",
+        stat: { value: "90°", label: "Turning the coupling a quarter turn swaps fail closed for fail open on a spring-return quarter-turn actuator." },
+        body: [
+          "A spring-return actuator always drives to its **spring end of travel**. Whether that end is valve open or valve closed depends on how the actuator is mounted on the valve. Turning the coupling 90° (or mounting the actuator the other way) swaps the fail action.",
+          "Try it below: switch the supply off, then change Fail action in the simulator and repeat.",
+        ],
+        figure: "spring-return-live",
+      },
+      {
+        heading: "Other ways to fail safe",
+        body: [
+          "**Double acting with stored gas or air.** A reservoir behind a check valve, with a control circuit that strokes the actuator on loss of supply. The direct-gas actuator in the simulator uses the same idea to close after a line break.",
+          "**Hydraulic accumulators** do the same job for hydraulic actuators.",
+          "**Electric actuators** fail in place unless fitted with stored energy: a spring module, or a battery or capacitor unit that drives to a set position.",
+          "Whatever the method, check it has enough energy at the **worst case**: lowest spring force at the end of the spring stroke, or lowest reservoir pressure after the strokes it must guarantee.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Fail closed (FC)", definition: "Goes closed on loss of motive power or signal." },
+      { term: "Fail open (FO)", definition: "Goes open on loss of motive power or signal." },
+      { term: "Fail in place (FIP) / fail last", definition: "Stays at its last position." },
+      { term: "Spring end", definition: "The end of travel the spring drives to. The mounting sets whether it is open or closed." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Who or what should decide whether a valve fails open or closed?",
+        options: ["The actuator's colour", "The process hazard review", "Whichever is cheaper", "The valve size"],
+        answer: 1,
+        explanation: "The safe position depends on what the valve does in the process.",
+      },
+      {
+        id: "q2",
+        prompt: "A spring-return actuator fails closed. How could the same actuator fail open on the same valve?",
+        options: ["Raise the supply pressure", "Change the coupling orientation by 90°", "Remove the spring", "Reverse the air ports only"],
+        answer: 1,
+        explanation: "The spring end stays the same; the mounting decides what that end means for the valve.",
+      },
+      {
+        id: "q3",
+        prompt: "A double-acting actuator must fail closed. What does it need?",
+        options: ["Nothing extra", "A stored-energy source and a circuit to use it", "A faster solenoid", "A bigger handwheel"],
+        answer: 1,
+        explanation: "Without stored energy, a double-acting actuator fails in place.",
+      },
+    ],
+  },
+  {
+    slug: "symmetric-vs-canted-yoke",
+    number: 10,
+    title: "Symmetric versus canted yoke concepts",
+    level: "Intermediate",
+    status: "available",
+    minutes: 10,
+    summary: "Shaping the torque curve to match the valve.",
+    objectives: [
+      "Explain where the symmetric yoke's U-shaped torque curve comes from.",
+      "Match the curve to a ball valve's demand.",
+      "Describe what a canted yoke changes, and when it helps.",
+    ],
+    sections: [
+      {
+        heading: "The symmetric U",
+        stat: { value: "2×", label: "Torque at either end of a symmetric 90° Scotch yoke stroke compared with mid-stroke, for the same force: 1/cos²45° = 2." },
+        body: [
+          "In a symmetric yoke the slot is radial and the stroke is centred: the yoke swings 45° either side of square to the piston. Torque is T = F·d / cos²φ, so it is lowest at mid-stroke and **twice as high at both ends**.",
+          "That suits a ball valve well: the valve needs its highest torque at the ends, to break out of the seats and to re-seat.",
+        ],
+      },
+      {
+        heading: "Where the demand really is",
+        body: [
+          "Look closer at a ball valve and both of its peaks are at the **closed** end: break to open, and end to close. The open end needs much less. A symmetric yoke still delivers its peak at the open end too, which is torque the valve does not need.",
+          "A **canted** yoke angles the slot so the swing is no longer centred. The peak moves to one end, matched to the valve's closed position, and the other end drops. For a spring-return actuator this can mean a smaller spring or cylinder for the same valve.",
+        ],
+        figure: "yoke-compare",
+      },
+      {
+        heading: "Spring return",
+        body: [
+          "With a spring, the effect shows in both curves. The canted yoke lifts torque where the spring must re-seat the valve and where air breaks it out. Compare these with the symmetric curves.",
+          "Switch the yoke between Symmetric and Canted in the simulator's Configure panel and watch the Engineering chart change.",
+        ],
+        figure: "yoke-compare-sr",
+      },
+    ],
+    terms: [
+      { term: "Symmetric yoke", definition: "Radial slot, stroke centred on square: equal torque peaks at both ends." },
+      { term: "Canted yoke", definition: "Slot or swing offset so the torque peak is at one chosen end of travel." },
+      { term: "Break-out torque", definition: "Torque to start a closed valve moving off its seats." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "For the same piston force, how does end-of-stroke torque compare with mid-stroke on a symmetric 90° yoke?",
+        options: ["The same", "About half", "About twice", "About four times"],
+        answer: 2,
+        explanation: "1/cos²45° = 2.",
+      },
+      {
+        id: "q2",
+        prompt: "Why can a canted yoke suit a ball valve better than a symmetric one?",
+        options: ["It turns more than 90°", "It puts the peak torque at the closed end, where the valve needs it", "It needs no air", "It removes the spring"],
+        answer: 1,
+        explanation: "Break-out and re-seat both happen at the closed end.",
+      },
+    ],
+  },
   { slug: "torque-requirements", number: 11, title: "Torque requirements and torque curves", level: "Advanced", status: "planned", summary: "Break-out, run, re-seat and end torques, and safety factors." },
   { slug: "supply-pressure-sizing", number: 12, title: "Supply pressure and actuator sizing principles", level: "Advanced", status: "planned", summary: "Sizing at minimum supply pressure and checking spring end torque." },
   { slug: "valve-mounting", number: 13, title: "Valve mounting and interfaces", level: "Advanced", status: "planned", summary: "Brackets, couplings, standards and alignment." },

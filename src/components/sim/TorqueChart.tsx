@@ -53,7 +53,7 @@ export function TorqueChart({
 
   return (
     <figure className={cn("w-full", className)}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Illustrative torque curves for a ${sr ? "spring-return" : "double-acting"} ${MECHANISMS[mechanismFor(config.family)].name.toLowerCase()} at ${pressure.toFixed(1)} bar.`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Illustrative torque curves for a ${sr ? "spring-return" : "double-acting"} ${config.yoke === "canted" ? "canted " : ""}${MECHANISMS[mechanismFor(config.family)].name.toLowerCase()} at ${pressure.toFixed(1)} bar.`}>
         {yTicks.map((t) => (
           <g key={t}>
             <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--rule)" strokeWidth={t === 0 ? 1 : 0.5} />

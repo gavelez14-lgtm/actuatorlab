@@ -26,6 +26,7 @@ import { SECTION_PLANE, makeShellRaycast, type MaterialSet } from "./materials";
 import { Label, Pick } from "./parts";
 import { ValveAssembly } from "./ValveAssembly";
 import { AirSystem } from "./AirSystem";
+import { GasSystem, OverrideSliderParts } from "./GasSystem";
 
 const AXIS_Z = -YOKE_OFFSET;
 
@@ -127,6 +128,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
   const showLabels = useSimSelector((s) => s.showLabels);
   const mode = useSimSelector((s) => s.mode);
   const springReturn = actionType === "spring-return";
+  const gas = useSimSelector((s) => s.config.family === "gas-scotch-yoke");
 
   const geo = useMemo(
     () => ({
@@ -258,13 +260,15 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
             <cylinderGeometry args={[0.022, 0.022, cylSpan + 0.08, 10]} />
           </mesh>
         ))}
-        {/* travel stop screw + lock nut on outer cap */}
+        {/* travel stop screw + lock nut on outer cap (the override cylinder takes this place on gas units) */}
+        {!gas && <>
         <mesh position={[CYLINDER.tubeEnd + CYLINDER.outerCapThickness + 0.07, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.tieRods}>
           <cylinderGeometry args={[0.035, 0.035, 0.14, 16]} />
         </mesh>
         <mesh position={[CYLINDER.tubeEnd + CYLINDER.outerCapThickness + 0.03, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.endCaps}>
           <cylinderGeometry args={[0.07, 0.07, 0.04, 6]} />
         </mesh>
+        </>}
       </Pick>
 
       {/* ---------------- Spring module (static parts) ---------------- */}
@@ -338,6 +342,8 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
           </Pick>
         )}
 
+        {gas && <OverrideSliderParts mats={mats} pick={pick} />}
+
         {showLabels && (
           <>
             <Label position={[PISTON.rodLength, 0.62, 0]}>Piston: linear stroke</Label>
@@ -386,6 +392,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
       <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={shaftRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
 
       <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} />
+      {gas && <GasSystem mats={mats} pick={pick} showLabels={showLabels} shellRaycast={shellRaycast} />}
     </group>
   );
 }

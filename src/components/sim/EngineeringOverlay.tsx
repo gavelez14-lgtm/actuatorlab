@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useSimSelector, useSimState } from "./SimulationProvider";
 import { MULTI_TURN, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "@/lib/sim/electric";
 import { ElectricTorqueChart, TorqueChart } from "./TorqueChart";
+import { isGas, pipelineToModel } from "@/lib/sim/gas";
 
 function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
   return (
@@ -77,7 +78,16 @@ function PneumaticEngineering() {
       <dl className="grid grid-cols-2 gap-x-5 divide-rule border-y border-rule py-1">
         <Row label="Valve position" value={`${(s.position * 100).toFixed(1)}`} unit="%" />
         <Row label="Output angle" value={s.outputAngle.toFixed(1)} unit="°" />
-        <Row label="Supply" value={s.supplyAvailable ? s.supplyPressure.toFixed(1) : "0.0"} unit="bar" tone={s.supplyAvailable ? "air" : "danger"} />
+        {isGas(s.config.family) ? (
+          <>
+            <Row label="Pipeline" value={s.gas.pipeline.toFixed(1)} unit="bar" tone={s.gas.ruptured ? "danger" : "air"} />
+            <Row label="Reserve tank" value={s.gas.tank.toFixed(1)} unit="bar" tone="air" />
+            <Row label="Rate of change" value={s.gas.rate.toFixed(2)} unit="bar/s" tone={-s.gas.rate > s.gas.setPoint ? "danger" : undefined} />
+            <Row label="Line break" value={s.gas.tripped ? "tripped" : s.gas.armed ? "armed" : "off"} tone={s.gas.tripped ? "danger" : s.gas.armed ? "ok" : "warn"} />
+          </>
+        ) : (
+          <Row label="Supply" value={s.supplyAvailable ? s.supplyPressure.toFixed(1) : "0.0"} unit="bar" tone={s.supplyAvailable ? "air" : "danger"} />
+        )}
         <Row label="Chamber A" value={s.chamberA} tone={s.chamberA === "supply" ? "air" : undefined} />
         <Row label="Air torque" value={t.air.toFixed(2)} tone="air" />
         <Row label="Chamber B" value={s.chamberB} tone={s.chamberB === "supply" ? "air" : undefined} />
@@ -85,7 +95,7 @@ function PneumaticEngineering() {
         <Row label="Valve demand" value={t.valveDemand.toFixed(2)} />
         <Row label="Margin" value={t.net.toFixed(2)} tone={t.net > 0 ? "ok" : "danger"} />
       </dl>
-      <TorqueChart config={s.config} pressure={s.supplyPressure} position={s.position} className="mt-2" />
+      <TorqueChart config={s.config} pressure={isGas(s.config.family) ? pipelineToModel(s.gas.tank) : s.supplyPressure} position={s.position} className="mt-2" />
     </div>
   );
 }

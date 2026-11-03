@@ -207,6 +207,30 @@ export function LessonFigure({ id }: { id: FigureId }) {
           </div>
         </Frame>
       );
+    case "yoke-compare":
+      return (
+        <Frame caption="Double acting at 5.5 bar. Left: symmetric yoke. Right: canted yoke, with the peak moved to the closed end. Normalised illustrative units, not manufacturer data.">
+          <div className="mb-2 flex justify-end">
+            <Illustrative />
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <TorqueChart config={{ family: "pneumatic-scotch-yoke", actionType: "double-acting", failPosition: "fail-in-place" }} pressure={5.5} showAxisNote={false} />
+            <TorqueChart config={{ family: "pneumatic-scotch-yoke", actionType: "double-acting", failPosition: "fail-in-place", yoke: "canted" }} pressure={5.5} showAxisNote={false} />
+          </div>
+        </Frame>
+      );
+    case "yoke-compare-sr":
+      return (
+        <Frame caption="Spring return, fail closed, at 5.5 bar. Left: symmetric. Right: canted. Normalised illustrative units.">
+          <div className="mb-2 flex justify-end">
+            <Illustrative />
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <TorqueChart config={{ family: "pneumatic-scotch-yoke", actionType: "spring-return", failPosition: "fail-closed" }} pressure={5.5} showAxisNote={false} />
+            <TorqueChart config={{ family: "pneumatic-scotch-yoke", actionType: "spring-return", failPosition: "fail-closed", yoke: "canted" }} pressure={5.5} showAxisNote={false} />
+          </div>
+        </Frame>
+      );
     case "torque-curves":
       return (
         <Frame caption="Double-acting symmetric yoke at 5.5 bar against an illustrative ball-valve demand. Normalised units, not manufacturer data.">

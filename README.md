@@ -38,9 +38,9 @@ Import the repository in Vercel. The framework preset (Next.js) and default buil
 | --- | --- |
 | Dashboard | Scroll-driven stroke story (scroll scrubs the real simulation; camera moves through exterior, air, mechanism views), continue learning, progress, families, recent topics, recommendations |
 | Actuator Explorer | Technology library (9 actuator types by mechanism and power source), detail pages, valve library. The pneumatic Scotch yoke is interactive; others are marked *coming soon* until their simulation is built. Old product-code URLs redirect. |
-| 3D Simulator | Pneumatic Scotch yoke, twin-piston pneumatic rack and pinion, electric part-turn with worm-wheel segment (on a ball valve), electric multi-turn on a rising-stem wedge gate valve, and compact electromechanical part-turn (choose in the header, or `?type=rack-pinion` / `electric-part-turn` / `electric-multi-turn` / `electric-compact-part-turn`). 5 modes, 3 configurations, supply loss, component inspection |
+| 3D Simulator | Pneumatic Scotch yoke, twin-piston pneumatic rack and pinion, electric part-turn with worm-wheel segment (on a ball valve), electric multi-turn on a rising-stem wedge gate valve, compact electromechanical part-turn, and direct high-pressure gas Scotch yoke with line-break detection and hydraulic hand-pump override (choose in the header, or `?type=rack-pinion` / `electric-part-turn` / `electric-multi-turn` / `electric-compact-part-turn` / `gas-scotch-yoke`). Scotch yokes offer a symmetric or canted yoke. 5 modes, 3 configurations, supply loss, component inspection |
 | Compare | Scotch yoke vs rack and pinion: torque shape and typical characteristics |
-| Academy | 16-lesson curriculum. Lessons 1–8 are written, with embedded live 3D demos and knowledge checks; the rest are marked *coming soon*. |
+| Academy | 16-lesson curriculum. Lessons 1–10 are written, with embedded live 3D demos and knowledge checks; the rest are marked *coming soon*. |
 | Assessments | Two scored quizzes with explanations |
 
 ### Simulator
@@ -86,6 +86,7 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 - Electric multi-turn: follows public IQ literature (IQ installation and safe-use manuals PUB002-024 / PUB002-039, IQ3 Pro couplings PUB002-197): hollow output with drive dogs turning a drive bush (stem nut) in a separate thrust base on a thrust bearing, rising stem through the centre column with a cover tube above the top handwheel, hand drive that disengages automatically when the motor runs, ISO 5210 flange. Electric physics runs in fixed 1/120 s sub-steps so seating and jams are never skipped on slow devices.
 
 - Compact electromechanical part-turn: follows the public Noah NA brochure (two-stage self-locking gearing, cam limit switches, mechanical open/close torque switch, thermal protector, domed position indicator, handwheel with lockable manual/auto lever, stop bolts). The spur-then-worm arrangement of the two stages is illustrative.
+- Direct high-pressure gas Scotch yoke: follows public descriptions of direct-gas pipeline actuators (e.g. Rotork HPG brochure): pipeline gas as power, rate-of-drop line-break detection, a tandem hydraulic override cylinder with hand pump, symmetric or canted yoke. Pipeline pressures, set points, delays, tank behaviour and the cant angle are illustrative. The canted yoke changes the torque curve only; the 3D yoke is drawn symmetric.
 - 3D labels use an in-house `SceneLabel` instead of drei `<Html>`, which threw on route changes and unmounted its root synchronously.
 
 ## Assumptions and decisions
@@ -105,7 +106,7 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 ## Known limitations
 
 - Vane and hydraulic types are not yet simulated; nor are butterfly and plug valves.
-- Lessons 9–16 are outlines only.
+- Lessons 11–16 are outlines only.
 - The air flow view is illustrative, not CFD.
 - Progress lives in one browser; clearing site data resets it.
 - In headless or software-rendered browsers the 3D view is slow; the simulation clock clamps long frames to 0.25 s.

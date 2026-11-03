@@ -149,7 +149,7 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
               s.supplyAvailable ? "bg-air-soft text-air" : "bg-danger/10 text-danger",
             )}
           >
-            {electric ? (s.supplyAvailable ? "Power on" : "Power lost") : s.supplyAvailable ? "Supply on" : "Supply lost"}
+            {electric ? (s.supplyAvailable ? "Power on" : "Power lost") : s.config.family === "gas-scotch-yoke" ? (s.supplyAvailable ? "Gas on" : "Gas isolated") : s.supplyAvailable ? "Supply on" : "Supply lost"}
           </span>
         </div>
       </div>

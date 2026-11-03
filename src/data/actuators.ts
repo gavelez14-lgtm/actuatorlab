@@ -9,7 +9,7 @@
 import type { ActuatorFamilyId } from "@/lib/sim/types";
 
 export type Technology = "Scotch yoke" | "Rack and pinion" | "Vane" | "Electro-hydraulic" | "Electric gearbox" | "Linear";
-export type PowerSource = "Pneumatic" | "Hydraulic" | "Electro-hydraulic" | "Electric" | "Pneumatic or electric";
+export type PowerSource = "Pneumatic" | "Pipeline gas" | "Gas over oil" | "Hydraulic" | "Electro-hydraulic" | "Electric" | "Pneumatic or electric";
 
 export interface ActuatorFamily {
   id: ActuatorFamilyId;
@@ -161,6 +161,40 @@ export const FAMILIES: ActuatorFamily[] = [
       "Duty rating (starts per hour, run time) limits how often the actuator can move without overheating the motor.",
     ],
     relatedLessons: ["power-sources", "quarter-turn-valves"],
+  },
+  {
+    id: "gas-scotch-yoke",
+    short: "Direct gas",
+    name: "Direct gas Scotch yoke",
+    technology: "Scotch yoke",
+    powerSource: "Pipeline gas",
+    movement: "Quarter-turn (90°)",
+    status: "interactive",
+    simulatorHref: "/simulator?type=gas-scotch-yoke",
+    summary: "A Scotch yoke driven directly by high-pressure pipeline gas, with line-break detection and a hydraulic hand-pump override.",
+    operation: [
+      "Gas is tapped from the pipeline and stored in a reserve tank behind a check valve. Control valves direct it to the cylinder.",
+      "The piston drives a Scotch yoke, as on a pneumatic actuator. The cylinder is rated for pipeline pressure, so it can be smaller for the same torque.",
+      "A line-break control watches the rate of pipeline pressure drop. A rupture drops pressure much faster than normal operation; the control then closes the valve on the reserve gas.",
+      "A hydraulic cylinder in line with the gas cylinder, driven by a hand pump, moves the valve when gas operation is unavailable.",
+    ],
+    configurations: [
+      { name: "Double acting", note: "Gas drives both directions; the reserve tank supplies the closing stroke after a line break." },
+      { name: "Spring return", note: "Gas strokes against a spring; venting the cylinder lets the spring drive the valve to its fail position." },
+      { name: "Symmetric or canted yoke", note: "A canted yoke moves the torque peak to the breakout end of the stroke." },
+    ],
+    objectives: [
+      "Explain why a pipeline actuator might use the line's own gas instead of instrument air.",
+      "Describe how rate-of-drop line-break detection tells a rupture from a normal transient.",
+      "Explain the role of the check valve and reserve tank.",
+      "Compare symmetric and canted yoke torque curves.",
+    ],
+    principles: [
+      "Remote pipeline valve sites often have no instrument air or reliable power, but they have the pipeline gas itself.",
+      "Exhausted gas must be handled safely: piped away, recovered, or minimised by design.",
+      "Line-break set points are a trade-off between spurious trips and missed ruptures.",
+    ],
+    relatedLessons: ["power-sources", "symmetric-vs-canted-yoke"],
   },
   {
     id: "electric-compact-part-turn",
