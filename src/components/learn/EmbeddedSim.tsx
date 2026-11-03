@@ -18,7 +18,9 @@ const SimViewport = dynamic(() => import("@/components/three/SimViewport").then(
   ),
 });
 
-function MiniControls({ supplyToggle, href }: { supplyToggle: boolean; href: string }) {
+export type ExtraControl = "rupture" | "esd" | "jam";
+
+function MiniControls({ supplyToggle, href, extra }: { supplyToggle: boolean; href: string; extra?: ExtraControl }) {
   const { engine } = useEngine();
   const s = useSimState();
   return (
@@ -40,6 +42,31 @@ function MiniControls({ supplyToggle, href }: { supplyToggle: boolean; href: str
           <Switch tone="air" checked={s.supplyAvailable} onChange={(v) => engine.dispatch({ type: "set-supply", available: v })} label="Supply" />
         </div>
       )}
+      {extra === "rupture" && (
+        <Button size="sm" variant={s.gas.ruptured ? "secondary" : "primary"} onClick={() => engine.dispatch({ type: "set-rupture", value: !s.gas.ruptured })}>
+          {s.gas.ruptured ? "Repair pipeline" : "Rupture pipeline"}
+        </Button>
+      )}
+      {extra === "rupture" && s.gas.tripped && !s.gas.ruptured && (
+        <Button size="sm" onClick={() => engine.dispatch({ type: "reset-line-break" })}>
+          Reset trip
+        </Button>
+      )}
+      {extra === "esd" && (
+        <div className="min-w-[120px]">
+          <Switch checked={s.eh.esd} onChange={(v) => engine.dispatch({ type: "set-esd", value: v })} label="ESD" />
+        </div>
+      )}
+      {extra === "esd" && (
+        <Button size="sm" onClick={() => engine.dispatch({ type: "start-pst" })}>
+          Partial-stroke test
+        </Button>
+      )}
+      {extra === "jam" && (
+        <div className="min-w-[150px]">
+          <Switch checked={s.electric.obstruction} onChange={(v) => engine.dispatch({ type: "set-obstruction", value: v })} label="Jam valve" />
+        </div>
+      )}
       <ButtonLink href={href} size="sm" variant="ghost" className="ml-auto">
         Full simulator <ExternalLink aria-hidden />
       </ButtonLink>
@@ -57,7 +84,9 @@ export function EmbeddedSim({
   className,
   autoCycle = false,
   ariaLabel,
+  extra,
 }: {
+  extra?: ExtraControl;
   config: Partial<ActuatorConfiguration>;
   mode?: VisualizationMode;
   supplyToggle?: boolean;
@@ -67,7 +96,7 @@ export function EmbeddedSim({
 }) {
   const params = new URLSearchParams({ action: config.actionType ?? "spring-return", mode });
   if (config.failPosition === "fail-open") params.set("fail", "open");
-  if (config.family === "pneumatic-rack-pinion") params.set("type", "rack-pinion");
+  if (config.family && config.family !== "pneumatic-scotch-yoke") params.set("type", config.family === "pneumatic-rack-pinion" ? "rack-pinion" : config.family);
   return (
     <SimulationProvider initialConfig={config} initialMode={mode} autoCycle={autoCycle}>
       <div className={cn("overflow-hidden rounded-2xl bg-viewport", className)}>
@@ -76,7 +105,7 @@ export function EmbeddedSim({
             <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel={ariaLabel} />
           </LazyMount>
         </div>
-        <MiniControls supplyToggle={supplyToggle} href={`/simulator?${params.toString()}`} />
+        <MiniControls supplyToggle={supplyToggle} href={`/simulator?${params.toString()}`} extra={extra} />
       </div>
     </SimulationProvider>
   );

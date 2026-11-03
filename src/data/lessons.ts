@@ -18,7 +18,10 @@ export type FigureId =
   | "rack-pinion-live"
   | "rack-pinion-torque"
   | "yoke-compare"
-  | "yoke-compare-sr";
+  | "yoke-compare-sr"
+  | "electric-live"
+  | "line-break-live"
+  | "esd-pst-live";
 
 export interface Question {
   id: string;
@@ -1022,6 +1025,195 @@ export const LESSONS: Lesson[] = [
         options: ["To save power", "To avoid pressure surge", "To pass a partial-stroke test", "To protect the switch box"],
         answer: 1,
         explanation: "Stopping the liquid too fast causes surge.",
+      },
+    ],
+  },
+  {
+    slug: "electric-actuators",
+    number: 17,
+    title: "Electric actuators: limits, torque and fail-in-place",
+    level: "Intermediate",
+    status: "available",
+    minutes: 10,
+    summary: "How an electric actuator knows where to stop, how it protects the valve, and what happens when the power goes.",
+    objectives: [
+      "Explain the difference between stopping on position and stopping on torque.",
+      "Describe why a self-locking gear holds the valve without power.",
+      "Compare switch-based and sensor-based electric actuators.",
+    ],
+    sections: [
+      {
+        heading: "Motor, gear, valve",
+        body: [
+          "An electric actuator turns a fast, low-torque motor into a slow, high-torque output through a large gear reduction, usually including a **worm and wheel**. A worm can drive the wheel, but the wheel cannot drive the worm back. That **self-locking** is why the valve stays put when the motor stops, with no brake and no power.",
+          "Speed is set by the motor and gearing, so the stroke runs at a near-constant rate whatever the valve load, until something tells the motor to stop.",
+        ],
+        figure: "electric-live",
+      },
+      {
+        heading: "Two ways to stop",
+        body: [
+          "**On position (limit):** the motor stops when the output reaches a set point at the end of travel. Quarter-turn ball and butterfly valves usually stop this way.",
+          "**On torque:** the motor stops when output torque reaches a set value. Wedge gate valves are often closed on torque so the wedge is driven firmly into its seats. The same torque sensing also stops the motor if the valve jams part-way, protecting valve and actuator.",
+          "A compact actuator does this with cam-operated **switches**; an intelligent one **measures** position and torque, so it can report them and record torque profiles for diagnostics.",
+        ],
+      },
+      {
+        heading: "Fail in place",
+        body: [
+          "Lose the power and the motor stops; the self-locking gear holds the valve wherever it was. That is **fail in place**. If the process needs the valve to move on power loss, the actuator needs stored energy: a spring module, or a battery or capacitor unit that drives to a set position.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Self-locking", definition: "A gear the output cannot back-drive, so position holds without power." },
+      { term: "Limit (position) seating", definition: "Stopping the motor at a set end position." },
+      { term: "Torque seating", definition: "Stopping the motor when output torque reaches a set value." },
+      { term: "Torque trip", definition: "Stopping on torque before the end of travel, usually because of a jam." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Why does a worm-geared electric actuator hold position without power?",
+        options: ["A brake is applied", "The worm gear cannot be back-driven", "The spring holds it", "The valve is self-locking"],
+        answer: 1,
+        explanation: "The wheel cannot turn the worm, so process forces cannot move the output.",
+      },
+      {
+        id: "q2",
+        prompt: "Which valve is commonly closed on torque rather than on position?",
+        options: ["Wedge gate valve", "Ball valve", "Butterfly valve", "Check valve"],
+        answer: 0,
+        explanation: "The wedge is driven into its seats until the set torque is reached.",
+      },
+      {
+        id: "q3",
+        prompt: "An electric actuator must drive the valve closed on power loss. What does it need?",
+        options: ["Nothing extra", "A faster motor", "Stored energy such as a spring or battery module", "A larger handwheel"],
+        answer: 2,
+        explanation: "Without stored energy it fails in place.",
+      },
+    ],
+  },
+  {
+    slug: "line-break-protection",
+    number: 18,
+    title: "Pipeline valves: line break and stored energy",
+    level: "Advanced",
+    status: "available",
+    minutes: 10,
+    summary: "How a pipeline valve detects a rupture from pressure alone and closes on energy it stored beforehand.",
+    objectives: [
+      "Explain how a rupture shows up in pipeline pressure.",
+      "Describe rate-of-drop and low-pressure trips and their trade-offs.",
+      "Explain why stored gas must be protected by a check valve.",
+    ],
+    sections: [
+      {
+        heading: "What a rupture looks like",
+        body: [
+          "When a gas pipeline ruptures downstream, pressure at the valve falls much faster than anything normal operation causes. A **rate-of-drop** monitor watches that fall. If it stays above a set point for a set delay, the control closes the valve.",
+          "The delay matters. Normal operations, such as a compressor tripping or a large user starting up, cause short dips. Filtering them out avoids shutting a pipeline for nothing.",
+        ],
+        figure: "line-break-live",
+      },
+      {
+        heading: "Set points are a trade-off",
+        body: [
+          "Set the rate too low and normal transients trip the valve. Set it too high and a small rupture, which drops pressure slowly, is missed. A **low-pressure** trip covers that slow case: if pressure stays below a floor, the valve closes regardless of the rate.",
+          "Once tripped, the control **latches**. Nobody wants a valve that reopens into a leak, so an operator must reset it after the line is made safe.",
+        ],
+      },
+      {
+        heading: "Energy you stored earlier",
+        body: [
+          "The actuator runs on the same gas that is escaping. A **check valve** and a reserve tank keep enough gas to close the valve after the line pressure has collapsed. On a gas-over-oil actuator the same stored gas pushes the oil.",
+          "The reserve must be sized for the strokes it has to guarantee, at the lowest pressure it could start from.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Line break", definition: "A pipeline rupture, detected from pressure at the valve." },
+      { term: "Rate-of-drop trip", definition: "Closes the valve when pressure falls faster than a set rate for a set time." },
+      { term: "Low-pressure trip", definition: "Closes the valve when pressure stays below a set floor." },
+      { term: "Latch", definition: "The trip stays active until deliberately reset." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Why is there a delay before a rate-of-drop trip acts?",
+        options: ["To save gas", "To ignore short, normal pressure dips", "To let the valve cool", "To charge the tank"],
+        answer: 1,
+        explanation: "Transients are brief; a rupture keeps falling.",
+      },
+      {
+        id: "q2",
+        prompt: "What keeps gas available to close the valve after the line pressure collapses?",
+        options: ["A check valve and reserve tank", "The spring", "A bigger cylinder", "The hand pump"],
+        answer: 0,
+        explanation: "The check valve stops the stored gas draining back into the falling line.",
+      },
+      {
+        id: "q3",
+        prompt: "A small leak drops pressure slowly. Which trip is designed to catch it?",
+        options: ["Rate of drop", "Low pressure", "Torque", "Partial stroke"],
+        answer: 1,
+        explanation: "A slow fall may never exceed the rate set point.",
+      },
+    ],
+  },
+  {
+    slug: "esd-and-partial-stroke",
+    number: 19,
+    title: "Emergency shutdown and partial-stroke testing",
+    level: "Advanced",
+    status: "available",
+    minutes: 9,
+    summary: "Making sure a safety valve moves when it is needed, without having to shut the plant down to prove it.",
+    objectives: [
+      "Explain what an ESD input does and why it overrides normal control.",
+      "Describe a partial-stroke test and what it can and cannot prove.",
+    ],
+    sections: [
+      {
+        heading: "The problem with safety valves",
+        body: [
+          "A shutdown valve may sit open for months, then have to close in seconds. The longer it sits, the more likely it is to stick, and the only way to be certain it moves is to move it. Closing it fully stops the process.",
+        ],
+      },
+      {
+        heading: "ESD overrides everything",
+        body: [
+          "An **emergency shutdown (ESD)** input is a separate signal that drives the valve to its fail position whatever the normal demand says. On a spring-return electro-hydraulic actuator, ESD opens the dump valve and the spring does the work.",
+        ],
+        figure: "esd-pst-live",
+      },
+      {
+        heading: "Partial-stroke testing",
+        body: [
+          "A **partial-stroke test** moves the valve a short way toward its fail position, typically a small fraction of travel, and back. The process barely notices, but the test proves the actuator works and the valve is not seized.",
+          "It does **not** prove the valve seals when fully closed, so full-stroke tests are still needed, just less often. In the full simulator, switch on Valve stuck and run the test to see it fail.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "ESD", definition: "Emergency shutdown: a safety signal that overrides normal control." },
+      { term: "Partial-stroke test (PST)", definition: "A short move toward the fail position and back, proving the valve can move." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "What can a partial-stroke test NOT prove?",
+        options: ["That the actuator works", "That the valve is not seized", "That the valve seals tightly when fully closed", "That the control signal reaches the actuator"],
+        answer: 2,
+        explanation: "It never reaches the seat, so tight shut-off is untested.",
+      },
+      {
+        id: "q2",
+        prompt: "An ESD signal arrives while the positioner demands 60% open. A spring-return unit…",
+        options: ["Stays at 60%", "Goes to its fail position", "Goes to 50%", "Waits for the demand to change"],
+        answer: 1,
+        explanation: "ESD overrides the demand.",
       },
     ],
   },

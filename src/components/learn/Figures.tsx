@@ -207,6 +207,27 @@ export function LessonFigure({ id }: { id: FigureId }) {
           </div>
         </Frame>
       );
+    case "electric-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ family: "electric-part-turn" }} mode="mechanical" extra="jam" supplyToggle ariaLabel="Live 3D electric part-turn actuator in section, with power and jam controls." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Open the valve, then switch on the jam and open again: the motor stops on torque instead of forcing the valve. Turn the power off mid-stroke and it stays where it is.</figcaption>
+        </figure>
+      );
+    case "line-break-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ family: "gas-scotch-yoke", actionType: "double-acting" }} mode="engineering" extra="rupture" ariaLabel="Live 3D direct-gas actuator with a pipeline rupture control." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Open the valve, then rupture the pipeline. The pressure falls, the rate of drop crosses the set point, and after the delay the valve closes on stored gas. Illustrative values.</figcaption>
+        </figure>
+      );
+    case "esd-pst-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ family: "electro-hydraulic", actionType: "spring-return", failPosition: "fail-closed" }} mode="normal" extra="esd" ariaLabel="Live 3D electro-hydraulic actuator with ESD and partial-stroke test controls." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Open the valve and run a partial-stroke test: it moves a little toward closed and back. Then trigger ESD: the dump valve opens and the spring closes the valve, whatever the demand.</figcaption>
+        </figure>
+      );
     case "yoke-compare":
       return (
         <Frame caption="Double acting at 5.5 bar. Left: symmetric yoke. Right: canted yoke, with the peak moved to the closed end. Normalised illustrative units, not manufacturer data.">
