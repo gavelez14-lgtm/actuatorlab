@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import type { ActuatorConfiguration, VisualizationMode } from "@/lib/sim/types";
 import { SimulationProvider } from "@/components/sim/SimulationProvider";
 import { SimulatorWorkbench } from "@/components/sim/SimulatorWorkbench";
+import { familyFromType } from "@/components/sim/familyUi";
 
 const MODES: VisualizationMode[] = ["normal", "cutaway", "mechanical", "energy", "engineering"];
 
@@ -23,7 +24,7 @@ export function SimulatorFromQuery() {
   const modeParam = q.get("mode") as VisualizationMode | null;
   const mode = modeParam && MODES.includes(modeParam) ? modeParam : "normal";
   const type = q.get("type");
-  const family = type === "rack-pinion" ? "pneumatic-rack-pinion" : type === "electric-part-turn" ? "electric-part-turn" : type === "electric-multi-turn" ? "electric-multi-turn" : type === "electric-compact-part-turn" ? "electric-compact-part-turn" : type === "gas-scotch-yoke" ? "gas-scotch-yoke" : type === "gas-over-oil" ? "gas-over-oil" : type === "electro-hydraulic" ? "electro-hydraulic" : type === "hydraulic-scotch-yoke" ? "hydraulic-scotch-yoke" : type === "hydraulic-rack-pinion" ? "hydraulic-rack-pinion" : type === "pneumatic-vane" ? "pneumatic-vane" : "pneumatic-scotch-yoke";
+  const family = familyFromType(type);
   const valveParam = q.get("valve");
   const valve = valveParam === "butterfly" || valveParam === "plug" ? valveParam : "ball";
   const config: Partial<ActuatorConfiguration> = { family, actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail, valve };

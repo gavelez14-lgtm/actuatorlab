@@ -178,7 +178,7 @@ function CameraRig({
         flyTo(sphere.center.clone(), sphere.center.clone().add(dir.multiplyScalar(distance)));
       },
       focus: (id: ComponentId) => {
-        const info = componentInfo(kind(), id, isGas(eng.getState().config.family) || eng.getState().config.family === "electro-hydraulic" ? eng.getState().config.family : null);
+        const info = componentInfo(kind(), id, eng.getState().config.family);
         const c = controls.current;
         if (!info || !c) return;
         const dir = camera.position.clone().sub(c.target).normalize();

@@ -8,6 +8,7 @@ import { Button, ButtonLink } from "@/components/ui/primitives";
 import { Switch } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
 import { LazyMount } from "@/components/ui/LazyMount";
+import { simulatorHref } from "@/components/sim/familyUi";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
   ssr: false,
@@ -96,7 +97,7 @@ export function EmbeddedSim({
 }) {
   const params = new URLSearchParams({ action: config.actionType ?? "spring-return", mode });
   if (config.failPosition === "fail-open") params.set("fail", "open");
-  if (config.family && config.family !== "pneumatic-scotch-yoke") params.set("type", config.family === "pneumatic-rack-pinion" ? "rack-pinion" : config.family);
+
   return (
     <SimulationProvider initialConfig={config} initialMode={mode} autoCycle={autoCycle}>
       <div className={cn("overflow-hidden rounded-2xl bg-viewport", className)}>
@@ -105,7 +106,7 @@ export function EmbeddedSim({
             <SimViewport compact interactive={false} className="absolute inset-0" ariaLabel={ariaLabel} />
           </LazyMount>
         </div>
-        <MiniControls supplyToggle={supplyToggle} href={`/simulator?${params.toString()}`} extra={extra} />
+        <MiniControls supplyToggle={supplyToggle} href={simulatorHref(config.family ?? "pneumatic-scotch-yoke", params)} extra={extra} />
       </div>
     </SimulationProvider>
   );

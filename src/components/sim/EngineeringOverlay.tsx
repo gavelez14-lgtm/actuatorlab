@@ -3,10 +3,11 @@
 import { Illustrative } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useSimSelector, useSimState } from "./SimulationProvider";
-import { MULTI_TURN, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "@/lib/sim/electric";
+import { MULTI_TURN, isCompact, isMultiTurn, torqueLimitValue } from "@/lib/sim/electric";
 import { ElectricTorqueChart, TorqueChart } from "./TorqueChart";
-import { isGas, pipelineToModel } from "@/lib/sim/gas";
-import { HYD, isHydraulic } from "@/lib/sim/hydraulic";
+import { isGasOverOil, pipelineToModel } from "@/lib/sim/gas";
+import type { SimulationState } from "@/lib/sim/types";
+import { FAMILY_UI, type ReadoutsKind } from "./familyUi";
 
 function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
   return (
@@ -62,14 +63,53 @@ function ElectricEngineering() {
 }
 
 export function EngineeringOverlay() {
-  const electric = useSimSelector((s) => isElectric(s.config.family));
-  return electric ? <ElectricEngineering /> : <PneumaticEngineering />;
+  const readouts = useSimSelector((s) => FAMILY_UI[s.config.family].readouts);
+  return readouts === "electric" ? <ElectricEngineering /> : <FluidEngineering />;
 }
 
-function PneumaticEngineering() {
+/** Pressure in model force units that drives the torque chart. */
+function modelPressure(s: SimulationState) {
+  const ui = FAMILY_UI[s.config.family];
+  if (ui.readouts === "gas") return pipelineToModel(s.gas.tank);
+  return s.supplyPressure * (ui.supply?.scale ?? 1);
+}
+
+/** Family-specific rows between the common position and torque rows. */
+const SOURCE_ROWS: Record<Exclude<ReadoutsKind, "electric">, (s: SimulationState) => React.ReactNode> = {
+  fluid: (s) => (
+    <Row
+      label="Supply"
+      value={s.supplyAvailable ? s.supplyPressure.toFixed(FAMILY_UI[s.config.family].supply?.decimals ?? 1) : "0"}
+      unit="bar"
+      tone={s.supplyAvailable ? "air" : "danger"}
+    />
+  ),
+  gas: (s) => (
+    <>
+      <Row label="Pipeline" value={s.gas.pipeline.toFixed(1)} unit="bar" tone={s.gas.ruptured ? "danger" : "air"} />
+      <Row label="Reserve tank" value={s.gas.tank.toFixed(1)} unit="bar" tone="air" />
+      <Row label="Rate of change" value={s.gas.rate.toFixed(2)} unit="bar/s" tone={-s.gas.rate > s.gas.setPoint ? "danger" : undefined} />
+      {isGasOverOil(s.config.family) && <Row label="Low trip at" value={s.gas.lowSet.toFixed(0)} unit="bar" tone={s.gas.pipeline < s.gas.lowSet ? "danger" : undefined} />}
+      <Row label="Line break" value={s.gas.tripped ? (s.gas.tripCause === "low" ? "low P" : "tripped") : s.gas.armed ? "armed" : "off"} tone={s.gas.tripped ? "danger" : s.gas.armed ? "ok" : "warn"} />
+    </>
+  ),
+  "electro-hydraulic": (s) => (
+    <>
+      <Row label="Demand" value={s.eh.demand === null ? "none" : (s.eh.demand * 100).toFixed(0)} unit={s.eh.demand === null ? undefined : "%"} />
+      <Row label="Pressure" value={s.eh.pressure.toFixed(0)} unit="bar" tone="air" />
+      <Row label="Pump" value={s.eh.motorRunning ? "running" : "off"} tone={s.eh.motorRunning ? "ok" : undefined} />
+      <Row label="Dump valve" value={s.eh.dumping ? "open" : "closed"} tone={s.eh.dumping ? "warn" : undefined} />
+      <Row label="ESD" value={s.eh.esd ? "active" : "healthy"} tone={s.eh.esd ? "danger" : "ok"} />
+      <Row label="Last PST" value={s.eh.pst} tone={s.eh.pst === "failed" ? "danger" : s.eh.pst === "passed" ? "ok" : undefined} />
+    </>
+  ),
+};
+
+function FluidEngineering() {
   const s = useSimState();
   const sr = s.config.actionType === "spring-return";
   const t = s.torque;
+  const kind = FAMILY_UI[s.config.family].readouts as Exclude<ReadoutsKind, "electric">;
   return (
     <div className="pointer-events-auto w-[340px] max-w-[calc(100vw-2rem)] glass rounded-2xl p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -79,26 +119,7 @@ function PneumaticEngineering() {
       <dl className="grid grid-cols-2 gap-x-5 divide-rule border-y border-rule py-1">
         <Row label="Valve position" value={`${(s.position * 100).toFixed(1)}`} unit="%" />
         <Row label="Output angle" value={s.outputAngle.toFixed(1)} unit="°" />
-        {s.config.family === "electro-hydraulic" ? (
-          <>
-            <Row label="Demand" value={s.eh.demand === null ? "none" : (s.eh.demand * 100).toFixed(0)} unit={s.eh.demand === null ? undefined : "%"} />
-            <Row label="Pressure" value={s.eh.pressure.toFixed(0)} unit="bar" tone="air" />
-            <Row label="Pump" value={s.eh.motorRunning ? "running" : "off"} tone={s.eh.motorRunning ? "ok" : undefined} />
-            <Row label="Dump valve" value={s.eh.dumping ? "open" : "closed"} tone={s.eh.dumping ? "warn" : undefined} />
-            <Row label="ESD" value={s.eh.esd ? "active" : "healthy"} tone={s.eh.esd ? "danger" : "ok"} />
-            <Row label="Last PST" value={s.eh.pst} tone={s.eh.pst === "failed" ? "danger" : s.eh.pst === "passed" ? "ok" : undefined} />
-          </>
-        ) : isGas(s.config.family) ? (
-          <>
-            <Row label="Pipeline" value={s.gas.pipeline.toFixed(1)} unit="bar" tone={s.gas.ruptured ? "danger" : "air"} />
-            <Row label="Reserve tank" value={s.gas.tank.toFixed(1)} unit="bar" tone="air" />
-            <Row label="Rate of change" value={s.gas.rate.toFixed(2)} unit="bar/s" tone={-s.gas.rate > s.gas.setPoint ? "danger" : undefined} />
-            {s.config.family === "gas-over-oil" && <Row label="Low trip at" value={s.gas.lowSet.toFixed(0)} unit="bar" tone={s.gas.pipeline < s.gas.lowSet ? "danger" : undefined} />}
-            <Row label="Line break" value={s.gas.tripped ? (s.gas.tripCause === "low" ? "low P" : "tripped") : s.gas.armed ? "armed" : "off"} tone={s.gas.tripped ? "danger" : s.gas.armed ? "ok" : "warn"} />
-          </>
-        ) : (
-          <Row label="Supply" value={s.supplyAvailable ? s.supplyPressure.toFixed(isHydraulic(s.config.family) ? 0 : 1) : "0"} unit="bar" tone={s.supplyAvailable ? "air" : "danger"} />
-        )}
+        {SOURCE_ROWS[kind](s)}
         <Row label="Chamber A" value={s.chamberA} tone={s.chamberA === "supply" ? "air" : undefined} />
         <Row label="Air torque" value={t.air.toFixed(2)} tone="air" />
         <Row label="Chamber B" value={s.chamberB} tone={s.chamberB === "supply" ? "air" : undefined} />
@@ -106,7 +127,7 @@ function PneumaticEngineering() {
         <Row label="Valve demand" value={t.valveDemand.toFixed(2)} />
         <Row label="Margin" value={t.net.toFixed(2)} tone={t.net > 0 ? "ok" : "danger"} />
       </dl>
-      <TorqueChart config={s.config} pressure={isGas(s.config.family) ? pipelineToModel(s.gas.tank) : isHydraulic(s.config.family) ? s.supplyPressure * HYD.scale : s.supplyPressure} position={s.position} className="mt-2" />
+      <TorqueChart config={s.config} pressure={modelPressure(s)} position={s.position} className="mt-2" />
     </div>
   );
 }

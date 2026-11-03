@@ -67,6 +67,8 @@ src/
     __tests__/        Vitest: kinematics, supply loss, fail actions, frame-rate independence
   components/three/   React Three Fiber renderer (reads engine state in useFrame)
   components/sim/     simulator UI (provider, panels, playback, torque chart)
+    familyUi.ts       presentation registry: titles, menu, URL type, labels,
+                      which controls and readouts each family shows
   components/learn/   lessons, figures, embedded sims, questions
   data/               actuators, components, lessons, assessments, valves, compare
   lib/progress.ts     localStorage progress behind a ProgressRepository interface

@@ -896,7 +896,12 @@ export function adaptForValve(list: ComponentInfo[], valve: "ball" | "butterfly"
   return list.map((c) => (c.id === "ball" ? DISC_INFO : c.id === "valve-body" ? WAFER_INFO : c));
 }
 
-export function componentsFor(kind: MechanismKind, gasFamily: ActuatorFamilyId | null = null): ComponentInfo[] {
+/**
+ * Component list for a mechanism, with family-specific overrides (gas,
+ * gas over oil, electro-hydraulic replace and add parts on the Scotch yoke).
+ */
+export function componentsFor(kind: MechanismKind, family: ActuatorFamilyId | null = null): ComponentInfo[] {
+  const gasFamily = family === "gas-scotch-yoke" || family === "gas-over-oil" || family === "electro-hydraulic" ? family : null;
   if (kind === "vane") return VANE_COMPONENTS;
   if (gasFamily === "electro-hydraulic") {
     const extra = ELECTRO_HYDRAULIC_COMPONENTS;
@@ -912,8 +917,8 @@ export function componentsFor(kind: MechanismKind, gasFamily: ActuatorFamilyId |
   return kind === "rack-pinion" ? RACK_PINION_COMPONENTS : COMPONENTS;
 }
 
-export function componentInfo(kind: MechanismKind, id: ComponentId, gasFamily: ActuatorFamilyId | null = null): ComponentInfo | undefined {
-  return componentsFor(kind, gasFamily).find((c) => c.id === id);
+export function componentInfo(kind: MechanismKind, id: ComponentId, family: ActuatorFamilyId | null = null): ComponentInfo | undefined {
+  return componentsFor(kind, family).find((c) => c.id === id);
 }
 
 /** @deprecated Scotch yoke only; use componentInfo(kind, id). */

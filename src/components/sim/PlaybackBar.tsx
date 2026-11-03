@@ -1,8 +1,8 @@
 "use client";
 
-import { isGas } from "@/lib/sim/gas";
 import { ArrowDownToLine, ArrowUpFromLine, Pause, Play, Repeat, RotateCcw, Square } from "lucide-react";
-import { MULTI_TURN, isElectric, isMultiTurn } from "@/lib/sim/electric";
+import { MULTI_TURN, isMultiTurn } from "@/lib/sim/electric";
+import { FAMILY_UI } from "./familyUi";
 import { Button } from "@/components/ui/primitives";
 import { Range, Segmented } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,8 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
   const { engine } = useEngine();
   const s = useSimState();
   const pct = Math.round(s.position * 100);
-  const electric = isElectric(s.config.family);
+  const ui = FAMILY_UI[s.config.family];
+  const electric = ui.controls === "electric";
   const multiTurn = isMultiTurn(s.config.family);
   const travel = s.targetPosition === null ? null : 1 - Math.abs(s.targetPosition - s.position);
   const speedValue = (SPEEDS.find((v) => Math.abs(Number(v) - s.speed) < 0.01) ?? "custom") as (typeof SPEEDS)[number];
@@ -150,7 +151,7 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
               s.supplyAvailable ? "bg-air-soft text-air" : "bg-danger/10 text-danger",
             )}
           >
-            {electric || s.config.family === "electro-hydraulic" ? (s.supplyAvailable ? "Power on" : "Power lost") : isGas(s.config.family) ? (s.supplyAvailable ? "Gas on" : "Gas isolated") : s.supplyAvailable ? "Supply on" : "Supply lost"}
+            {s.supplyAvailable ? ui.supplyChip.on : ui.supplyChip.off}
           </span>
         </div>
       </div>

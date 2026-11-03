@@ -1,6 +1,5 @@
 "use client";
 
-import { isGas } from "@/lib/sim/gas";
 import { Crosshair, MousePointerClick, X } from "lucide-react";
 import { adaptForValve, componentsFor, type ComponentRole } from "@/data/components";
 import { mechanismFor } from "@/lib/sim/mechanisms";
@@ -25,9 +24,9 @@ export function ComponentInspector() {
   const selected = useSimSelector((s) => s.selectedComponent);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const kind = useSimSelector((s) => mechanismFor(s.config.family));
-  const gas = useSimSelector((s) => (isGas(s.config.family) || s.config.family === "electro-hydraulic" ? s.config.family : null));
+  const family = useSimSelector((s) => s.config.family);
   const valve = useSimSelector((s) => s.config.valve);
-  const all = adaptForValve(componentsFor(kind, gas), valve);
+  const all = adaptForValve(componentsFor(kind, family), valve);
   const info = selected ? (all.find((c) => c.id === selected) ?? null) : null;
   const list = all.filter((c) => !c.springReturnOnly || sr);
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { FAMILY_UI } from "./familyUi";
 import { Activity, Eye, Layers, Settings2, Wind, Zap } from "lucide-react";
 import type { VisualizationMode } from "@/lib/sim/types";
 import { Segmented } from "@/components/ui/controls";
@@ -16,8 +17,8 @@ export const MODES: { value: VisualizationMode; label: string; icon: typeof Eye;
 export function ModeSelector() {
   const { engine, camera } = useEngine();
   const mode = useSimSelector((s) => s.mode);
-  const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
-  const fluid = useSimSelector((s) => (s.config.family === "gas-over-oil" || s.config.family === "electro-hydraulic" || s.config.family.startsWith("hydraulic") ? "Oil flow" : s.config.family === "gas-scotch-yoke" ? "Gas flow" : null));
+  const energyLabel = useSimSelector((s) => FAMILY_UI[s.config.family].energyLabel);
+  const power = energyLabel === "Power flow";
   return (
     <Segmented
       label="Visualisation mode"
@@ -29,11 +30,11 @@ export function ModeSelector() {
       className="w-full overflow-x-auto sm:w-auto"
       options={MODES.map((m) => ({
         value: m.value,
-        hint: electric && m.value === "energy" ? "Illustrative electrical and mechanical power path" : m.summary,
+        hint: power && m.value === "energy" ? "Illustrative electrical and mechanical power path" : m.summary,
         label: (
           <>
-            {electric && m.value === "energy" ? <Zap aria-hidden /> : <m.icon aria-hidden />}
-            <span className="max-sm:sr-only">{electric && m.value === "energy" ? "Power flow" : fluid && m.value === "energy" ? fluid : m.label}</span>
+            {power && m.value === "energy" ? <Zap aria-hidden /> : <m.icon aria-hidden />}
+            <span className="max-sm:sr-only">{m.value === "energy" ? energyLabel : m.label}</span>
           </>
         ),
       }))}

@@ -1,202 +1,39 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { MODEL, minimumPressureForFullStroke } from "@/lib/sim/model";
-import { ELECTRIC, isCompact, isElectric, isMultiTurn } from "@/lib/sim/electric";
+import { minimumPressureForFullStroke } from "@/lib/sim/model";
+import { FAMILY_UI, type ControlsKind } from "./familyUi";
+import { ELECTRIC, isCompact, isMultiTurn } from "@/lib/sim/electric";
 import { Button } from "@/components/ui/primitives";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { Segmented, Switch, Range } from "@/components/ui/controls";
 import { Illustrative } from "@/components/ui/primitives";
 import { useEngine, useSimState } from "./SimulationProvider";
-import { GAS, goStrokeTime, isGas, isGasOverOil } from "@/lib/sim/gas";
+import { GAS, goStrokeTime, isGasOverOil } from "@/lib/sim/gas";
 import { EH } from "@/lib/sim/electroHydraulic";
-import { HYD, isHydraulic } from "@/lib/sim/hydraulic";
+import { HYD } from "@/lib/sim/hydraulic";
 import { mechanismFor } from "@/lib/sim/mechanisms";
+
+const FAMILY_CONTROLS: Record<ControlsKind, (props: { sr: boolean }) => React.ReactNode> = {
+  fluid: () => <FluidSupplyConfig />,
+  gas: ({ sr }) => <GasConfig sr={sr} />,
+  "electro-hydraulic": ({ sr }) => <ElectroHydraulicConfig sr={sr} />,
+  electric: () => <ElectricConfig />,
+};
 
 export function ConfigPanel() {
   const { engine } = useEngine();
   const s = useSimState();
+  const ui = FAMILY_UI[s.config.family];
   const sr = s.config.actionType === "spring-return";
-  const hyd = isHydraulic(s.config.family);
-  const minP = minimumPressureForFullStroke(s.config) / (hyd ? HYD.scale : 1);
-  const electric = isElectric(s.config.family);
-  const gas = isGas(s.config.family);
-  const eh = s.config.family === "electro-hydraulic";
-  const yokeFamily = mechanismFor(s.config.family) === "scotch-yoke";
+  const Controls = FAMILY_CONTROLS[ui.controls];
 
   return (
     <div className="space-y-6">
-      {electric ? (
-        <ElectricConfig />
-      ) : (
-        <>
-      {s.config.family === "pneumatic-vane" ? (
-        <p className="text-[12.5px] leading-snug text-muted">Double acting: air drives the vane both ways and it fails in place. Spring-return vane actuators add a separate spring module, which is not modelled here.</p>
-      ) : (
-        <>
-      <fieldset className="space-y-2">
-        <legend className="mb-2 text-[13px] font-medium text-fg">Action type</legend>
-        <Segmented
-          label="Action type"
-          className="w-full"
-          value={s.config.actionType}
-          onChange={(v) => engine.dispatch({ type: "set-config", config: { actionType: v } })}
-          options={[
-            { value: "double-acting", label: "Double acting" },
-            { value: "spring-return", label: "Spring return" },
-          ]}
-        />
-        <p className="text-[12.5px] leading-snug text-muted">
-          {sr
-            ? eh
-              ? "The pump drives one direction against a spring. The dump valve lets the spring drive the other direction, and gives the fail action."
-              : `${gas ? "Gas" : isHydraulic(s.config.family) ? "Oil" : "Air"} drives one direction against a spring. The spring drives the other direction and provides the fail action.`
-            : eh
-              ? "The pump drives both directions through a directional valve. There is no spring, so it fails in place."
-              : gas
-              ? isGasOverOil(s.config.family)
-                ? "Gas pushes oil to either side of the piston. With no spring, stored gas is what closes the valve after a trip."
-                : "Gas drives both directions. With no spring, the reserve tank is the stored energy that closes the valve after a line break."
-              : `${isHydraulic(s.config.family) ? "Oil" : "Air"} drives both directions. There is no spring, so there is no stored energy to reach a fail position.`}
-        </p>
-      </fieldset>
-
-      <fieldset className="space-y-2">
-        <legend className="mb-2 text-[13px] font-medium text-fg">Fail action</legend>
-        <Segmented
-          label="Fail action"
-          className="w-full"
-          value={s.config.failPosition}
-          onChange={(v) => engine.dispatch({ type: "set-config", config: { failPosition: v } })}
-          options={
-            sr
-              ? [
-                  { value: "fail-closed", label: "Fail closed" },
-                  { value: "fail-open", label: "Fail open" },
-                ]
-              : [{ value: "fail-in-place", label: "Fail in place (no spring)" }]
-          }
-        />
-        <p className="text-[12.5px] leading-snug text-muted">
-          {sr
-            ? s.config.failPosition === "fail-closed"
-              ? "The coupling is oriented so the spring end of the stroke is valve closed."
-              : "The coupling is turned 90° so the spring end of the stroke is valve open. Same mechanism, different orientation."
-            : gas
-              ? "Loss of power gas leaves the valve in place. The line-break control is what drives it closed, using stored gas."
-              : "Fail-open or fail-closed needs stored energy. Add a spring module, or an accumulator and control circuit (not modelled here)."}
-        </p>
-      </fieldset>
-
-        </>
-      )}
-
-      <fieldset className="space-y-2">
-        <legend className="mb-2 text-[13px] font-medium text-fg">Valve</legend>
-        <Segmented
-          label="Valve"
-          className="w-full"
-          value={s.config.valve ?? "ball"}
-          onChange={(v) => engine.dispatch({ type: "set-config", config: { valve: v } })}
-          options={[
-            { value: "ball", label: "Ball" },
-            { value: "butterfly", label: "Butterfly" },
-            { value: "plug", label: "Plug" },
-          ]}
-        />
-        <p className="text-[12.5px] leading-snug text-muted">
-          {s.config.valve === "plug"
-            ? "High break-out at closed and a high running torque all the way, because the plug rubs on its body throughout the turn."
-            : (s.config.valve ?? "ball") === "butterfly"
-            ? "Seating torque at closed, then a flow-induced dynamic torque that peaks part-way open. See the dashed demand in Engineering mode."
-            : "Highest torque at the seats (closed), lower while the ball turns."}
-        </p>
-      </fieldset>
-
-      {yokeFamily && (
-        <fieldset className="space-y-2">
-          <legend className="mb-2 text-[13px] font-medium text-fg">Yoke</legend>
-          <Segmented
-            label="Yoke"
-            className="w-full"
-            value={s.config.yoke ?? "symmetric"}
-            onChange={(v) => engine.dispatch({ type: "set-config", config: { yoke: v } })}
-            options={[
-              { value: "symmetric", label: "Symmetric" },
-              { value: "canted", label: "Canted" },
-            ]}
-          />
-          <p className="text-[12.5px] leading-snug text-muted">
-            {(s.config.yoke ?? "symmetric") === "canted"
-              ? "The yoke's 90° swing is offset 6° from square, so torque is highest where the valve breaks out of its seat and lower at the other end. The piston and spring shift to centre the longer pin travel. Watch the swing arc shift in Mechanism mode, and compare the curves in Engineering mode."
-              : "Torque is high at both ends of the stroke and lowest in the middle, which suits a ball valve's high seating torque at both ends."}
-          </p>
-        </fieldset>
-      )}
-
-      {gas ? (
-        <GasConfig sr={sr} />
-      ) : eh ? (
-        <ElectroHydraulicConfig sr={sr} />
-      ) : (
-      <div className="space-y-4 border-t border-rule pt-5">
-        <Switch
-          tone="air"
-          checked={s.supplyAvailable}
-          onChange={(v) => engine.dispatch({ type: "set-supply", available: v })}
-          label={hyd ? "Hydraulic supply available" : "Supply available"}
-          description={
-            hyd
-              ? sr
-                ? "Turn off to simulate loss of the hydraulic power unit. The cylinder drains to tank and the spring acts."
-                : "Turn off to simulate loss of the hydraulic power unit. The trapped oil holds the valve in place."
-              : sr
-                ? "Turn off to simulate loss of instrument air. The spring will act."
-                : `Turn off to simulate loss of instrument air. Nothing will drive the ${s.config.family === "pneumatic-vane" ? "vane" : "piston"}.`
-          }
-        />
-
-        <div>
-          <div className="mb-1 flex items-baseline justify-between">
-            <label htmlFor="pressure" className="text-[14px] font-medium text-fg">
-              Supply pressure
-            </label>
-            <span className="num text-[14px] text-fg">{s.supplyPressure.toFixed(hyd ? 0 : 1)} bar</span>
-          </div>
-          <Range
-            id="pressure"
-            label="Supply pressure"
-            valueText={`${s.supplyPressure.toFixed(hyd ? 0 : 1)} bar`}
-            min={hyd ? HYD.pressureMin : MODEL.pressureMin}
-            max={hyd ? HYD.pressureMax : MODEL.pressureMax}
-            step={hyd ? 1 : 0.1}
-            value={s.supplyPressure}
-            onChange={(v) => engine.dispatch({ type: "set-pressure", bar: v })}
-          />
-          <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
-            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            <span>
-              This model needs about <span className="num text-fg-2">{minP.toFixed(hyd ? 0 : 1)} bar</span> to complete the {hyd ? "powered" : "air"} stroke. Below that it stalls part-way.{" "}
-              <Illustrative>Illustrative model</Illustrative>
-            </span>
-          </p>
-        </div>
-        {hyd && (
-          <div>
-            <div className="mb-1 flex items-baseline justify-between text-[13px]">
-              <label htmlFor="hyd-flow" className="text-fg">Flow-control setting</label>
-              <span className="num text-fg">{(HYD.strokeTime / Math.max(GAS.flowMin, s.gas.flow)).toFixed(1)} s stroke</span>
-            </div>
-            <Range id="hyd-flow" label="Flow-control setting" min={GAS.flowMin} max={1} step={0.01} value={s.gas.flow} onChange={(v) => engine.dispatch({ type: "set-flow", value: v })} />
-            <p className="mt-1.5 text-[12.5px] leading-snug text-muted">Oil is metered, so speed is steady and set here, while pressure sets the available torque.</p>
-          </div>
-        )}
-      </div>
-      )}
-
-        </>
-      )}
-
+      {ui.actionChoice ? <ActionConfig /> : ui.noSpringNote && <p className="text-[12.5px] leading-snug text-muted">{ui.noSpringNote}</p>}
+      {ui.valveChoice && <ValveConfig />}
+      {mechanismFor(s.config.family) === "scotch-yoke" && <YokeConfig />}
+      <Controls sr={sr} />
       <div className="space-y-4 border-t border-rule pt-5">
         <div>
           <div className="mb-2 text-[13px] font-medium text-fg">Housing view</div>
@@ -538,5 +375,164 @@ function ElectroHydraulicConfig({ sr }: { sr: boolean }) {
         <Switch checked={h.stuck} onChange={(v) => engine.dispatch({ type: "set-stuck", value: v })} label="Valve stuck (teaching aid)" description="Simulate a seized valve and watch the partial-stroke test catch it." />
       </div>
     </>
+  );
+}
+
+function ActionConfig() {
+  const { engine } = useEngine();
+  const s = useSimState();
+  const ui = FAMILY_UI[s.config.family];
+  const sr = s.config.actionType === "spring-return";
+  return (
+    <>
+      <fieldset className="space-y-2">
+        <legend className="mb-2 text-[13px] font-medium text-fg">Action type</legend>
+        <Segmented
+          label="Action type"
+          className="w-full"
+          value={s.config.actionType}
+          onChange={(v) => engine.dispatch({ type: "set-config", config: { actionType: v } })}
+          options={[
+            { value: "double-acting", label: "Double acting" },
+            { value: "spring-return", label: "Spring return" },
+          ]}
+        />
+        <p className="text-[12.5px] leading-snug text-muted">{sr ? ui.actionText.sr : ui.actionText.da}</p>
+      </fieldset>
+
+      <fieldset className="space-y-2">
+        <legend className="mb-2 text-[13px] font-medium text-fg">Fail action</legend>
+        <Segmented
+          label="Fail action"
+          className="w-full"
+          value={s.config.failPosition}
+          onChange={(v) => engine.dispatch({ type: "set-config", config: { failPosition: v } })}
+          options={
+            sr
+              ? [
+                  { value: "fail-closed", label: "Fail closed" },
+                  { value: "fail-open", label: "Fail open" },
+                ]
+              : [{ value: "fail-in-place", label: "Fail in place (no spring)" }]
+          }
+        />
+        <p className="text-[12.5px] leading-snug text-muted">
+          {sr
+            ? s.config.failPosition === "fail-closed"
+              ? "The coupling is oriented so the spring end of the stroke is valve closed."
+              : "The coupling is turned 90° so the spring end of the stroke is valve open. Same mechanism, different orientation."
+            : ui.noSpringNote}
+        </p>
+      </fieldset>
+    </>
+  );
+}
+
+function ValveConfig() {
+  const { engine } = useEngine();
+  const valve = useSimState().config.valve ?? "ball";
+  return (
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-[13px] font-medium text-fg">Valve</legend>
+      <Segmented
+        label="Valve"
+        className="w-full"
+        value={valve}
+        onChange={(v) => engine.dispatch({ type: "set-config", config: { valve: v } })}
+        options={[
+          { value: "ball", label: "Ball" },
+          { value: "butterfly", label: "Butterfly" },
+          { value: "plug", label: "Plug" },
+        ]}
+      />
+      <p className="text-[12.5px] leading-snug text-muted">
+        {valve === "plug"
+          ? "High break-out at closed and a high running torque all the way, because the plug rubs on its body throughout the turn."
+          : valve === "butterfly"
+            ? "Seating torque at closed, then a flow-induced dynamic torque that peaks part-way open. See the dashed demand in Engineering mode."
+            : "Highest torque at the seats (closed), lower while the ball turns."}
+      </p>
+    </fieldset>
+  );
+}
+
+function YokeConfig() {
+  const { engine } = useEngine();
+  const yoke = useSimState().config.yoke ?? "symmetric";
+  return (
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-[13px] font-medium text-fg">Yoke</legend>
+      <Segmented
+        label="Yoke"
+        className="w-full"
+        value={yoke}
+        onChange={(v) => engine.dispatch({ type: "set-config", config: { yoke: v } })}
+        options={[
+          { value: "symmetric", label: "Symmetric" },
+          { value: "canted", label: "Canted" },
+        ]}
+      />
+      <p className="text-[12.5px] leading-snug text-muted">
+        {yoke === "canted"
+          ? "The yoke's 90° swing is offset 6° from square, so torque is highest where the valve breaks out of its seat and lower at the other end. The piston and spring shift to centre the longer pin travel. Watch the swing arc shift in Mechanism mode, and compare the curves in Engineering mode."
+          : "Torque is high at both ends of the stroke and lowest in the middle, which suits a ball valve's high seating torque at both ends."}
+      </p>
+    </fieldset>
+  );
+}
+
+/** Supply switch, pressure and (for oil) flow control, described by the registry. */
+function FluidSupplyConfig() {
+  const { engine } = useEngine();
+  const s = useSimState();
+  const sup = FAMILY_UI[s.config.family].supply!;
+  const sr = s.config.actionType === "spring-return";
+  const minP = minimumPressureForFullStroke(s.config) / sup.scale;
+  const bar = (v: number) => `${v.toFixed(sup.decimals)} bar`;
+  return (
+    <div className="space-y-4 border-t border-rule pt-5">
+      <Switch
+        tone="air"
+        checked={s.supplyAvailable}
+        onChange={(v) => engine.dispatch({ type: "set-supply", available: v })}
+        label={sup.label}
+        description={sr ? sup.lossSr : sup.lossDa}
+      />
+      <div>
+        <div className="mb-1 flex items-baseline justify-between">
+          <label htmlFor="pressure" className="text-[14px] font-medium text-fg">
+            Supply pressure
+          </label>
+          <span className="num text-[14px] text-fg">{bar(s.supplyPressure)}</span>
+        </div>
+        <Range
+          id="pressure"
+          label="Supply pressure"
+          valueText={bar(s.supplyPressure)}
+          min={sup.min}
+          max={sup.max}
+          step={sup.step}
+          value={s.supplyPressure}
+          onChange={(v) => engine.dispatch({ type: "set-pressure", bar: v })}
+        />
+        <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
+          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          <span>
+            This model needs about <span className="num text-fg-2">{bar(minP)}</span> to complete the {sup.strokeWord} stroke. Below that it stalls part-way.{" "}
+            <Illustrative>Illustrative model</Illustrative>
+          </span>
+        </p>
+      </div>
+      {sup.flowControl && (
+        <div>
+          <div className="mb-1 flex items-baseline justify-between text-[13px]">
+            <label htmlFor="hyd-flow" className="text-fg">Flow-control setting</label>
+            <span className="num text-fg">{(HYD.strokeTime / Math.max(GAS.flowMin, s.gas.flow)).toFixed(1)} s stroke</span>
+          </div>
+          <Range id="hyd-flow" label="Flow-control setting" min={GAS.flowMin} max={1} step={0.01} value={s.gas.flow} onChange={(v) => engine.dispatch({ type: "set-flow", value: v })} />
+          <p className="mt-1.5 text-[12.5px] leading-snug text-muted">Oil is metered, so speed is steady and set here, while pressure sets the available torque.</p>
+        </div>
+      )}
+    </div>
   );
 }

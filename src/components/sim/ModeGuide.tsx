@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Keyboard } from "lucide-react";
-import type { VisualizationMode } from "@/lib/sim/types";
+import type { ActuatorFamilyId, VisualizationMode } from "@/lib/sim/types";
+import { FAMILY_UI } from "./familyUi";
 import { useSimSelector } from "./SimulationProvider";
 
 const MODE_TEXT: Record<VisualizationMode, { title: string; body: string[] }> = {
@@ -304,19 +305,32 @@ const EH_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   },
 };
 
+type GuideText = Partial<typeof MODE_TEXT>;
+
+/** Guide overrides per family; missing modes fall back to the Scotch yoke text. */
+const GUIDE_TEXT: Record<ActuatorFamilyId, GuideText> = {
+  "pneumatic-scotch-yoke": {},
+  "pneumatic-rack-pinion": RP_MODE_TEXT,
+  "pneumatic-vane": VANE_MODE_TEXT,
+  "electric-part-turn": EPT_MODE_TEXT,
+  "electric-multi-turn": MT_MODE_TEXT,
+  "electric-compact-part-turn": CPT_MODE_TEXT,
+  "gas-scotch-yoke": GAS_MODE_TEXT,
+  "gas-over-oil": { ...GAS_MODE_TEXT, ...GO_MODE_TEXT },
+  "hydraulic-scotch-yoke": {},
+  "hydraulic-rack-pinion": RP_MODE_TEXT,
+  "electro-hydraulic": EH_MODE_TEXT,
+  "rising-stem-linear": {},
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const fail = useSimSelector((s) => s.config.failPosition);
-  const rp = useSimSelector((s) => s.config.family.includes("rack-pinion"));
-  const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
-  const multi = useSimSelector((s) => s.config.family === "electric-multi-turn");
-  const compact = useSimSelector((s) => s.config.family === "electric-compact-part-turn");
-  const gasFamily = useSimSelector((s) => s.config.family === "gas-scotch-yoke" || s.config.family === "gas-over-oil");
-  const gasOil = useSimSelector((s) => s.config.family === "gas-over-oil");
-  const ehFamily = useSimSelector((s) => s.config.family === "electro-hydraulic");
-  const vaneFamily = useSimSelector((s) => s.config.family === "pneumatic-vane");
-  const t = (vaneFamily ? VANE_MODE_TEXT[mode] : ehFamily ? EH_MODE_TEXT[mode] : gasOil ? (GO_MODE_TEXT[mode] ?? GAS_MODE_TEXT[mode]) : gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const family = useSimSelector((s) => s.config.family);
+  const t = GUIDE_TEXT[family][mode] ?? MODE_TEXT[mode];
+  const electric = FAMILY_UI[family].controls === "electric";
+  const gateValve = !FAMILY_UI[family].valveChoice && FAMILY_UI[family].fixedValve?.includes("gate");
   return (
     <div className="space-y-6">
       <section>
@@ -363,7 +377,7 @@ export function ModeGuide() {
       </section>
 
       <section>
-        {multi ? (
+        {gateValve ? (
           <>
             <h3 className="text-[17px] text-fg">Gate valves isolate, they do not throttle</h3>
             <p className="mt-2 max-w-[60ch] text-[13.5px] text-fg-2">

@@ -14,6 +14,8 @@ import { ComponentInspector } from "./ComponentInspector";
 import { ModeGuide } from "./ModeGuide";
 import { EngineeringOverlay } from "./EngineeringOverlay";
 import { useEngine, useSimSelector, useSimState } from "./SimulationProvider";
+import { FAMILY_UI, MENU_GROUPS, simulatorHref } from "./familyUi";
+import type { ActuatorFamilyId } from "@/lib/sim/types";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
   ssr: false,
@@ -96,45 +98,16 @@ export function SimulatorWorkbench() {
   const actionType = useSimSelector((s) => s.config.actionType);
   const fail = useSimSelector((s) => s.config.failPosition);
   const family = useSimSelector((s) => s.config.family);
-  const rackPinion = family === "pneumatic-rack-pinion";
-  const multiTurn = family === "electric-multi-turn";
-  const compact = family === "electric-compact-part-turn";
-  const gas = family === "gas-scotch-yoke";
-  const gasOil = family === "gas-over-oil";
-  const eh = family === "electro-hydraulic";
-  const hydSY = family === "hydraulic-scotch-yoke";
-  const vane = family === "pneumatic-vane";
+  const ui = FAMILY_UI[family];
   const valveKind = useSimSelector((s) => s.config.valve ?? "ball");
-  const hydRP = family === "hydraulic-rack-pinion";
-  const electric = family === "electric-part-turn" || multiTurn || compact;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("configure");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { touchRecent } = useProgress();
 
   useEffect(() => {
-    touchRecent(
-      vane
-        ? { id: "sim-vane", title: "Pneumatic vane simulator", href: "/simulator?type=pneumatic-vane" }
-        : hydSY || hydRP
-        ? { id: `sim-${family}`, title: `Hydraulic ${hydSY ? "Scotch yoke" : "rack and pinion"} simulator`, href: `/simulator?type=${family}` }
-        : eh
-        ? { id: "sim-electro-hydraulic", title: "Electro-hydraulic simulator", href: "/simulator?type=electro-hydraulic" }
-        : gasOil
-        ? { id: "sim-gas-over-oil", title: "Gas-over-oil simulator", href: "/simulator?type=gas-over-oil" }
-        : gas
-        ? { id: "sim-gas", title: "Direct gas Scotch yoke simulator", href: "/simulator?type=gas-scotch-yoke" }
-        : compact
-        ? { id: "sim-electric-compact", title: "Compact electric part-turn simulator", href: "/simulator?type=electric-compact-part-turn" }
-        : multiTurn
-        ? { id: "sim-electric-multi-turn", title: "Electric multi-turn simulator", href: "/simulator?type=electric-multi-turn" }
-        : electric
-        ? { id: "sim-electric-part-turn", title: "Electric part-turn simulator", href: "/simulator?type=electric-part-turn" }
-        : rackPinion
-          ? { id: "sim-rack-pinion", title: "Pneumatic rack and pinion simulator", href: "/simulator?type=rack-pinion" }
-          : { id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" },
-    );
-  }, [touchRecent, rackPinion, electric, multiTurn, compact, gas, gasOil, eh, hydSY, hydRP, vane, family]);
+    touchRecent({ id: `sim-${family}`, title: FAMILY_UI[family].recentTitle, href: simulatorHref(family) });
+  }, [touchRecent, family]);
 
   // Selecting a part in the scene brings the Components tab forward
   // (state adjusted during render, per React guidance, not in an effect).
@@ -176,34 +149,25 @@ export function SimulatorWorkbench() {
     tabRefs.current[n]?.focus();
   };
 
-  const configLabel = compact
-    ? "Two-stage self-locking gearing with cam limit and torque switches, fails in place"
-    : multiTurn
-    ? "Motor, worm gear and stem nut, fails in place"
-    : electric
-    ? "Motor and self-locking worm gear, fails in place"
-    : vane
-    ? "Single vane, double acting, fails in place"
-    : hydSY || hydRP
-    ? actionType === "double-acting" ? "Double acting on a hydraulic power unit, fails in place" : `Spring return on hydraulic supply, ${fail === "fail-closed" ? "fails closed" : "fails open"}`
-    : eh
-    ? actionType === "double-acting" ? "Motor-driven pump, double acting, fails in place" : `Motor-driven pump against a spring, ${fail === "fail-closed" ? "fails closed" : "fails open"}`
-    : gasOil
-    ? actionType === "double-acting" ? "Double acting, gas pressure on oil, line-break and low-pressure close" : `Spring return, gas over oil, ${fail === "fail-closed" ? "fails closed" : "fails open"}`
-    : gas
-    ? actionType === "double-acting" ? "Double acting on pipeline gas, line-break close" : `Spring return on pipeline gas, ${fail === "fail-closed" ? "fails closed" : "fails open"}`
-    : actionType === "double-acting" ? "Double acting, fails in place" : `Spring return, ${fail === "fail-closed" ? "fails closed" : "fails open"}`;
+  const configLabel = ui.configLabel(actionType, fail);
+  const valveText = ui.valveChoice
+    ? valveKind === "butterfly"
+      ? "on a butterfly valve"
+      : valveKind === "plug"
+        ? "on a plug valve"
+        : "on a quarter-turn ball valve"
+    : (ui.fixedValve ?? "on a quarter-turn ball valve");
 
   return (
     <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh lg:min-h-0">
       <header className="flex flex-col gap-3 border-b border-rule bg-panel px-4 py-3 md:flex-row md:items-center md:justify-between lg:px-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] text-fg">{vane ? "Pneumatic vane" : hydSY ? "Hydraulic Scotch yoke" : hydRP ? "Hydraulic rack and pinion" : eh ? "Electro-hydraulic Scotch yoke" : gasOil ? "Gas-over-oil Scotch yoke" : gas ? "Direct gas Scotch yoke" : compact ? "Compact electric part-turn" : multiTurn ? "Electric multi-turn" : electric ? "Electric part-turn" : rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
+            <h1 className="text-[24px] text-fg">{ui.title}</h1>
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">
-            {configLabel}, {multiTurn ? "on a rising-stem wedge gate valve" : valveKind === "butterfly" ? "on a butterfly valve" : valveKind === "plug" ? "on a plug valve" : "on a quarter-turn ball valve"}. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
+            {configLabel}, {valveText}. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -212,39 +176,29 @@ export function SimulatorWorkbench() {
             <select
               aria-label="Actuator type"
               className="cursor-pointer appearance-none bg-transparent font-medium text-fg outline-none"
-              value={vane || hydSY || hydRP ? family : eh ? "electro-hydraulic" : gasOil ? "gas-over-oil" : gas ? "gas-scotch-yoke" : compact ? "electric-compact-part-turn" : multiTurn ? "electric-multi-turn" : electric ? "electric-part-turn" : rackPinion ? "rack-pinion" : "scotch-yoke"}
+              value={family}
               onChange={(ev) => {
-                const v = ev.target.value;
+                const next = ev.target.value as ActuatorFamilyId;
                 const params = new URLSearchParams();
-                if (v !== "scotch-yoke") params.set("type", v);
-                if (!electric && !v.startsWith("electric")) {
+                // Keep the action and fail choice when both families offer it.
+                if (ui.actionChoice && FAMILY_UI[next].actionChoice) {
                   if (actionType === "double-acting") params.set("action", "double-acting");
                   if (fail === "fail-open") params.set("fail", "open");
                 }
-                router.push(`/simulator${params.size ? `?${params}` : ""}`);
+                router.push(simulatorHref(next, params));
               }}
             >
-              <optgroup label="Pneumatic">
-                <option value="scotch-yoke">Scotch yoke</option>
-                <option value="rack-pinion">Rack and pinion</option>
-                <option value="pneumatic-vane">Vane</option>
-              </optgroup>
-              <optgroup label="Electric">
-                <option value="electric-part-turn">Intelligent part-turn</option>
-                <option value="electric-multi-turn">Intelligent multi-turn</option>
-                <option value="electric-compact-part-turn">Compact part-turn</option>
-              </optgroup>
-              <optgroup label="Gas">
-                <option value="gas-scotch-yoke">Direct gas (high pressure)</option>
-                <option value="gas-over-oil">Gas over oil</option>
-              </optgroup>
-              <optgroup label="Hydraulic">
-                <option value="hydraulic-scotch-yoke">Scotch yoke</option>
-                <option value="hydraulic-rack-pinion">Rack and pinion (large)</option>
-              </optgroup>
-              <optgroup label="Electro-hydraulic">
-                <option value="electro-hydraulic">With integral controller</option>
-              </optgroup>
+              {MENU_GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {(Object.keys(FAMILY_UI) as ActuatorFamilyId[])
+                    .filter((f) => FAMILY_UI[f].menu?.group === group)
+                    .map((f) => (
+                      <option key={f} value={f}>
+                        {FAMILY_UI[f].menu!.label}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2.5 size-4 text-muted" aria-hidden />
           </label>
