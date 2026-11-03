@@ -48,7 +48,7 @@ const MODE_PRESETS: Record<VisualizationMode, Partial<SimulationState>> = {
 
 function normaliseConfig(c: ActuatorConfiguration): ActuatorConfiguration {
   // Electric actuators have no spring and no coupling flip in this model.
-  if (isElectric(c.family)) return { ...c, actionType: "double-acting", failPosition: "fail-in-place" };
+  if (isElectric(c.family) || c.family === "pneumatic-vane") return { ...c, actionType: "double-acting", failPosition: "fail-in-place" };
   if (c.actionType === "double-acting") return { ...c, failPosition: "fail-in-place" };
   if (c.failPosition === "fail-in-place") return { ...c, failPosition: "fail-closed" };
   return c;
@@ -963,6 +963,7 @@ export class SimulationEngine {
       else if (isHydraulic(s.config.family)) msg = `${verb}: oil from the power unit drives the piston; oil from the other side returns to tank.`;
       else if (isGasOverOil(s.config.family)) msg = `${verb}: gas pushes oil into one side of the piston; oil from the other side returns to its tank.`;
       else if (isGas(s.config.family)) msg = `${verb}: pipeline gas drives the piston; the opposite chamber exhausts.`;
+      else if (s.config.family === "pneumatic-vane") msg = `${verb}: air on one face of the vane turns it; the other side of the chamber exhausts.`;
       else msg = `${verb}: air drives the piston; the opposite chamber exhausts.`;
     } else if (s.stalled) {
       msg = `Stalled at ${pct(s.position)}: available torque does not exceed the load. Raise supply pressure (illustrative model).`;

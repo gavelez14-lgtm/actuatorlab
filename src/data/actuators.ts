@@ -106,7 +106,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Vane",
     powerSource: "Pneumatic",
     movement: "Quarter-turn (limited by the chamber)",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=pneumatic-vane",
     summary: "Air pushes directly on a vane fixed to the shaft inside a sector-shaped chamber. Rotary force with no linear-to-rotary conversion.",
     operation: [
       "A flat vane is fixed to the output shaft and divides a sector-shaped chamber in two.",

@@ -32,3 +32,21 @@ describe("hydraulic actuators", () => {
     expect(e.getState().position).toBeLessThan(0.99);
   });
 });
+
+import { checkVaneGeometry } from "../vaneGeometry";
+import { torqueCurves } from "../model";
+
+describe("pneumatic vane", () => {
+  it("vane clears the chamber walls through the stroke", () => {
+    expect(checkVaneGeometry()).toEqual([]);
+  });
+  it("is double acting only and gives constant torque", () => {
+    const e = new SimulationEngine({ family: "pneumatic-vane", actionType: "spring-return" });
+    expect(e.getState().config.actionType).toBe("double-acting");
+    const c = torqueCurves(e.getState().config, 5.5);
+    expect(c[0].airStroke).toBeCloseTo(c[30].airStroke, 6);
+    e.dispatch({ type: "open" });
+    for (let i = 0; i < 600; i++) e.advance(1 / 60);
+    expect(e.getState().position).toBeGreaterThan(0.99);
+  });
+});

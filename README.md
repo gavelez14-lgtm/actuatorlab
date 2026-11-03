@@ -37,8 +37,8 @@ Import the repository in Vercel. The framework preset (Next.js) and default buil
 | Section | Status |
 | --- | --- |
 | Dashboard | Scroll-driven stroke story (scroll scrubs the real simulation; camera moves through exterior, air, mechanism views), continue learning, progress, families, recent topics, recommendations |
-| Actuator Explorer | Technology library (9 actuator types by mechanism and power source), detail pages, valve library. The pneumatic Scotch yoke is interactive; others are marked *coming soon* until their simulation is built. Old product-code URLs redirect. |
-| 3D Simulator | Pneumatic Scotch yoke, twin-piston pneumatic rack and pinion, electric part-turn with worm-wheel segment (on a ball valve), electric multi-turn on a rising-stem wedge gate valve, compact electromechanical part-turn, direct high-pressure gas Scotch yoke with line-break detection and hydraulic hand-pump override, gas-over-oil with flow-controlled stroke speed and a low-pressure trip, a self-contained electro-hydraulic actuator with an integral controller (positioner, ESD, partial-stroke test), and hydraulic Scotch yoke and rack and pinion on a power unit (choose in the header, or `?type=rack-pinion` / `electric-part-turn` / `electric-multi-turn` / `electric-compact-part-turn` / `gas-scotch-yoke` / `gas-over-oil` / `electro-hydraulic` / `hydraulic-scotch-yoke` / `hydraulic-rack-pinion`). Scotch yokes offer a symmetric or canted yoke. 5 modes, 3 configurations, supply loss, component inspection |
+| Actuator Explorer | Technology library by mechanism and power source, detail pages, valve library. Every listed type is interactive except the rising-stem entry, which opens the multi-turn simulator. Old product-code URLs redirect. |
+| 3D Simulator | Pneumatic Scotch yoke, twin-piston pneumatic rack and pinion, single-vane pneumatic rotary, electric part-turn with worm-wheel segment (on a ball valve), electric multi-turn on a rising-stem wedge gate valve, compact electromechanical part-turn, direct high-pressure gas Scotch yoke with line-break detection and hydraulic hand-pump override, gas-over-oil with flow-controlled stroke speed and a low-pressure trip, a self-contained electro-hydraulic actuator with an integral controller (positioner, ESD, partial-stroke test), and hydraulic Scotch yoke and rack and pinion on a power unit (choose in the header, or `?type=rack-pinion` / `electric-part-turn` / `electric-multi-turn` / `electric-compact-part-turn` / `gas-scotch-yoke` / `gas-over-oil` / `electro-hydraulic` / `hydraulic-scotch-yoke` / `hydraulic-rack-pinion` / `pneumatic-vane`). Scotch yokes offer a symmetric or canted yoke. 5 modes, 3 configurations, supply loss, component inspection |
 | Compare | Scotch yoke vs rack and pinion (torque shape, typical characteristics), and six power sources side by side |
 | Academy | 16-lesson curriculum, all written, with embedded live 3D demos, torque figures and knowledge checks. |
 | Assessments | Three scored quizzes with explanations, including power sources and safety functions |
@@ -108,7 +108,7 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 
 ## Known limitations
 
-- The vane type is not yet simulated; nor are butterfly and plug valves.
+- Vane actuators are modelled double acting only; nor are butterfly and plug valves.
 - The air flow view is illustrative, not CFD.
 - Progress lives in one browser; clearing site data resets it.
 - In headless or software-rendered browsers the 3D view is slow; the simulation clock clamps long frames to 0.25 s.

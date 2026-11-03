@@ -8,7 +8,7 @@ import { yokeLever } from "./gas";
 import { RP } from "./rackPinionGeometry";
 import type { ActuatorConfiguration, ActuatorFamilyId } from "./types";
 
-export type MechanismKind = "scotch-yoke" | "rack-pinion" | "worm-gear" | "multi-turn" | "compact-electric";
+export type MechanismKind = "scotch-yoke" | "rack-pinion" | "worm-gear" | "multi-turn" | "compact-electric" | "vane";
 
 export interface Mechanism {
   kind: MechanismKind;
@@ -56,6 +56,13 @@ export const MECHANISMS: Record<MechanismKind, Mechanism> = {
     formula: "Thrust ≈ T × 2π / lead × efficiency",
     formulaNote: "The stem nut turns many times; the thread converts output torque into stem thrust.",
   },
+  vane: {
+    kind: "vane",
+    name: "Rotary vane",
+    lever: () => RACK_PINION_LEVER,
+    formula: "T = p·A·r̄",
+    formulaNote: "Pressure on the vane area acts at its mean radius, so torque is constant through travel.",
+  },
   "rack-pinion": {
     kind: "rack-pinion",
     name: "Rack and pinion",
@@ -69,6 +76,7 @@ export function mechanismFor(family: ActuatorFamilyId): MechanismKind {
   if (family === "electric-part-turn") return "worm-gear";
   if (family === "electric-multi-turn") return "multi-turn";
   if (family === "electric-compact-part-turn") return "compact-electric";
+  if (family === "pneumatic-vane") return "vane";
   return family.includes("rack-pinion") ? "rack-pinion" : "scotch-yoke";
 }
 

@@ -30,6 +30,10 @@ export function ConfigPanel() {
         <ElectricConfig />
       ) : (
         <>
+      {s.config.family === "pneumatic-vane" ? (
+        <p className="text-[12.5px] leading-snug text-muted">Double acting: air drives the vane both ways and it fails in place. Spring-return vane actuators add a separate spring module, which is not modelled here.</p>
+      ) : (
+        <>
       <fieldset className="space-y-2">
         <legend className="mb-2 text-[13px] font-medium text-fg">Action type</legend>
         <Segmented
@@ -84,6 +88,9 @@ export function ConfigPanel() {
         </p>
       </fieldset>
 
+        </>
+      )}
+
       {yokeFamily && (
         <fieldset className="space-y-2">
           <legend className="mb-2 text-[13px] font-medium text-fg">Yoke</legend>
@@ -123,7 +130,7 @@ export function ConfigPanel() {
                 : "Turn off to simulate loss of the hydraulic power unit. The trapped oil holds the valve in place."
               : sr
                 ? "Turn off to simulate loss of instrument air. The spring will act."
-                : "Turn off to simulate loss of instrument air. Nothing will drive the piston."
+                : `Turn off to simulate loss of instrument air. Nothing will drive the ${s.config.family === "pneumatic-vane" ? "vane" : "piston"}.`
           }
         />
 

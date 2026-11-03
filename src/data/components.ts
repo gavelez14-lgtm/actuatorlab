@@ -815,7 +815,46 @@ export const ELECTRO_HYDRAULIC_COMPONENTS: ComponentInfo[] = [
   },
 ];
 
+/** Single-vane rotary actuator. */
+export const VANE_COMPONENTS: ComponentInfo[] = [
+  {
+    id: "housing",
+    name: "Vane housing",
+    role: "Pressure containment",
+    function: "A drum with a sector-shaped chamber that the vane sweeps through.",
+    description:
+      "The housing contains the air on both sides of the vane. The chamber spans the 90° swing plus the vane's own width; the solid part of the housing forms the end walls (abutments) that the vane stops against.",
+    focus: [0, 0, -0.2],
+    distance: 2.4,
+    group: "actuator",
+  },
+  {
+    id: "piston",
+    name: "Vane",
+    role: "Torque conversion",
+    function: "A blade fixed to the shaft: air pressure on one face turns it directly.",
+    description:
+      "There is no linear-to-rotary conversion at all. Pressure acts on the vane's face, and the resulting force acts at the vane's mean radius, so torque is constant through travel. Seals on the vane's edges keep the two sides of the chamber apart; their length is a weak point compared with a round piston seal.",
+    caveat: "Double-vane designs give twice the torque in the same diameter but less rotation. Spring-return versions add a separate spring module (not modelled).",
+    focus: [0, 0, -0.32],
+    distance: 2.0,
+    group: "actuator",
+  },
+  {
+    id: "output-shaft",
+    name: "Hub and output shaft",
+    role: "Output transmission",
+    function: "Carries the vane and transmits its torque to the valve.",
+    description: "The vane is part of, or keyed to, the hub. The shaft runs through the housing to the coupling and position indicator, so the vane, shaft and ball turn as one.",
+    focus: [0, -0.2, 0],
+    distance: 2.4,
+    group: "actuator",
+  },
+  ...VALVE_PARTS,
+];
+
 export function componentsFor(kind: MechanismKind, gasFamily: ActuatorFamilyId | null = null): ComponentInfo[] {
+  if (kind === "vane") return VANE_COMPONENTS;
   if (gasFamily === "electro-hydraulic") {
     const extra = ELECTRO_HYDRAULIC_COMPONENTS;
     return [...COMPONENTS.map((c) => extra.find((g) => g.id === c.id) ?? c), ...extra.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];

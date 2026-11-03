@@ -115,7 +115,7 @@ export function Dashboard() {
                 <ProgressBar value={mounted ? quizzesTaken.length / ASSESSMENTS.length : 0} label="Assessments taken" />
               </div>
               <p className="text-[12px] text-muted">
-                {LESSONS.length - AVAILABLE_LESSONS.length} more lessons are planned. Progress is stored only in this browser.
+                {LESSONS.length > AVAILABLE_LESSONS.length ? `${LESSONS.length - AVAILABLE_LESSONS.length} more lessons are planned. ` : ""}Progress is stored only in this browser.
               </p>
               <div className="flex flex-wrap gap-1 border-t border-rule pt-3">
                 <Button variant="ghost" size="sm" onClick={() => reset("empty")}>

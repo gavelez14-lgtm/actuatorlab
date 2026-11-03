@@ -45,6 +45,30 @@ const MODE_TEXT: Record<VisualizationMode, { title: string; body: string[] }> = 
 };
 
 /** Rack-and-pinion versions of the mechanism-specific explanations. */
+const VANE_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "A single-vane rotary actuator on the ball valve. Inside the drum, a blade on the shaft swings through 90° in a sector-shaped chamber. Fewest moving parts of any actuator here: the vane is the output.",
+    ],
+  },
+  mechanical: {
+    title: "No conversion needed",
+    body: [
+      "Air in one side of the chamber pushes on the vane's face; the other side exhausts. The vane is fixed to the shaft, so it turns the valve directly, with no piston, yoke or rack.",
+      "The vane stops against the chamber's end walls at each end of travel. Animation is slowed to 0.35× in this mode.",
+    ],
+  },
+  energy: {
+    title: "Air flow (illustrative)",
+    body: ["Blue shows the pressurised side of the vane; grey the exhausting side. Watch the two sectors trade size as the vane swings. Markers show direction only."],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: ["Torque is pressure × vane area × mean radius, so the curve is flat, like a rack and pinion. Values are normalised and illustrative."],
+  },
+};
+
 const RP_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   normal: {
     title: "Normal operation",
@@ -291,7 +315,8 @@ export function ModeGuide() {
   const gasFamily = useSimSelector((s) => s.config.family === "gas-scotch-yoke" || s.config.family === "gas-over-oil");
   const gasOil = useSimSelector((s) => s.config.family === "gas-over-oil");
   const ehFamily = useSimSelector((s) => s.config.family === "electro-hydraulic");
-  const t = (ehFamily ? EH_MODE_TEXT[mode] : gasOil ? (GO_MODE_TEXT[mode] ?? GAS_MODE_TEXT[mode]) : gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const vaneFamily = useSimSelector((s) => s.config.family === "pneumatic-vane");
+  const t = (vaneFamily ? VANE_MODE_TEXT[mode] : ehFamily ? EH_MODE_TEXT[mode] : gasOil ? (GO_MODE_TEXT[mode] ?? GAS_MODE_TEXT[mode]) : gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>

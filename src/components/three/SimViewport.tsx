@@ -13,6 +13,7 @@ import { useEngine, useSimSelector } from "@/components/sim/SimulationProvider";
 import { usePrefersReducedMotion, useWebGLSupport } from "@/lib/hooks";
 import { ActuatorModel } from "./ActuatorModel";
 import { RackPinionModel } from "./RackPinionModel";
+import { VaneModel } from "./VaneModel";
 import { ElectricPartTurnModel } from "./ElectricPartTurnModel";
 import { ElectricMultiTurnModel } from "./ElectricMultiTurnModel";
 import { CompactElectricModel } from "./CompactElectricModel";
@@ -78,8 +79,18 @@ const GAS_VIEWS: Record<VisualizationMode, View> = {
   engineering: { target: [0.35, -0.45, -0.6], dir: [0.55, 0.38, 0.74], distance: 8.6 },
 };
 
+/** Single-vane drum on the ball valve. */
+const VANE_VIEWS: Record<VisualizationMode, View> = {
+  normal: { target: [0, -0.55, 0], dir: [0.55, 0.42, 0.72], distance: 4.8 },
+  cutaway: { target: [0, -0.2, -0.15], dir: [0.35, 0.82, -0.45], distance: 3.8 },
+  mechanical: { target: [0, 0.0, -0.2], dir: [0.25, 0.9, -0.36], distance: 2.6 },
+  energy: { target: [0, 0.0, -0.15], dir: [0.3, 0.84, -0.45], distance: 3.4 },
+  engineering: { target: [0, -0.55, 0], dir: [0.55, 0.42, 0.72], distance: 4.8 },
+};
+
 function viewsFor(kind: MechanismKind, gas = false) {
   if (gas) return GAS_VIEWS;
+  if (kind === "vane") return VANE_VIEWS;
   if (kind === "compact-electric") return COMPACT_VIEWS;
   if (kind === "multi-turn") return MULTI_TURN_VIEWS;
   if (kind === "worm-gear") return ELECTRIC_VIEWS;
@@ -287,7 +298,14 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
         <Lightformer form="ring" intensity={0.6} position={[0, -3, 0]} scale={4} />
       </Environment>
 
-      {mechanism === "compact-electric" ? (
+      {mechanism === "vane" ? (
+        <VaneModel
+          mats={mats}
+          rootRef={root}
+          onSelect={(id) => interactive && engine.dispatch({ type: "select", id })}
+          onHover={(id) => interactive && setHovered(id)}
+        />
+      ) : mechanism === "compact-electric" ? (
         <CompactElectricModel
           mats={mats}
           rootRef={root}
