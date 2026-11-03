@@ -78,7 +78,16 @@ function PneumaticEngineering() {
       <dl className="grid grid-cols-2 gap-x-5 divide-rule border-y border-rule py-1">
         <Row label="Valve position" value={`${(s.position * 100).toFixed(1)}`} unit="%" />
         <Row label="Output angle" value={s.outputAngle.toFixed(1)} unit="°" />
-        {isGas(s.config.family) ? (
+        {s.config.family === "electro-hydraulic" ? (
+          <>
+            <Row label="Demand" value={s.eh.demand === null ? "none" : (s.eh.demand * 100).toFixed(0)} unit={s.eh.demand === null ? undefined : "%"} />
+            <Row label="Pressure" value={s.eh.pressure.toFixed(0)} unit="bar" tone="air" />
+            <Row label="Pump" value={s.eh.motorRunning ? "running" : "off"} tone={s.eh.motorRunning ? "ok" : undefined} />
+            <Row label="Dump valve" value={s.eh.dumping ? "open" : "closed"} tone={s.eh.dumping ? "warn" : undefined} />
+            <Row label="ESD" value={s.eh.esd ? "active" : "healthy"} tone={s.eh.esd ? "danger" : "ok"} />
+            <Row label="Last PST" value={s.eh.pst} tone={s.eh.pst === "failed" ? "danger" : s.eh.pst === "passed" ? "ok" : undefined} />
+          </>
+        ) : isGas(s.config.family) ? (
           <>
             <Row label="Pipeline" value={s.gas.pipeline.toFixed(1)} unit="bar" tone={s.gas.ruptured ? "danger" : "air"} />
             <Row label="Reserve tank" value={s.gas.tank.toFixed(1)} unit="bar" tone="air" />

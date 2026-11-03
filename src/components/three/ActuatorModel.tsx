@@ -28,6 +28,7 @@ import { Label, Pick } from "./parts";
 import { ValveAssembly } from "./ValveAssembly";
 import { AirSystem } from "./AirSystem";
 import { GasSystem, OverrideSliderParts } from "./GasSystem";
+import { ElectroHydraulicModule } from "./ElectroHydraulicModule";
 
 const AXIS_Z = -YOKE_OFFSET;
 
@@ -131,6 +132,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
   const springReturn = actionType === "spring-return";
   const gas = useSimSelector((s) => isGas(s.config.family));
   const overOil = useSimSelector((s) => isGasOverOil(s.config.family));
+  const eh = useSimSelector((s) => s.config.family === "electro-hydraulic");
 
   const geo = useMemo(
     () => ({
@@ -393,7 +395,8 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
       <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={shaftRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
 
-      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil} />
+      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil || eh} />
+      {eh && <ElectroHydraulicModule mats={mats} pick={pick} showLabels={showLabels} />}
       {gas && <GasSystem mats={mats} pick={pick} showLabels={showLabels} shellRaycast={shellRaycast} overOil={overOil} />}
     </group>
   );

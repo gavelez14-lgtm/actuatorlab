@@ -373,7 +373,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Electro-hydraulic",
     powerSource: "Electro-hydraulic",
     movement: "Quarter-turn or linear",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=electro-hydraulic",
     summary: "An electric motor drives a pump inside the actuator, so it needs only electrical power yet delivers hydraulic force and spring fail-safe action.",
     operation: [
       "An integral motor and pump generate hydraulic pressure on demand.",
@@ -383,7 +384,11 @@ export const FAMILIES: ActuatorFamily[] = [
       { name: "Spring return", note: "Hydraulic stroke against a spring; spring drives to the fail position." },
       { name: "Double acting", note: "Pump drives both directions." },
     ],
-    objectives: ["Explain how electro-hydraulic actuators combine electric control with hydraulic force.", "Identify why they suit remote sites without an air supply."],
+    objectives: [
+      "Explain how electro-hydraulic actuators combine electric control with hydraulic force.",
+      "Identify why they suit remote sites without an air supply.",
+      "Describe how an integral controller positions the valve, handles ESD and runs a partial-stroke test.",
+    ],
     principles: ["Avoids long instrument air or hydraulic lines.", "Combines precise electric control with hydraulic force and spring fail-safe capability."],
     relatedLessons: ["power-sources"],
   },

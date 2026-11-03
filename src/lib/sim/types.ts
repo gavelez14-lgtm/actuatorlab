@@ -89,7 +89,9 @@ export type ComponentId =
   | "hand-pump"
   | "gas-controls"
   | "gas-tank"
-  | "flow-controls";
+  | "flow-controls"
+  | "power-unit"
+  | "controller";
 
 export interface ActuatorConfiguration {
   family: ActuatorFamilyId;
@@ -174,6 +176,25 @@ export interface GasState {
   pumpPhase: number;
 }
 
+/** Electro-hydraulic state. Present for every family; only used by electro-hydraulic. */
+export interface ElectroHydraulicState {
+  /** Positioner demand, valve position 0..1, or null for no demand. */
+  demand: number | null;
+  /** Emergency shutdown input active: dump oil, spring to fail position. */
+  esd: boolean;
+  /** Partial-stroke test phase. */
+  pst: "idle" | "out" | "back" | "passed" | "failed";
+  /** Simulation time the current PST phase started. */
+  pstStart: number;
+  /** Teaching aid: valve stuck in position (PST should fail). */
+  stuck: boolean;
+  motorRunning: boolean;
+  /** Dump solenoid open: oil returning to the reservoir under spring force. */
+  dumping: boolean;
+  /** Illustrative hydraulic pressure, bar. */
+  pressure: number;
+}
+
 export interface SimulationState {
   config: ActuatorConfiguration;
 
@@ -228,6 +249,7 @@ export interface SimulationState {
 
   electric: ElectricState;
   gas: GasState;
+  eh: ElectroHydraulicState;
   paint: PaintFinish;
 }
 
@@ -263,5 +285,9 @@ export type SimulationCommand =
   | { type: "reset-line-break" }
   | { type: "set-manual"; value: boolean }
   | { type: "set-flow"; value: number }
+  | { type: "set-demand"; value: number | null }
+  | { type: "set-esd"; value: boolean }
+  | { type: "start-pst" }
+  | { type: "set-stuck"; value: boolean }
   | { type: "set-low-set"; value: number }
   | { type: "pump"; dir: -1 | 0 | 1 };

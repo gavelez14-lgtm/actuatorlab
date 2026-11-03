@@ -9,6 +9,7 @@ import { Segmented, Switch, Range } from "@/components/ui/controls";
 import { Illustrative } from "@/components/ui/primitives";
 import { useEngine, useSimState } from "./SimulationProvider";
 import { GAS, goStrokeTime, isGas, isGasOverOil } from "@/lib/sim/gas";
+import { EH } from "@/lib/sim/electroHydraulic";
 import { mechanismFor } from "@/lib/sim/mechanisms";
 
 export function ConfigPanel() {
@@ -18,6 +19,7 @@ export function ConfigPanel() {
   const minP = minimumPressureForFullStroke(s.config);
   const electric = isElectric(s.config.family);
   const gas = isGas(s.config.family);
+  const eh = s.config.family === "electro-hydraulic";
   const yokeFamily = mechanismFor(s.config.family) === "scotch-yoke";
 
   return (
@@ -40,8 +42,12 @@ export function ConfigPanel() {
         />
         <p className="text-[12.5px] leading-snug text-muted">
           {sr
-            ? `${gas ? "Gas" : "Air"} drives one direction against a spring. The spring drives the other direction and provides the fail action.`
-            : gas
+            ? eh
+              ? "The pump drives one direction against a spring. The dump valve lets the spring drive the other direction, and gives the fail action."
+              : `${gas ? "Gas" : "Air"} drives one direction against a spring. The spring drives the other direction and provides the fail action.`
+            : eh
+              ? "The pump drives both directions through a directional valve. There is no spring, so it fails in place."
+              : gas
               ? isGasOverOil(s.config.family)
                 ? "Gas pushes oil to either side of the piston. With no spring, stored gas is what closes the valve after a trip."
                 : "Gas drives both directions. With no spring, the reserve tank is the stored energy that closes the valve after a line break."
@@ -99,6 +105,8 @@ export function ConfigPanel() {
 
       {gas ? (
         <GasConfig sr={sr} />
+      ) : eh ? (
+        <ElectroHydraulicConfig sr={sr} />
       ) : (
       <div className="space-y-4 border-t border-rule pt-5">
         <Switch
@@ -418,6 +426,67 @@ function GasConfig({ sr }: { sr: boolean }) {
             </HandwheelButton>
           </div>
         )}
+      </div>
+    </>
+  );
+}
+
+function ElectroHydraulicConfig({ sr }: { sr: boolean }) {
+  const { engine } = useEngine();
+  const s = useSimState();
+  const h = s.eh;
+  const demandPct = h.demand === null ? null : Math.round(h.demand * 100);
+  return (
+    <>
+      <div className="space-y-4 border-t border-rule pt-5">
+        <Switch
+          checked={s.supplyAvailable}
+          onChange={(v) => engine.dispatch({ type: "set-supply", available: v })}
+          label="Power available"
+          description={sr ? "Turn off: the dump solenoid de-energises and the spring drives the valve to its fail position." : "Turn off: the pump stops and the valve holds where it is."}
+        />
+        <div>
+          <div className="mb-1 flex items-baseline justify-between">
+            <label htmlFor="eh-demand" className="text-[14px] font-medium text-fg">
+              Position demand
+            </label>
+            <span className="num text-[14px] text-fg">{demandPct === null ? "none" : `${demandPct}%`}</span>
+          </div>
+          <Range
+            id="eh-demand"
+            label="Position demand"
+            valueText={demandPct === null ? "no demand" : `${demandPct} percent open`}
+            min={0}
+            max={1}
+            step={0.01}
+            value={h.demand ?? s.position}
+            onChange={(v) => engine.dispatch({ type: "set-demand", value: v })}
+          />
+          <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
+            The integral controller runs the pump or opens the dump valve until the valve is within a small deadband of the demand, then locks the oil in. Open and Close set 100% and 0%. <Illustrative>Illustrative</Illustrative>
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4 border-t border-rule pt-5">
+        <Switch
+          checked={h.esd}
+          onChange={(v) => engine.dispatch({ type: "set-esd", value: v })}
+          label="Emergency shutdown (ESD) input"
+          description="A separate safety input that overrides the demand and drives the valve to its fail position."
+        />
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={() => engine.dispatch({ type: "start-pst" })}>
+              Run partial-stroke test
+            </Button>
+            <span className={`text-[13px] ${h.pst === "failed" ? "text-danger" : h.pst === "passed" ? "text-ok" : "text-muted"}`}>
+              {h.pst === "idle" ? "Not run" : h.pst === "out" || h.pst === "back" ? "Running" : h.pst === "passed" ? "Passed" : "Failed"}
+            </span>
+          </div>
+          <p className="mt-1.5 text-[12.5px] leading-snug text-muted">From the normal (powered) position, moves the valve {Math.round(EH.pstTravel * 100)}% toward its fail position and back. It proves the valve is free without shutting the process down.</p>
+        </div>
+        <Switch checked={h.stuck} onChange={(v) => engine.dispatch({ type: "set-stuck", value: v })} label="Valve stuck (teaching aid)" description="Simulate a seized valve and watch the partial-stroke test catch it." />
       </div>
     </>
   );

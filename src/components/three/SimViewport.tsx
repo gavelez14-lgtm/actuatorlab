@@ -151,7 +151,7 @@ function CameraRig({
 
     cameraApi.current = {
       reset: () => {
-        const v = viewsFor(kind(), isGas(eng.getState().config.family)).normal;
+        const v = viewsFor(kind(), isGas(eng.getState().config.family) || eng.getState().config.family === "electro-hydraulic").normal;
         fromView(new THREE.Vector3(...v.target), new THREE.Vector3(...v.dir), v.distance);
       },
       fit: () => {
@@ -167,14 +167,14 @@ function CameraRig({
         flyTo(sphere.center.clone(), sphere.center.clone().add(dir.multiplyScalar(distance)));
       },
       focus: (id: ComponentId) => {
-        const info = componentInfo(kind(), id, isGas(eng.getState().config.family) ? eng.getState().config.family : null);
+        const info = componentInfo(kind(), id, isGas(eng.getState().config.family) || eng.getState().config.family === "electro-hydraulic" ? eng.getState().config.family : null);
         const c = controls.current;
         if (!info || !c) return;
         const dir = camera.position.clone().sub(c.target).normalize();
         fromView(new THREE.Vector3(...info.focus), dir, info.distance);
       },
       preset: (mode: VisualizationMode, scale = 1) => {
-        const v = viewsFor(kind(), isGas(eng.getState().config.family))[mode];
+        const v = viewsFor(kind(), isGas(eng.getState().config.family) || eng.getState().config.family === "electro-hydraulic")[mode];
         fromView(new THREE.Vector3(...v.target), new THREE.Vector3(...v.dir), v.distance * scale);
       },
     };
@@ -192,7 +192,7 @@ function CameraRig({
     const mode = engine.getState().mode;
     const c = controls.current;
     if (!c) return;
-    const v = viewsFor(mechanismFor(engine.getState().config.family), isGas(engine.getState().config.family))[mode];
+    const v = viewsFor(mechanismFor(engine.getState().config.family), isGas(engine.getState().config.family) || engine.getState().config.family === "electro-hydraulic")[mode];
     const target = new THREE.Vector3(...v.target);
     c.target.copy(target);
     camera.position.copy(target.clone().add(new THREE.Vector3(...v.dir).normalize().multiplyScalar(v.distance * frameScale(camera, compact))));

@@ -25,7 +25,7 @@ export function ComponentInspector() {
   const selected = useSimSelector((s) => s.selectedComponent);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const kind = useSimSelector((s) => mechanismFor(s.config.family));
-  const gas = useSimSelector((s) => (isGas(s.config.family) ? s.config.family : null));
+  const gas = useSimSelector((s) => (isGas(s.config.family) || s.config.family === "electro-hydraulic" ? s.config.family : null));
   const info = selected ? (componentInfo(kind, selected, gas) ?? null) : null;
   const list = componentsFor(kind, gas).filter((c) => !c.springReturnOnly || sr);
 

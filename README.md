@@ -38,7 +38,7 @@ Import the repository in Vercel. The framework preset (Next.js) and default buil
 | --- | --- |
 | Dashboard | Scroll-driven stroke story (scroll scrubs the real simulation; camera moves through exterior, air, mechanism views), continue learning, progress, families, recent topics, recommendations |
 | Actuator Explorer | Technology library (9 actuator types by mechanism and power source), detail pages, valve library. The pneumatic Scotch yoke is interactive; others are marked *coming soon* until their simulation is built. Old product-code URLs redirect. |
-| 3D Simulator | Pneumatic Scotch yoke, twin-piston pneumatic rack and pinion, electric part-turn with worm-wheel segment (on a ball valve), electric multi-turn on a rising-stem wedge gate valve, compact electromechanical part-turn, direct high-pressure gas Scotch yoke with line-break detection and hydraulic hand-pump override, and gas-over-oil with flow-controlled stroke speed and a low-pressure trip (choose in the header, or `?type=rack-pinion` / `electric-part-turn` / `electric-multi-turn` / `electric-compact-part-turn` / `gas-scotch-yoke` / `gas-over-oil`). Scotch yokes offer a symmetric or canted yoke. 5 modes, 3 configurations, supply loss, component inspection |
+| 3D Simulator | Pneumatic Scotch yoke, twin-piston pneumatic rack and pinion, electric part-turn with worm-wheel segment (on a ball valve), electric multi-turn on a rising-stem wedge gate valve, compact electromechanical part-turn, direct high-pressure gas Scotch yoke with line-break detection and hydraulic hand-pump override, gas-over-oil with flow-controlled stroke speed and a low-pressure trip, and a self-contained electro-hydraulic actuator with an integral controller (positioner, ESD, partial-stroke test) (choose in the header, or `?type=rack-pinion` / `electric-part-turn` / `electric-multi-turn` / `electric-compact-part-turn` / `gas-scotch-yoke` / `gas-over-oil` / `electro-hydraulic`). Scotch yokes offer a symmetric or canted yoke. 5 modes, 3 configurations, supply loss, component inspection |
 | Compare | Scotch yoke vs rack and pinion: torque shape and typical characteristics |
 | Academy | 16-lesson curriculum. Lessons 1–10 are written, with embedded live 3D demos and knowledge checks; the rest are marked *coming soon*. |
 | Assessments | Two scored quizzes with explanations |
@@ -88,6 +88,7 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 - Compact electromechanical part-turn: follows the public Noah NA brochure (two-stage self-locking gearing, cam limit switches, mechanical open/close torque switch, thermal protector, domed position indicator, handwheel with lockable manual/auto lever, stop bolts). The spur-then-worm arrangement of the two stages is illustrative.
 - Direct high-pressure gas Scotch yoke: follows public descriptions of direct-gas pipeline actuators (e.g. Rotork HPG brochure): pipeline gas as power, rate-of-drop line-break detection, a tandem hydraulic override cylinder with hand pump, symmetric or canted yoke. Pipeline pressures, set points, delays, tank behaviour and the cant angle are illustrative. The canted yoke changes the torque curve only; the 3D yoke is drawn symmetric.
 - Gas over oil: follows public descriptions of gas-over-oil pipeline actuators (e.g. Rotork GO brochure): gas pressurising oil in two tanks, oil driving the cylinder, flow controls setting speed, line-break and low-pressure trips, hand pumps. Speeds, set points and tank levels are illustrative.
+- Electro-hydraulic with integral controller: follows public descriptions of self-contained electro-hydraulic actuators (e.g. Rotork Skilmatic SI brochure): motor-driven pump stroking a cylinder against a spring, dump solenoid for the spring stroke and fail-safe, integral positioning control, ESD input and partial-stroke testing. Pressures, speeds, deadband and PST travel are illustrative.
 - 3D labels use an in-house `SceneLabel` instead of drei `<Html>`, which threw on route changes and unmounted its root synchronously.
 
 ## Assumptions and decisions
@@ -106,7 +107,7 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 
 ## Known limitations
 
-- Vane and hydraulic types are not yet simulated; nor are butterfly and plug valves.
+- Vane and plain hydraulic types are not yet simulated; nor are butterfly and plug valves.
 - Lessons 11–16 are outlines only.
 - The air flow view is illustrative, not CFD.
 - Progress lives in one browser; clearing site data resets it.

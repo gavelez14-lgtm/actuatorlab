@@ -248,6 +248,38 @@ const GO_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   },
 };
 
+/** Electro-hydraulic with integral controller. */
+const EH_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "Everything the actuator needs is on board: a motor-driven pump and oil reservoir in front of the cylinder, and an integral controller on the right. It needs only electrical power and a signal.",
+      "The display shows position, demand and what the hydraulics are doing: PUMP, DUMP, HOLD, ESD or PST.",
+      "Try it: set a demand in Configure, then trigger ESD, or open fully and run a partial-stroke test.",
+    ],
+  },
+  mechanical: {
+    title: "Pump, spring and solenoid",
+    body: [
+      "To move away from the spring end, the motor runs the pump and oil strokes the piston, compressing the spring. To move back, the dump solenoid opens and the spring pushes the oil back to the reservoir.",
+      "Between moves the pump stops and the solenoid locks the oil in. That is how it holds any position with no energy use. Animation is slowed to 0.35× in this mode.",
+    ],
+  },
+  energy: {
+    title: "Oil flow (illustrative)",
+    body: [
+      "Amber shows pumped oil entering the cylinder; darker amber shows oil returning to the reservoir through the dump valve. Markers show direction only.",
+    ],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: [
+      "Readouts show demand, position, hydraulic pressure and the state of the pump, dump valve, ESD and partial-stroke test. Pressure and timings are illustrative.",
+      "The torque chart is the Scotch yoke's, as on the pneumatic actuator: the mechanism is the same, only the motive power differs.",
+    ],
+  },
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
@@ -258,7 +290,8 @@ export function ModeGuide() {
   const compact = useSimSelector((s) => s.config.family === "electric-compact-part-turn");
   const gasFamily = useSimSelector((s) => s.config.family === "gas-scotch-yoke" || s.config.family === "gas-over-oil");
   const gasOil = useSimSelector((s) => s.config.family === "gas-over-oil");
-  const t = (gasOil ? (GO_MODE_TEXT[mode] ?? GAS_MODE_TEXT[mode]) : gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const ehFamily = useSimSelector((s) => s.config.family === "electro-hydraulic");
+  const t = (ehFamily ? EH_MODE_TEXT[mode] : gasOil ? (GO_MODE_TEXT[mode] ?? GAS_MODE_TEXT[mode]) : gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>

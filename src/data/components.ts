@@ -776,7 +776,50 @@ export const GAS_OVER_OIL_COMPONENTS: ComponentInfo[] = [
   },
 ];
 
+/** Electro-hydraulic overrides and additions on top of the Scotch yoke list. */
+export const ELECTRO_HYDRAULIC_COMPONENTS: ComponentInfo[] = [
+  {
+    id: "cylinder",
+    name: "Hydraulic cylinder",
+    role: "Pressure containment",
+    function: "Contains the oil the pump delivers to drive the piston.",
+    description:
+      "The integral pump pushes oil into the cylinder to stroke the piston against the spring. A solenoid valve then locks the oil in, so the actuator holds position with the pump off.",
+    focus: [(CYLINDER.tubeStart + CYLINDER.tubeEnd) / 2, 0, GZ],
+    distance: 3.2,
+    group: "actuator",
+  },
+  {
+    id: "power-unit",
+    name: "Hydraulic power unit",
+    role: "Motive power",
+    function: "Motor, pump, reservoir and dump solenoid: makes hydraulic pressure on demand from electrical power.",
+    description:
+      "The motor runs the pump only while the actuator needs to move against the spring (or in either direction on double acting). The dump solenoid is held closed while powered; de-energising it releases the oil to the reservoir so the spring can stroke the valve. That makes power loss a fail-safe event for spring-return units.",
+    caveat: "Pump type, reservoir arrangement and the number of solenoid valves vary with design and duty.",
+    focus: [1.7, 0.1, 0.22],
+    distance: 2.4,
+    group: "actuator",
+  },
+  {
+    id: "controller",
+    name: "Integral controller",
+    role: "Sensing and control",
+    function: "Positions the valve to a demand signal, handles ESD and runs partial-stroke tests.",
+    description:
+      "The controller compares the measured position with the demand and runs the pump or opens the dump valve to close the gap, stopping inside a small deadband. A separate emergency shutdown input overrides the demand. Partial-stroke tests move the valve a short way toward its fail position and back, proving it is not stuck without stopping the process.",
+    caveat: "Signal types, diagnostics and safety certification depend on the specific product.",
+    focus: [2.68, 0, 0.22],
+    distance: 2.2,
+    group: "actuator",
+  },
+];
+
 export function componentsFor(kind: MechanismKind, gasFamily: ActuatorFamilyId | null = null): ComponentInfo[] {
+  if (gasFamily === "electro-hydraulic") {
+    const extra = ELECTRO_HYDRAULIC_COMPONENTS;
+    return [...COMPONENTS.map((c) => extra.find((g) => g.id === c.id) ?? c), ...extra.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];
+  }
   if (gasFamily) {
     const extra = gasFamily === "gas-over-oil" ? [...GAS_OVER_OIL_COMPONENTS, ...GAS_COMPONENTS.filter((g) => !GAS_OVER_OIL_COMPONENTS.some((o) => o.id === g.id))] : GAS_COMPONENTS;
     return [...COMPONENTS.map((c) => extra.find((g) => g.id === c.id) ?? c), ...extra.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];

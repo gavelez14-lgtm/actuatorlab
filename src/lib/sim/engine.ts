@@ -14,6 +14,7 @@
  * throttled rate during motion to avoid re-rendering on every frame.
  */
 import { MODEL, computeTorques, strokeFromValvePosition, valvePositionFromStroke } from "./model";
+import { EH, isElectroHydraulic } from "./electroHydraulic";
 import { GAS, goStrokeTime, isGas, isGasOverOil, pipelineToModel } from "./gas";
 import { COMPACT, ELECTRIC, MULTI_TURN, electricDemand, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "./electric";
 import type {
@@ -114,6 +115,7 @@ export function createInitialState(config: Partial<ActuatorConfiguration> = {}):
       pumpDir: 0,
       pumpPhase: 0,
     },
+    eh: { demand: null, esd: false, pst: "idle", pstStart: 0, stuck: false, motorRunning: false, dumping: false, pressure: 0 },
     paint: "graphite",
   };
   derive(state);
@@ -133,6 +135,10 @@ function derive(s: SimulationState) {
   let b: ChamberCondition = "idle";
   if (isElectric(config.family) || (isGas(config.family) && s.gas.manual)) {
     // no air chambers, or gas controls isolated for the hydraulic override
+  } else if (isElectroHydraulic(config.family)) {
+    // Pump pressurises chamber A; the dump valve drains it back to the reservoir.
+    a = s.eh.motorRunning ? "supply" : s.eh.dumping ? "exhaust" : "idle";
+    b = config.actionType === "spring-return" ? "atmosphere" : s.eh.motorRunning ? "exhaust" : s.eh.dumping ? "supply" : "idle";
   } else if (config.actionType === "double-acting") {
     if (s.supplyAvailable && s.commandedStroke !== null) {
       a = s.commandedStroke === 1 ? "supply" : "exhaust";
@@ -254,6 +260,11 @@ export class SimulationEngine {
       for (let i = 0; i < n; i++) this.electricStep(dt / n);
       return;
     }
+    if (isElectroHydraulic(s.config.family)) {
+      const n = Math.max(1, Math.ceil(dt / (1 / 120)));
+      for (let i = 0; i < n; i++) this.ehStep(dt / n);
+      return;
+    }
     if (isGas(s.config.family)) {
       this.gasStep(dt);
       if (s.gas.manual) {
@@ -360,6 +371,91 @@ export class SimulationEngine {
     } else if (-g.rate <= g.setPoint && !low) {
       g.overFor = 0;
     }
+  }
+
+  /**
+   * Electro-hydraulic: the integral controller turns a demand into pump runs
+   * (toward the stroke end, compressing the spring) and dump-valve releases
+   * (spring stroke). Without power or with ESD, the dump valve opens and the
+   * spring drives to the fail position; a double-acting unit stays put.
+   */
+  private ehStep(dt: number) {
+    const s = this.s;
+    const h = s.eh;
+    const sr = s.config.actionType === "spring-return";
+    const springEnd = 0; // stroke 0 is the spring end
+    const prevPst = h.pst;
+    let targetStroke: number | null = null;
+    const failSafe = !s.supplyAvailable || h.esd;
+    if (failSafe) {
+      targetStroke = sr ? springEnd : null;
+      if (h.pst === "out" || h.pst === "back") h.pst = "idle";
+    } else if (h.pst === "out") {
+      const goal = 1 - EH.pstTravel; // stroke domain: from the powered end toward the spring end
+      targetStroke = goal;
+      if (Math.abs(s.stroke - goal) < EH.deadband * 2) {
+        h.pst = "back";
+        h.pstStart = s.time;
+      } else if (s.time - h.pstStart > EH.pstTimeout) {
+        h.pst = "failed";
+        h.pstStart = s.time;
+      }
+    } else if (h.pst === "back") {
+      targetStroke = 1;
+      if (Math.abs(s.stroke - targetStroke) < EH.deadband) h.pst = "passed";
+    } else if (h.demand !== null) {
+      targetStroke = strokeFromValvePosition(s.config, h.demand);
+    }
+
+    let vTarget = 0;
+    h.motorRunning = false;
+    h.dumping = false;
+    if (targetStroke !== null && !h.stuck) {
+      const err = targetStroke - s.stroke;
+      if (Math.abs(err) > EH.deadband || (Math.abs(err) > 1e-4 && Math.abs(s.velocity) > 1e-4)) {
+        const dir = Math.sign(err);
+        const pumped = dir > 0 || !sr;
+        const time = pumped ? EH.pumpStrokeTime : EH.springStrokeTime;
+        // Slow down over the last few percent so the positioner lands without overshoot.
+        vTarget = (dir / time) * (0.25 + 0.75 * smoothstep(0, 0.05, Math.abs(err)));
+        h.motorRunning = pumped && !failSafe;
+        h.dumping = !pumped;
+      }
+    } else if (failSafe && sr && !h.stuck && s.stroke > END_EPS) {
+      vTarget = -1 / EH.springStrokeTime;
+      h.dumping = true;
+    }
+
+    // Oil is stiff and the solenoid holds it: motion stops promptly.
+    s.velocity += (vTarget - s.velocity) * (1 - Math.exp(-dt * 25));
+    if (vTarget === 0 && Math.abs(s.velocity) < 1e-3) s.velocity = 0;
+    s.stroke = Math.min(1, Math.max(0, s.stroke + s.velocity * dt));
+    if ((s.stroke >= 1 && s.velocity > 0) || (s.stroke <= 0 && s.velocity < 0)) s.velocity = 0;
+
+    const holding = !failSafe && targetStroke !== null && (sr ? s.stroke > END_EPS : true);
+    h.pressure += ((h.motorRunning ? EH.workingPressure : holding ? EH.workingPressure * 0.85 : 0) - h.pressure) * (1 - Math.exp(-dt * 6));
+    derive(s);
+    this.updateForces();
+    s.stalled = false;
+    s.airFlowing = Math.abs(s.velocity) > 0.004;
+    const valveVel = valvePositionFromStroke(s.config, 1) > 0.5 ? s.velocity : -s.velocity;
+    s.direction = !s.airFlowing ? "stopped" : valveVel > 0 ? "opening" : "closing";
+
+    if (s.autoCycle && !s.airFlowing && h.pst !== "out" && h.pst !== "back") {
+      this.dwell += dt;
+      if (this.dwell >= AUTO_CYCLE_DWELL) {
+        this.dwell = 0;
+        h.demand = s.position < 0.5 ? 1 : 0;
+      }
+    } else {
+      this.dwell = 0;
+    }
+    if (prevPst !== h.pst) {
+      if (h.pst === "passed") this.flash("Partial-stroke test passed: the valve moved off its normal position and returned, without interrupting the process.");
+      if (h.pst === "failed") this.flash("Partial-stroke test failed: the valve did not move in time. In service this raises an alarm, because the valve might not close on demand.");
+      this.emit();
+    }
+    this.updateStatus();
   }
 
   /** Hydraulic hand-pump override: each lever stroke displaces oil into the override cylinder. */
@@ -510,6 +606,16 @@ export class SimulationEngine {
       if (!s.playing) this.flash("Simulation is paused. Press Play to see the command execute.");
       return;
     }
+    if (isElectroHydraulic(s.config.family)) {
+      s.eh.demand = kind === "open" ? 1 : 0;
+      if (s.eh.pst === "out" || s.eh.pst === "back") s.eh.pst = "idle";
+      s.commandedStroke = targetStroke;
+      derive(s);
+      if (silent) return;
+      if (s.eh.esd) this.flash("ESD is active, so the controller holds the fail position. Clear the ESD input first.");
+      else if (!s.supplyAvailable) this.flash("Demand recorded, but there is no power to run the pump.");
+      return;
+    }
     if (isGas(s.config.family)) {
       const g = s.gas;
       if (g.tripped && kind === "open") {
@@ -597,6 +703,16 @@ export class SimulationEngine {
           );
           break;
         }
+        if (isElectroHydraulic(s.config.family)) {
+          this.flash(
+            !cmd.available
+              ? s.config.actionType === "spring-return"
+                ? "Power lost. The dump solenoid de-energises, oil returns to the reservoir and the spring drives the valve to its fail position."
+                : "Power lost. The pump stops and the locked-in oil holds the valve where it is."
+              : "Power restored. The controller returns the valve to its demand.",
+          );
+          break;
+        }
         if (isGas(s.config.family)) {
           this.flash(
             !cmd.available
@@ -662,6 +778,39 @@ export class SimulationEngine {
         s.gas.overFor = 0;
         this.flash("Line-break trip reset. The valve stays closed until an Open command.");
         break;
+      case "set-demand":
+        s.eh.demand = cmd.value === null ? null : Math.min(1, Math.max(0, cmd.value));
+        if (s.eh.pst === "out" || s.eh.pst === "back") s.eh.pst = "idle";
+        if (!s.playing) s.playing = true;
+        break;
+      case "set-esd":
+        s.eh.esd = cmd.value;
+        this.flash(
+          cmd.value
+            ? s.config.actionType === "spring-return"
+              ? "ESD: the controller opens the dump valve and the spring drives the valve to its fail position, whatever the demand."
+              : "ESD on a double-acting unit: the pump stops and the valve holds. A spring-return unit would move to its fail position."
+            : "ESD cleared. The controller returns to the demand signal.",
+        );
+        break;
+      case "start-pst": {
+        if (s.eh.esd || !s.supplyAvailable) {
+          this.flash("A partial-stroke test needs power and no ESD.");
+          break;
+        }
+        if (s.stroke < 0.98) {
+          this.flash("Partial-stroke tests run from the normal powered position (the end away from the spring). They prove the safety valve can still move toward its fail position.");
+          break;
+        }
+        s.eh.pst = "out";
+        s.eh.pstStart = s.time;
+        s.eh.demand = valvePositionFromStroke(s.config, 1);
+        if (!s.playing) s.playing = true;
+        break;
+      }
+      case "set-stuck":
+        s.eh.stuck = cmd.value;
+        break;
       case "set-flow":
         s.gas.flow = Math.min(1, Math.max(GAS.flowMin, cmd.value));
         break;
@@ -723,6 +872,7 @@ export class SimulationEngine {
         s.selectedComponent = cmd.id;
         break;
       case "stop":
+        if (isElectroHydraulic(s.config.family)) s.eh.demand = s.position;
         s.commandedStroke = null;
         derive(s);
         break;
@@ -781,6 +931,10 @@ export class SimulationEngine {
       return;
     }
     const sr = s.config.actionType === "spring-return";
+    if (isElectroHydraulic(s.config.family)) {
+      s.status = this.ehStatus();
+      return;
+    }
     if (isGas(s.config.family)) {
       const g = s.gas;
       if (g.manual)
@@ -817,6 +971,23 @@ export class SimulationEngine {
     s.status = msg;
   }
 
+  private ehStatus(): string {
+    const s = this.s;
+    const h = s.eh;
+    const sr = s.config.actionType === "spring-return";
+    if (!s.playing) return `Paused at ${pct(s.position)} open.`;
+    if (h.pst === "out") return h.stuck ? "Partial-stroke test: commanding a small move, but the valve is not responding." : `Partial-stroke test: moving ${Math.round(EH.pstTravel * 100)}% toward the fail position, then back.`;
+    if (h.pst === "back") return "Partial-stroke test: returning to the normal position.";
+    if (h.esd) return sr ? (s.airFlowing ? "ESD: dump valve open, spring driving to the fail position." : `ESD: held at the fail position (${pct(s.position)} open) by the spring.`) : `ESD: pump stopped, valve held at ${pct(s.position)}.`;
+    if (!s.supplyAvailable)
+      return sr ? (s.airFlowing ? "Power lost: the dump solenoid de-energised and the spring is driving the valve to its fail position." : `Power lost: at the fail position, ${pct(s.position)} open.`) : `Power lost: no pump, valve held at ${pct(s.position)} (fails in place).`;
+    if (h.motorRunning) return `Pump running: oil into the cylinder drives the valve toward ${pct(h.demand ?? 1)}${sr ? ", compressing the spring" : ""}.`;
+    if (h.dumping) return `Dump valve open: ${sr ? "the spring drives" : "oil drives"} the valve toward ${pct(h.demand ?? 0)}.`;
+    if (h.stuck && h.demand !== null && Math.abs(h.demand - s.position) > EH.deadband) return `The valve is stuck at ${pct(s.position)}: the controller cannot reach the ${pct(h.demand)} demand.`;
+    if (h.demand === null) return "Idle. Set a demand, or press Open or Close.";
+    return `In position at ${pct(s.position)}. The pump is off; the solenoid valve locks the oil in.${h.pst === "passed" ? " Last partial-stroke test: passed." : h.pst === "failed" ? " Last partial-stroke test: FAILED." : ""}`;
+  }
+
   private electricStatus(): string {
     const s = this.s;
     const e = s.electric;
@@ -851,7 +1022,7 @@ export class SimulationEngine {
 
   private copy(): SimulationState {
     const s = this.s;
-    return { ...s, config: { ...s.config }, torque: { ...s.torque }, electric: { ...s.electric }, gas: { ...s.gas } };
+    return { ...s, config: { ...s.config }, torque: { ...s.torque }, electric: { ...s.electric }, gas: { ...s.gas }, eh: { ...s.eh } };
   }
 
   private emit() {
