@@ -61,7 +61,10 @@ export type ComponentId =
   | "bracket"
   | "valve-body"
   | "ball"
-  | "stem";
+  | "stem"
+  | "rack"
+  | "pinion"
+  | "travel-stops";
 
 export interface ActuatorConfiguration {
   family: ActuatorFamilyId;

@@ -44,11 +44,45 @@ const MODE_TEXT: Record<VisualizationMode, { title: string; body: string[] }> = 
   },
 };
 
+/** Rack-and-pinion versions of the mechanism-specific explanations. */
+const RP_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "A twin-piston rack and pinion sits on a bracket above the ball valve. The pinion shaft, coupling, valve stem and ball turn together as one rigid chain.",
+      "The indicator stripe on top lines up with the ball bore. When it runs along the pipe, the valve is open.",
+    ],
+  },
+  mechanical: {
+    title: "How the rack and pinion converts motion",
+    body: [
+      "Two pistons share one bore. Air in the centre chamber pushes them apart; air in the outer chambers (or the springs) pushes them back together.",
+      "Each piston carries a toothed rack, one on each side of the pinion. Moving apart, one rack travels left on one side while the other travels right on the other side, so both turn the pinion the same way.",
+      "The racks always act at the pinion's pitch radius, so the lever arm never changes. That is why rack-and-pinion torque is nearly flat across the stroke. Animation is slowed to 0.35× in this mode.",
+    ],
+  },
+  energy: {
+    title: "Air flow (illustrative)",
+    body: [
+      "Blue shows pressurised supply air; grey shows air leaving. Markers show direction only. This is not a fluid simulation.",
+      "Chamber A is the centre chamber between the pistons: pressure there drives them apart. Chamber B is the pair of outer chambers behind the pistons. In spring return, B breathes to atmosphere while the springs do the return work.",
+    ],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: [
+      "Readouts show position, angle, supply and chamber states, with torque values from a simplified model. Values are normalised and illustrative, for understanding shape and margin, not sizing.",
+      "Rack and pinion gives T = F·r: the pitch radius r is fixed, so for double acting the air curve is flat. In spring return the air stroke falls and the spring stroke falls as the springs extend, because spring force changes with length, not because of the gearing.",
+    ],
+  },
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const fail = useSimSelector((s) => s.config.failPosition);
-  const t = MODE_TEXT[mode];
+  const rp = useSimSelector((s) => s.config.family.includes("rack-pinion"));
+  const t = (rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>

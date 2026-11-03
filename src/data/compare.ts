@@ -7,7 +7,7 @@ export type MechanismKey = "scotchYoke" | "rackPinion";
 
 export const MECHANISMS: Record<MechanismKey, { name: string; simulator: string | null }> = {
   scotchYoke: { name: "Scotch yoke", simulator: "/simulator" },
-  rackPinion: { name: "Rack and pinion", simulator: null },
+  rackPinion: { name: "Rack and pinion", simulator: "/simulator?type=rack-pinion" },
 };
 
 export interface CompareRow {

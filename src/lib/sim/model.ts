@@ -4,9 +4,10 @@
  * Every number here is a NORMALISED, ILLUSTRATIVE value chosen to make the
  * behaviour of the mechanism understandable. None of it is manufacturer data, and
  * none of it should be used for sizing. The one relationship taken from
- * engineering texts is the Scotch-yoke lever factor T = F * d / cos^2(phi).
+ * engineering texts are the lever relations in mechanisms.ts: Scotch yoke
+ * T = F * d / cos^2(phi), rack and pinion T = F * r.
  */
-import { leverFactor } from "./geometry";
+import { leverFor } from "./mechanisms";
 import type { ActuatorConfiguration } from "./types";
 
 export const MODEL = {
@@ -78,7 +79,7 @@ export interface ForceResult {
 }
 
 export function computeTorques({ config, stroke, pA, pB }: ForceInputs): ForceResult {
-  const lever = leverFactor(stroke);
+  const lever = leverFor(config.family, stroke);
   const airForce = (pA - pB) * MODEL.pistonArea;
   const spring = config.actionType === "spring-return" ? springForce(stroke) : 0;
   const active = (airForce - spring) * lever;
@@ -107,7 +108,7 @@ export function torqueCurves(config: ActuatorConfiguration, pressure: number, sa
   for (let i = 0; i < samples; i++) {
     const position = i / (samples - 1);
     const stroke = strokeFromValvePosition(config, position);
-    const lever = leverFactor(stroke);
+    const lever = leverFor(config.family, stroke);
     const spring = config.actionType === "spring-return" ? springForce(stroke) * lever : 0;
     pts.push({
       position,
@@ -124,7 +125,7 @@ export function minimumPressureForFullStroke(config: ActuatorConfiguration): num
   let worst = 0;
   for (let i = 0; i <= 200; i++) {
     const s = i / 200;
-    const lever = leverFactor(s);
+    const lever = leverFor(config.family, s);
     const spring = config.actionType === "spring-return" ? springForce(s) : 0;
     const demand = valveDemand(valvePositionFromStroke(config, s));
     worst = Math.max(worst, spring + demand / lever);

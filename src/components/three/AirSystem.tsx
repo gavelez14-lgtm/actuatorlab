@@ -11,30 +11,71 @@ import { usePrefersReducedMotion } from "@/lib/hooks";
 import type { MaterialSet } from "./materials";
 
 /**
- * Illustrative pneumatic circuit: a directional control valve block on the
- * cylinder, tubing to each port, supply inlet, exhaust silencer and (for
- * spring-return) a breather on the spring-side chamber.
+ * Illustrative pneumatic circuit: a directional control valve block, tubing to
+ * each port, supply inlet, exhaust silencer and (for spring-return) a breather
+ * on the spring-side chamber. Each mechanism supplies an AirLayout.
  *
  * The moving markers show DIRECTION of air movement only. This is not CFD,
  * and marker speed does not represent flow rate.
  */
 
-const Z = -YOKE_OFFSET;
-const BLOCK = new THREE.Vector3(1.67, 0.53, Z);
-const PORT_A = new THREE.Vector3(CYLINDER.innerCapStart + 0.05, 0.47, Z);
-const PORT_B = new THREE.Vector3(CYLINDER.tubeEnd + 0.05, 0.47, Z);
-
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
-// All curves are defined in the direction "from the control block outward".
-const CURVES = {
-  toA: new THREE.CatmullRomCurve3([v(1.42, 0.53, Z), v(1.18, 0.56, Z), v(1.03, 0.62, Z), PORT_A.clone()]),
-  toB: new THREE.CatmullRomCurve3([v(1.92, 0.53, Z), v(2.16, 0.56, Z), v(2.31, 0.62, Z), PORT_B.clone()]),
-  supply: new THREE.CatmullRomCurve3([v(1.67, 0.53, Z - 0.15), v(1.67, 0.56, Z - 0.6), v(1.67, 0.3, Z - 1.0), v(1.67, -0.35, Z - 1.15)]),
-  exhaust: new THREE.CatmullRomCurve3([v(1.67, 0.53, Z + 0.15), v(1.67, 0.53, Z + 0.4), v(1.67, 0.6, Z + 0.75)]),
-  breather: new THREE.CatmullRomCurve3([PORT_B.clone().setY(0.5), PORT_B.clone().setY(0.68), PORT_B.clone().setY(0.9)]),
+export type CurveKey = "toA" | "toB" | "supply" | "exhaust" | "breather";
+
+/** A cylindrical chamber volume along X at (y, z) with radius r. */
+export interface ChamberSegment {
+  x0: number;
+  x1: number;
+  y: number;
+  z: number;
+  r: number;
+}
+
+export interface AirLayout {
+  /** All curves run "from the control block outward". */
+  curves: Record<CurveKey, THREE.CatmullRomCurve3>;
+  /** Chamber A (drives stroke 0 -> 1) and chamber B volumes at a stroke. */
+  chambers: (stroke: number) => { a: ChamberSegment[]; b: ChamberSegment[] };
+  block: { position: THREE.Vector3; size: [number, number, number] };
+  mountPlate?: { position: THREE.Vector3; size: [number, number, number] };
+  portA: THREE.Vector3;
+  portB: THREE.Vector3;
+  /** Rotation for port fittings and breather (default: vertical). */
+  portRotation?: [number, number, number];
+  silencer: { position: THREE.Vector3; rotation: [number, number, number] };
+  supplyInlet: THREE.Vector3;
+  labels: { supply: THREE.Vector3; exhaust: THREE.Vector3; breather: THREE.Vector3 };
+}
+
+/* Scotch yoke layout: block sits on the cylinder tie rods. */
+const Z = -YOKE_OFFSET;
+const SY_PORT_A = v(CYLINDER.innerCapStart + 0.05, 0.47, Z);
+const SY_PORT_B = v(CYLINDER.tubeEnd + 0.05, 0.47, Z);
+export const SCOTCH_YOKE_AIR: AirLayout = {
+  curves: {
+    toA: new THREE.CatmullRomCurve3([v(1.42, 0.53, Z), v(1.18, 0.56, Z), v(1.03, 0.62, Z), SY_PORT_A.clone()]),
+    toB: new THREE.CatmullRomCurve3([v(1.92, 0.53, Z), v(2.16, 0.56, Z), v(2.31, 0.62, Z), SY_PORT_B.clone()]),
+    supply: new THREE.CatmullRomCurve3([v(1.67, 0.53, Z - 0.15), v(1.67, 0.56, Z - 0.6), v(1.67, 0.3, Z - 1.0), v(1.67, -0.35, Z - 1.15)]),
+    exhaust: new THREE.CatmullRomCurve3([v(1.67, 0.53, Z + 0.15), v(1.67, 0.53, Z + 0.4), v(1.67, 0.6, Z + 0.75)]),
+    breather: new THREE.CatmullRomCurve3([SY_PORT_B.clone().setY(0.5), SY_PORT_B.clone().setY(0.68), SY_PORT_B.clone().setY(0.9)]),
+  },
+  chambers: (stroke) => {
+    const px = pistonXFromStroke(stroke);
+    const r = CYLINDER.boreRadius - 0.012;
+    return {
+      a: [{ x0: CYLINDER.tubeStart, x1: px - PISTON.thickness / 2, y: 0, z: Z, r }],
+      b: [{ x0: px + PISTON.thickness / 2, x1: CYLINDER.tubeEnd, y: 0, z: Z, r }],
+    };
+  },
+  block: { position: v(1.67, 0.53, Z), size: [0.5, 0.22, 0.3] },
+  mountPlate: { position: v(1.67, 0.385, Z), size: [0.55, 0.03, 0.78] },
+  portA: SY_PORT_A,
+  portB: SY_PORT_B,
+  silencer: { position: v(1.67, 0.53, Z + 0.24), rotation: [Math.PI / 2, 0, 0] },
+  supplyInlet: v(1.67, -0.35, Z - 1.15),
+  labels: { supply: v(1.67, -0.45, Z - 1.15), exhaust: v(1.67, 0.72, Z + 0.75), breather: v(SY_PORT_B.x, 1.0, Z) },
 };
-type CurveKey = keyof typeof CURVES;
 
 interface Stream {
   curve: CurveKey;
@@ -45,6 +86,7 @@ interface Stream {
 
 const MARKERS_PER_STREAM = 7;
 const MAX_STREAMS = 5;
+const MAX_SEGMENTS = 2; // per chamber
 const SUPPLY_COLOR = new THREE.Color("#5DB7EE");
 const EXHAUST_COLOR = new THREE.Color("#C3C9D0");
 
@@ -64,42 +106,48 @@ function streamsFor(a: ChamberCondition, b: ChamberCondition, springReturn: bool
     // Chamber B shrinks on the air stroke (expels through breather) and grows on the spring stroke (draws in).
     out.push({ curve: "breather", dir: velocity > 0 ? 1 : -1, kind: "exhaust" });
   }
-  // de-duplicate shared trunk segments
   return out.filter((s, i) => out.findIndex((o) => o.curve === s.curve && o.dir === s.dir) === i).slice(0, MAX_STREAMS);
 }
 
-export function AirSystem({ mats, springReturn, active }: { mats: MaterialSet; springReturn: boolean; active: boolean }) {
+export function AirSystem({
+  mats,
+  springReturn,
+  active,
+  layout = SCOTCH_YOKE_AIR,
+}: {
+  mats: MaterialSet;
+  springReturn: boolean;
+  active: boolean;
+  layout?: AirLayout;
+}) {
   const { engine } = useEngine();
   const reduced = usePrefersReducedMotion();
+  const C = layout.curves;
 
   const tubes = useMemo(() => {
     const make = (c: THREE.Curve<THREE.Vector3>) => new THREE.TubeGeometry(c, 40, 0.022, 8, false);
-    return {
-      toA: make(CURVES.toA),
-      toB: make(CURVES.toB),
-      supply: make(CURVES.supply),
-    };
-  }, []);
+    return { toA: make(C.toA), toB: make(C.toB), supply: make(C.supply) };
+  }, [C]);
   useEffect(() => () => Object.values(tubes).forEach((g) => g.dispose()), [tubes]);
 
   const markers = useRef<THREE.InstancedMesh>(null);
-  const chamberA = useRef<THREE.Mesh>(null);
-  const chamberB = useRef<THREE.Mesh>(null);
+  const fillRefs = useRef<(THREE.Mesh | null)[]>([]);
   const phase = useRef(0);
   const markerGeo = useMemo(() => new THREE.ConeGeometry(0.03, 0.085, 10).rotateX(Math.PI / 2), []);
   const markerMat = useMemo(() => new THREE.MeshBasicMaterial({ toneMapped: false }), []);
   const fillGeo = useMemo(() => new THREE.CylinderGeometry(1, 1, 1, 40).rotateZ(Math.PI / 2), []);
-  const fillA = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }), []);
-  const fillB = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }), []);
+  const fillMats = useMemo(
+    () => Array.from({ length: MAX_SEGMENTS * 2 }, () => new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false })),
+    [],
+  );
   useEffect(
     () => () => {
       markerGeo.dispose();
       markerMat.dispose();
       fillGeo.dispose();
-      fillA.dispose();
-      fillB.dispose();
+      fillMats.forEach((m) => m.dispose());
     },
-    [markerGeo, markerMat, fillGeo, fillA, fillB],
+    [markerGeo, markerMat, fillGeo, fillMats],
   );
 
   const tmp = useMemo(
@@ -109,27 +157,25 @@ export function AirSystem({ mats, springReturn, active }: { mats: MaterialSet; s
 
   useFrame((_, delta) => {
     const s = engine.getState();
-    // chamber volumes follow the piston
-    const px = pistonXFromStroke(s.stroke);
-    const aStart = CYLINDER.tubeStart;
-    const aEnd = px - PISTON.thickness / 2;
-    const bStart = px + PISTON.thickness / 2;
-    const bEnd = CYLINDER.tubeEnd;
-    const r = CYLINDER.boreRadius - 0.012;
-    const paint = (mesh: THREE.Mesh | null, mat: THREE.MeshBasicMaterial, x0: number, x1: number, cond: ChamberCondition) => {
-      if (!mesh) return;
-      const len = Math.max(0.001, x1 - x0);
-      mesh.position.set((x0 + x1) / 2, 0, Z);
-      mesh.scale.set(len, r, r);
-      const show = active && (cond === "supply" || (cond === "exhaust" && s.airFlowing));
-      mesh.visible = show;
-      if (show) {
+    const ch = layout.chambers(s.stroke);
+    const paintChamber = (segs: ChamberSegment[], cond: ChamberCondition, offset: number) => {
+      for (let i = 0; i < MAX_SEGMENTS; i++) {
+        const mesh = fillRefs.current[offset + i];
+        if (!mesh) continue;
+        const seg = segs[i];
+        const show = !!seg && active && (cond === "supply" || (cond === "exhaust" && s.airFlowing));
+        mesh.visible = show;
+        if (!seg || !show) continue;
+        const len = Math.max(0.001, seg.x1 - seg.x0);
+        mesh.position.set((seg.x0 + seg.x1) / 2, seg.y, seg.z);
+        mesh.scale.set(len, seg.r, seg.r);
+        const mat = mesh.material as THREE.MeshBasicMaterial;
         mat.color.copy(cond === "supply" ? SUPPLY_COLOR : EXHAUST_COLOR);
         mat.opacity = cond === "supply" ? 0.38 : 0.14;
       }
     };
-    paint(chamberA.current, fillA, aStart, aEnd, s.chamberA);
-    paint(chamberB.current, fillB, bStart, bEnd, s.chamberB);
+    paintChamber(ch.a, s.chamberA, 0);
+    paintChamber(ch.b, s.chamberB, MAX_SEGMENTS);
 
     const im = markers.current;
     if (!im) return;
@@ -142,7 +188,7 @@ export function AirSystem({ mats, springReturn, active }: { mats: MaterialSet; s
     const streams = streamsFor(s.chamberA, s.chamberB, springReturn, s.velocity);
     let n = 0;
     for (const st of streams) {
-      const curve = CURVES[st.curve];
+      const curve = C[st.curve];
       for (let i = 0; i < MARKERS_PER_STREAM; i++) {
         let u = (phase.current + i / MARKERS_PER_STREAM) % 1;
         if (st.dir < 0) u = 1 - u;
@@ -161,57 +207,70 @@ export function AirSystem({ mats, springReturn, active }: { mats: MaterialSet; s
     if (im.instanceColor) im.instanceColor.needsUpdate = true;
   });
 
+  const portRot = layout.portRotation ?? [0, 0, 0];
   return (
     <group>
-      {/* control valve block on a mounting plate across the top tie rods */}
-      <mesh position={[BLOCK.x, 0.385, Z]} material={mats.controlBlock}>
-        <boxGeometry args={[0.55, 0.03, 0.78]} />
-      </mesh>
-      <mesh position={BLOCK} material={mats.controlBlock}>
-        <boxGeometry args={[0.5, 0.22, 0.3]} />
+      {layout.mountPlate && (
+        <mesh position={layout.mountPlate.position} material={mats.controlBlock}>
+          <boxGeometry args={layout.mountPlate.size} />
+        </mesh>
+      )}
+      <mesh position={layout.block.position} material={mats.controlBlock}>
+        <boxGeometry args={layout.block.size} />
       </mesh>
       {/* solenoid coil */}
-      <mesh position={[BLOCK.x + 0.12, BLOCK.y + 0.17, Z]} material={mats.housingTrim}>
+      <mesh position={[layout.block.position.x + 0.12, layout.block.position.y + layout.block.size[1] / 2 + 0.06, layout.block.position.z]} material={mats.housingTrim}>
         <boxGeometry args={[0.16, 0.12, 0.16]} />
       </mesh>
       <mesh geometry={tubes.toA} material={mats.tubing} />
       <mesh geometry={tubes.supply} material={mats.tubing} />
       {springReturn ? (
-        <mesh position={[PORT_B.x, PORT_B.y + 0.07, Z]} material={mats.fitting}>
-          <cylinderGeometry args={[0.045, 0.045, 0.1, 14]} />
-        </mesh>
+        <group position={layout.portB} rotation={portRot}>
+          <mesh position={[0, 0.07, 0]} material={mats.fitting}>
+            <cylinderGeometry args={[0.045, 0.045, 0.1, 14]} />
+          </mesh>
+        </group>
       ) : (
         <mesh geometry={tubes.toB} material={mats.tubing} />
       )}
-      {/* port fittings */}
-      {[PORT_A, PORT_B].map((p, i) => (
-        <mesh key={i} position={[p.x, p.y - 0.02, Z]} material={mats.fitting}>
-          <cylinderGeometry args={[0.035, 0.035, 0.06, 12]} />
-        </mesh>
+      {[layout.portA, layout.portB].map((p, i) => (
+        <group key={i} position={p} rotation={portRot}>
+          <mesh position={[0, -0.02, 0]} material={mats.fitting}>
+            <cylinderGeometry args={[0.035, 0.035, 0.06, 12]} />
+          </mesh>
+        </group>
       ))}
-      {/* exhaust silencer */}
-      <mesh position={[BLOCK.x, BLOCK.y, Z + 0.24]} rotation={[Math.PI / 2, 0, 0]} material={mats.fitting}>
+      <mesh position={layout.silencer.position} rotation={layout.silencer.rotation} material={mats.fitting}>
         <cylinderGeometry args={[0.04, 0.04, 0.18, 14]} />
       </mesh>
-      {/* supply inlet fitting */}
-      <mesh position={[1.67, -0.35, Z - 1.15]} material={mats.fitting}>
+      <mesh position={layout.supplyInlet} material={mats.fitting}>
         <cylinderGeometry args={[0.04, 0.04, 0.1, 12]} />
       </mesh>
 
-      <mesh ref={chamberA} geometry={fillGeo} material={fillA} visible={false} raycast={() => null} />
-      <mesh ref={chamberB} geometry={fillGeo} material={fillB} visible={false} raycast={() => null} />
+      {fillMats.map((m, i) => (
+        <mesh
+          key={i}
+          ref={(el) => {
+            fillRefs.current[i] = el;
+          }}
+          geometry={fillGeo}
+          material={m}
+          visible={false}
+          raycast={() => null}
+        />
+      ))}
       <instancedMesh ref={markers} args={[markerGeo, markerMat, MARKERS_PER_STREAM * MAX_STREAMS]} raycast={() => null} frustumCulled={false} />
 
       {active && (
         <>
-          <Html position={[1.67, -0.45, Z - 1.15]} center style={{ pointerEvents: "none" }}>
+          <Html position={layout.labels.supply} center style={{ pointerEvents: "none" }}>
             <div className="sim-label sim-label--air">Supply in</div>
           </Html>
-          <Html position={[1.67, 0.72, Z + 0.75]} center style={{ pointerEvents: "none" }}>
+          <Html position={layout.labels.exhaust} center style={{ pointerEvents: "none" }}>
             <div className="sim-label">Exhaust</div>
           </Html>
           {springReturn && (
-            <Html position={[PORT_B.x, 1.0, Z]} center style={{ pointerEvents: "none" }}>
+            <Html position={layout.labels.breather} center style={{ pointerEvents: "none" }}>
               <div className="sim-label">Breather</div>
             </Html>
           )}

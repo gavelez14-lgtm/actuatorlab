@@ -1,5 +1,7 @@
 import type { ComponentId } from "@/lib/sim/types";
 import { CYLINDER, SPRING_MODULE, VALVE, YOKE_OFFSET } from "@/lib/sim/geometry";
+import { RP } from "@/lib/sim/rackPinionGeometry";
+import type { MechanismKind } from "@/lib/sim/mechanisms";
 
 export type ComponentRole =
   | "Linear movement"
@@ -28,6 +30,7 @@ export interface ComponentInfo {
   group: "actuator" | "valve";
 }
 
+/** Scotch yoke components (also includes the shared valve and mounting parts). */
 export const COMPONENTS: ComponentInfo[] = [
   {
     id: "cylinder",
@@ -191,6 +194,115 @@ export const COMPONENTS: ComponentInfo[] = [
   },
 ];
 
+const VALVE_PARTS = COMPONENTS.filter((c) => c.group === "valve");
+
+/**
+ * Twin-piston rack and pinion. Architecture follows publicly documented
+ * compact twin-piston designs; proportions are original and illustrative.
+ */
+export const RACK_PINION_COMPONENTS: ComponentInfo[] = [
+  {
+    id: "housing",
+    name: "Body (cylinder)",
+    role: "Pressure containment",
+    function: "One bore holds both pistons; the pinion passes through the middle.",
+    description:
+      "The body is a single cylinder bore with the pinion crossing it at the centre. The space between the pistons is the centre chamber; the spaces behind them are the outer chambers. Bodies are commonly extruded aluminium, often anodised.",
+    focus: [0, 0, 0],
+    distance: 3.2,
+    group: "actuator",
+  },
+  {
+    id: "piston",
+    name: "Pistons",
+    role: "Linear movement",
+    function: "Two opposed pistons convert air pressure into equal and opposite linear forces.",
+    description:
+      "Air in the centre chamber pushes both pistons outward at the same time; air in the outer chambers pushes them back in. Because the forces are opposed, the side loads on the pinion largely cancel.",
+    focus: [0.55, 0, 0],
+    distance: 2.4,
+    group: "actuator",
+  },
+  {
+    id: "rack",
+    name: "Racks",
+    role: "Torque conversion",
+    function: "Toothed bars on each piston that mesh with the pinion.",
+    description:
+      "Each piston carries a rack on opposite sides of the pinion. As the pistons move apart, one rack moves left on one side and the other moves right on the other side, so both turn the pinion the same way. Their torques add.",
+    caveat: "Rack form and tooth count vary between designs; teeth are shown simplified.",
+    focus: [0, 0.05, 0],
+    distance: 1.6,
+    group: "actuator",
+  },
+  {
+    id: "pinion",
+    name: "Pinion",
+    role: "Torque conversion",
+    function: "Gear on the output shaft, driven by both racks.",
+    description:
+      "The pinion turns as the racks move. Its pitch radius never changes, so torque per unit of piston force is the same at every point of the stroke. Designs commonly retain the pinion so it cannot be pushed out of the body under pressure (anti-blowout).",
+    focus: [0, 0.05, 0],
+    distance: 1.5,
+    group: "actuator",
+  },
+  {
+    id: "output-shaft",
+    name: "Output shaft and indicator",
+    role: "Output transmission",
+    function: "Transfers torque to the valve and shows position on top.",
+    description:
+      "The pinion shaft extends below the body to drive the valve coupling, and above it to the position indicator and the accessory interface used for switch boxes and positioners (often to the VDI/VDE 3845 NAMUR pattern).",
+    focus: [0, 0.2, 0],
+    distance: 2.2,
+    group: "actuator",
+  },
+  {
+    id: "end-caps",
+    name: "End caps",
+    role: "Pressure containment",
+    function: "Close each end of the body and seat the springs.",
+    description: "End caps seal the outer chambers and react the spring and pressure loads. In spring-return builds they hold the spring cartridges.",
+    focus: [RP.body.halfX, 0, 0],
+    distance: 2.2,
+    group: "actuator",
+  },
+  {
+    id: "spring",
+    name: "Spring cartridges",
+    role: "Energy storage",
+    function: "Store energy on the air stroke and drive the return stroke.",
+    description:
+      "Springs sit between each piston and its end cap. The air stroke compresses them; when the centre chamber vents, they push the pistons back in and close (or open) the valve. The number of springs is chosen to suit the available supply pressure. Spring designs are commonly pre-loaded cartridges so the cap can be removed safely.",
+    caveat: "Three springs per side are shown; real builds use different counts and nested springs.",
+    focus: [0.85, 0, 0],
+    distance: 2.0,
+    springReturnOnly: true,
+    group: "actuator",
+  },
+  {
+    id: "travel-stops",
+    name: "Travel stops",
+    role: "Structure and alignment",
+    function: "Adjustable bolts that set the exact end-of-travel positions.",
+    description:
+      "Stop bolts through the end caps meet the pistons at the end of the stroke. Turning them sets the end position precisely, typically a few degrees either side of 90°, so the valve seats exactly where it should.",
+    focus: [RP.body.halfX, 0, 0],
+    distance: 1.8,
+    group: "actuator",
+  },
+  ...VALVE_PARTS,
+];
+
+export function componentsFor(kind: MechanismKind): ComponentInfo[] {
+  return kind === "rack-pinion" ? RACK_PINION_COMPONENTS : COMPONENTS;
+}
+
+export function componentInfo(kind: MechanismKind, id: ComponentId): ComponentInfo | undefined {
+  return componentsFor(kind).find((c) => c.id === id);
+}
+
+/** @deprecated Scotch yoke only; use componentInfo(kind, id). */
 export const COMPONENT_MAP: Record<ComponentId, ComponentInfo> = Object.fromEntries(
   COMPONENTS.map((c) => [c.id, c]),
 ) as Record<ComponentId, ComponentInfo>;

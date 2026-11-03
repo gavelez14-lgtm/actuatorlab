@@ -1,9 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Focus, Maximize, RotateCcw, Tag as TagIcon } from "lucide-react";
 import { Button, Illustrative, Tag } from "@/components/ui/primitives";
+import { Segmented } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
 import { useProgress } from "@/lib/progress";
 import { ModeSelector } from "./ModeSelector";
@@ -94,13 +96,19 @@ export function SimulatorWorkbench() {
   const selected = useSimSelector((s) => s.selectedComponent);
   const actionType = useSimSelector((s) => s.config.actionType);
   const fail = useSimSelector((s) => s.config.failPosition);
+  const rackPinion = useSimSelector((s) => s.config.family === "pneumatic-rack-pinion");
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("configure");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { touchRecent } = useProgress();
 
   useEffect(() => {
-    touchRecent({ id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" });
-  }, [touchRecent]);
+    touchRecent(
+      rackPinion
+        ? { id: "sim-rack-pinion", title: "Pneumatic rack and pinion simulator", href: "/simulator?type=rack-pinion" }
+        : { id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" },
+    );
+  }, [touchRecent, rackPinion]);
 
   // Selecting a part in the scene brings the Components tab forward
   // (state adjusted during render, per React guidance, not in an effect).
@@ -149,14 +157,32 @@ export function SimulatorWorkbench() {
       <header className="flex flex-col gap-3 border-b border-rule bg-panel px-4 py-3 md:flex-row md:items-center md:justify-between lg:px-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] text-fg">Pneumatic Scotch yoke</h1>
+            <h1 className="text-[24px] text-fg">{rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">
             {configLabel}, on a quarter-turn ball valve. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
           </p>
         </div>
-        <ModeSelector />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Segmented
+            size="sm"
+            label="Mechanism"
+            value={rackPinion ? "rack-pinion" : "scotch-yoke"}
+            onChange={(v) => {
+              const params = new URLSearchParams();
+              if (v === "rack-pinion") params.set("type", "rack-pinion");
+              if (actionType === "double-acting") params.set("action", "double-acting");
+              if (fail === "fail-open") params.set("fail", "open");
+              router.push(`/simulator${params.size ? `?${params}` : ""}`);
+            }}
+            options={[
+              { value: "scotch-yoke", label: "Scotch yoke" },
+              { value: "rack-pinion", label: "Rack and pinion" },
+            ]}
+          />
+          <ModeSelector />
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">

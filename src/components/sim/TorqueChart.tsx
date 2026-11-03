@@ -2,12 +2,13 @@
 
 import { useMemo } from "react";
 import { torqueCurves } from "@/lib/sim/model";
+import { MECHANISMS, mechanismFor } from "@/lib/sim/mechanisms";
 import type { ActuatorConfiguration } from "@/lib/sim/types";
 import { cn } from "@/lib/utils";
 
 /**
  * Illustrative torque profile across the stroke, from the documented
- * Scotch-yoke relation T = F·d / cos²φ with illustrative spring and valve
+ * mechanism's lever relation (see mechanisms.ts) with illustrative spring and valve
  * values. Units are normalised; this is not manufacturer data.
  */
 export function TorqueChart({
@@ -51,7 +52,7 @@ export function TorqueChart({
 
   return (
     <figure className={cn("w-full", className)}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Illustrative torque curves for a ${sr ? "spring-return" : "double-acting"} symmetric Scotch yoke at ${pressure.toFixed(1)} bar.`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Illustrative torque curves for a ${sr ? "spring-return" : "double-acting"} ${MECHANISMS[mechanismFor(config.family)].name.toLowerCase()} at ${pressure.toFixed(1)} bar.`}>
         {yTicks.map((t) => (
           <g key={t}>
             <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--rule)" strokeWidth={t === 0 ? 1 : 0.5} />
@@ -91,7 +92,7 @@ export function TorqueChart({
           <span className="h-0 w-3 border-t border-muted" aria-hidden />
           Valve demand
         </span>
-        {showAxisNote && <span className="w-full">Horizontal: valve position. Vertical: normalised torque from T = F·d / cos²φ.</span>}
+        {showAxisNote && <span className="w-full">Horizontal: valve position. Vertical: normalised torque from {MECHANISMS[mechanismFor(config.family)].formula}.</span>}
       </figcaption>
     </figure>
   );

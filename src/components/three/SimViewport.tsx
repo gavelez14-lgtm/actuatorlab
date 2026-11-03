@@ -5,11 +5,13 @@ import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { COMPONENT_MAP } from "@/data/components";
+import { componentInfo } from "@/data/components";
+import { mechanismFor, type MechanismKind } from "@/lib/sim/mechanisms";
 import type { ComponentId, VisualizationMode } from "@/lib/sim/types";
 import { useEngine, useSimSelector } from "@/components/sim/SimulationProvider";
 import { usePrefersReducedMotion, useWebGLSupport } from "@/lib/hooks";
 import { ActuatorModel } from "./ActuatorModel";
+import { RackPinionModel } from "./RackPinionModel";
 import { applyCutaway, applyHighlight, createMaterials, disposeMaterials } from "./materials";
 import { WebGLFallback } from "./WebGLFallback";
 
@@ -17,13 +19,28 @@ const DEFAULT_TARGET = new THREE.Vector3(-0.15, -0.5, -0.35);
 const DEFAULT_DIR = new THREE.Vector3(0.62, 0.36, 0.7).normalize();
 const DEFAULT_DISTANCE = 7.4;
 
-const MODE_VIEWS: Record<VisualizationMode, { target: [number, number, number]; dir: [number, number, number]; distance: number }> = {
+type View = { target: [number, number, number]; dir: [number, number, number]; distance: number };
+
+const SCOTCH_YOKE_VIEWS: Record<VisualizationMode, View> = {
   normal: { target: [-0.15, -0.5, -0.35], dir: [0.62, 0.36, 0.7], distance: 7.4 },
   cutaway: { target: [-0.15, -0.3, -0.45], dir: [0.4, 0.82, 0.42], distance: 6.8 },
   mechanical: { target: [0.2, 0.05, -0.45], dir: [0.3, 0.82, 0.5], distance: 4.6 },
   energy: { target: [0.2, -0.15, -0.5], dir: [0.32, 0.5, 0.8], distance: 6.6 },
   engineering: { target: [-0.15, -0.5, -0.35], dir: [0.62, 0.36, 0.7], distance: 7.4 },
 };
+
+/** The rack and pinion is about 40% of the Scotch yoke's length, so views sit closer. */
+const RACK_PINION_VIEWS: Record<VisualizationMode, View> = {
+  normal: { target: [0, -0.55, 0], dir: [0.55, 0.38, 0.74], distance: 5.4 },
+  cutaway: { target: [0, -0.25, 0], dir: [0.3, 0.84, 0.45], distance: 4.6 },
+  mechanical: { target: [0, 0.05, 0], dir: [0.22, 0.88, 0.42], distance: 2.9 },
+  energy: { target: [0, -0.1, 0.2], dir: [0.25, 0.45, 0.86], distance: 4.4 },
+  engineering: { target: [0, -0.55, 0], dir: [0.55, 0.38, 0.74], distance: 5.4 },
+};
+
+function viewsFor(kind: MechanismKind) {
+  return kind === "rack-pinion" ? RACK_PINION_VIEWS : SCOTCH_YOKE_VIEWS;
+}
 
 /**
  * Distance multiplier so the model fits narrow (portrait) viewports too:
@@ -63,7 +80,9 @@ function CameraRig({
     t: number;
   } | null>(null);
 
+  const { engine: eng } = useEngine();
   useEffect(() => {
+    const kind = () => mechanismFor(eng.getState().config.family);
     const flyTo = (target: THREE.Vector3, position: THREE.Vector3) => {
       const c = controls.current;
       if (!c) return;
@@ -87,7 +106,10 @@ function CameraRig({
       flyTo(target.clone(), target.clone().add(dir.clone().normalize().multiplyScalar(distance * frameScale(camera, compact))));
 
     cameraApi.current = {
-      reset: () => fromView(DEFAULT_TARGET, DEFAULT_DIR, DEFAULT_DISTANCE),
+      reset: () => {
+        const v = viewsFor(kind()).normal;
+        fromView(new THREE.Vector3(...v.target), new THREE.Vector3(...v.dir), v.distance);
+      },
       fit: () => {
         const c = controls.current;
         if (!c || !root.current) return;
@@ -101,21 +123,21 @@ function CameraRig({
         flyTo(sphere.center.clone(), sphere.center.clone().add(dir.multiplyScalar(distance)));
       },
       focus: (id: ComponentId) => {
-        const info = COMPONENT_MAP[id];
+        const info = componentInfo(kind(), id);
         const c = controls.current;
         if (!info || !c) return;
         const dir = camera.position.clone().sub(c.target).normalize();
         fromView(new THREE.Vector3(...info.focus), dir, info.distance);
       },
       preset: (mode: VisualizationMode, scale = 1) => {
-        const v = MODE_VIEWS[mode];
+        const v = viewsFor(kind())[mode];
         fromView(new THREE.Vector3(...v.target), new THREE.Vector3(...v.dir), v.distance * scale);
       },
     };
     return () => {
       cameraApi.current = null;
     };
-  }, [camera, cameraApi, controls, root, invalidate, reduced, compact]);
+  }, [camera, cameraApi, controls, root, invalidate, reduced, compact, eng]);
 
   // Start in the preset view of the initial mode (e.g. deep-linked ?mode=mechanical).
   const { engine } = useEngine();
@@ -126,7 +148,7 @@ function CameraRig({
     const mode = engine.getState().mode;
     const c = controls.current;
     if (!c) return;
-    const v = MODE_VIEWS[mode];
+    const v = viewsFor(mechanismFor(engine.getState().config.family))[mode];
     const target = new THREE.Vector3(...v.target);
     c.target.copy(target);
     camera.position.copy(target.clone().add(new THREE.Vector3(...v.dir).normalize().multiplyScalar(v.distance * frameScale(camera, compact))));
@@ -165,6 +187,7 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
   const cutaway = useSimSelector((s) => s.cutaway);
   const opacity = useSimSelector((s) => s.housingOpacity);
   const actionType = useSimSelector((s) => s.config.actionType);
+  const mechanism = useSimSelector((s) => mechanismFor(s.config.family));
   const [hovered, setHovered] = useState<ComponentId | null>(null);
   const invalidate = useThree((s) => s.invalidate);
   const controls = useRef<OrbitControlsImpl>(null);
@@ -215,14 +238,23 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
         <Lightformer form="ring" intensity={0.6} position={[0, -3, 0]} scale={4} />
       </Environment>
 
-      <ActuatorModel
-        mats={mats}
-        rootRef={root}
-        onSelect={(id) => interactive && engine.dispatch({ type: "select", id })}
-        onHover={(id) => interactive && setHovered(id)}
-      />
+      {mechanism === "rack-pinion" ? (
+        <RackPinionModel
+          mats={mats}
+          rootRef={root}
+          onSelect={(id) => interactive && engine.dispatch({ type: "select", id })}
+          onHover={(id) => interactive && setHovered(id)}
+        />
+      ) : (
+        <ActuatorModel
+          mats={mats}
+          rootRef={root}
+          onSelect={(id) => interactive && engine.dispatch({ type: "select", id })}
+          onHover={(id) => interactive && setHovered(id)}
+        />
+      )}
 
-      <ContactShadows key={actionType} position={[0, -2.04, -0.3]} scale={10} blur={2.8} opacity={0.7} far={3.2} frames={1} resolution={1024} color="#000000" />
+      <ContactShadows key={`${mechanism}-${actionType}`} position={[0, -2.04, -0.3]} scale={10} blur={2.8} opacity={0.7} far={3.2} frames={1} resolution={1024} color="#000000" />
 
     </>
   );

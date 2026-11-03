@@ -188,6 +188,25 @@ export function LessonFigure({ id }: { id: FigureId }) {
           <figcaption className="mt-2 text-[12.5px] text-muted">Spring return, fail closed. Blue is supply air; grey is exhausting air. Air movement is illustrative, not a fluid simulation.</figcaption>
         </figure>
       );
+    case "rack-pinion-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ family: "pneumatic-rack-pinion", actionType: "spring-return", failPosition: "fail-closed" }} mode="cutaway" autoCycle ariaLabel="Live 3D twin-piston rack and pinion in half section, cycling open and closed." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Live model in half section. The pistons move apart on the air stroke, compressing the spring cartridges; the racks turn the pinion between them.</figcaption>
+        </figure>
+      );
+    case "rack-pinion-torque":
+      return (
+        <Frame caption="Left: double acting, a flat line. Right: spring return, where the springs tilt both curves. Normalised illustrative units at 5.5 bar, not manufacturer data.">
+          <div className="mb-2 flex justify-end">
+            <Illustrative />
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <TorqueChart config={{ family: "pneumatic-rack-pinion", actionType: "double-acting", failPosition: "fail-in-place" }} pressure={5.5} showAxisNote={false} />
+            <TorqueChart config={{ family: "pneumatic-rack-pinion", actionType: "spring-return", failPosition: "fail-closed" }} pressure={5.5} showAxisNote={false} />
+          </div>
+        </Frame>
+      );
     case "torque-curves":
       return (
         <Frame caption="Double-acting symmetric yoke at 5.5 bar against an illustrative ball-valve demand. Normalised units, not manufacturer data.">

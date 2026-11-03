@@ -67,6 +67,7 @@ export function EmbeddedSim({
 }) {
   const params = new URLSearchParams({ action: config.actionType ?? "spring-return", mode });
   if (config.failPosition === "fail-open") params.set("fail", "open");
+  if (config.family === "pneumatic-rack-pinion") params.set("type", "rack-pinion");
   return (
     <SimulationProvider initialConfig={config} initialMode={mode} autoCycle={autoCycle}>
       <div className={cn("overflow-hidden rounded-2xl bg-viewport", className)}>

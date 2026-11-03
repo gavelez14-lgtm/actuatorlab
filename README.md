@@ -38,9 +38,9 @@ Import the repository in Vercel. The framework preset (Next.js) and default buil
 | --- | --- |
 | Dashboard | Scroll-driven stroke story (scroll scrubs the real simulation; camera moves through exterior, air, mechanism views), continue learning, progress, families, recent topics, recommendations |
 | Actuator Explorer | Technology library (9 actuator types by mechanism and power source), detail pages, valve library. The pneumatic Scotch yoke is interactive; others are marked *coming soon* until their simulation is built. Old product-code URLs redirect. |
-| 3D Simulator | Pneumatic Scotch yoke on a ball valve. 5 modes, 3 configurations, supply loss, component inspection |
+| 3D Simulator | Pneumatic Scotch yoke and twin-piston pneumatic rack and pinion (switch in the header, or `?type=rack-pinion`), on a ball valve. 5 modes, 3 configurations, supply loss, component inspection |
 | Compare | Scotch yoke vs rack and pinion: torque shape and typical characteristics |
-| Academy | 16-lesson curriculum. Lessons 1–6 and 8 are written, with embedded live 3D demos and knowledge checks; the rest are marked *coming soon*. |
+| Academy | 16-lesson curriculum. Lessons 1–8 are written, with embedded live 3D demos and knowledge checks; the rest are marked *coming soon*. |
 | Assessments | Two scored quizzes with explanations |
 
 ### Simulator
@@ -77,6 +77,10 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 
 **Torque model.** `T = F·d / cos²φ` (symmetric yoke), with an illustrative linear spring, an illustrative ball valve demand that peaks at the seat, and valve demand treated as friction. Below the illustrative minimum pressure, the actuator stalls part-way.
 
+## Reference sources for mechanism architecture
+
+- Twin-piston rack and pinion: layout follows publicly documented features of compact twin-piston actuators, e.g. the Rotork GT range brochure (pub110-019) and distributor listings (twin opposed pistons and racks, convertible single/double acting, anti-blowout pinion, ±5° end stops, NAMUR top / ISO 5211 bottom). Proportions in `rackPinionGeometry.ts` are original, not manufacturer dimensions. The UI stays vendor-neutral.
+
 ## Assumptions and decisions
 
 - Content is organised by technology, not manufacturer product ranges. No manufacturer dimensions, ratings or internal geometry are claimed.
@@ -93,8 +97,8 @@ supabase/schema.sql   database-ready entities + RLS for a future backend
 
 ## Known limitations
 
-- Rack and pinion, other families, butterfly and plug valves are not yet simulated.
-- Lessons 7 and 9–16 are outlines only.
+- Vane, electric part-turn, electric multi-turn (rising stem) and hydraulic types are not yet simulated; nor are butterfly and plug valves.
+- Lessons 9–16 are outlines only.
 - The air flow view is illustrative, not CFD.
 - Progress lives in one browser; clearing site data resets it.
 - In headless or software-rendered browsers the 3D view is slow; the simulation clock clamps long frames to 0.25 s.

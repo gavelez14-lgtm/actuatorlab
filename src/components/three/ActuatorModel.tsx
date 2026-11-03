@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { Html, Line, RoundedBox } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { Line, RoundedBox } from "@react-three/drei";
 import {
-  BRACKET,
   CYLINDER,
   GUIDE_BAR,
   GUIDE_BLOCK,
@@ -14,7 +13,6 @@ import {
   PISTON,
   SHAFT,
   SPRING_MODULE,
-  VALVE,
   YOKE,
   YOKE_OFFSET,
   pinXFromStroke,
@@ -24,7 +22,9 @@ import {
 import type { ComponentId, CutawayStyle } from "@/lib/sim/types";
 import { useEngine, useSimSelector } from "@/components/sim/SimulationProvider";
 import { HelixSpring } from "./helix";
-import { SECTION_PLANE, VALVE_SECTION_PLANE, makeShellRaycast, type MaterialSet } from "./materials";
+import { SECTION_PLANE, makeShellRaycast, type MaterialSet } from "./materials";
+import { Label, Pick } from "./parts";
+import { ValveAssembly } from "./ValveAssembly";
 import { AirSystem } from "./AirSystem";
 
 const AXIS_Z = -YOKE_OFFSET;
@@ -109,83 +109,6 @@ function buildTubeAlongX(inner: number, outer: number, length: number, segments 
   return g;
 }
 
-function buildValveBody() {
-  const p = [
-    [0.27, -0.62],
-    [0.36, -0.52],
-    [0.48, -0.26],
-    [0.52, 0],
-    [0.48, 0.26],
-    [0.36, 0.52],
-    [0.27, 0.62],
-    [0.23, 0.62],
-    [0.23, 0.44],
-    [0.395, 0.26],
-    [0.405, 0],
-    [0.395, -0.26],
-    [0.23, -0.44],
-    [0.23, -0.62],
-    [0.27, -0.62],
-  ].map(([r, y]) => new THREE.Vector2(r, y));
-  const g = new THREE.LatheGeometry(p, 56);
-  g.rotateX(Math.PI / 2); // axis Y -> Z (pipe axis)
-  return g;
-}
-
-function buildBall() {
-  const R = VALVE.ballRadius;
-  const rb = VALVE.boreRadius;
-  const h = Math.sqrt(R * R - rb * rb);
-  const a0 = Math.asin(h / R);
-  const pts: THREE.Vector2[] = [];
-  const n = 28;
-  for (let i = 0; i <= n; i++) {
-    const a = a0 - (i / n) * 2 * a0; // from +h to -h through the equator
-    pts.push(new THREE.Vector2(R * Math.cos(a), R * Math.sin(a)));
-  }
-  const outer = new THREE.LatheGeometry(pts, 48);
-  outer.rotateX(Math.PI / 2); // bore axis Y -> Z
-  const bore = new THREE.CylinderGeometry(rb, rb, 2 * h, 40, 1, true);
-  bore.rotateX(Math.PI / 2);
-  return { outer, bore, h };
-}
-
-/* ---------- picking ---------- */
-
-interface PickProps {
-  id: ComponentId;
-  children: ReactNode;
-  onSelect: (id: ComponentId) => void;
-  onHover: (id: ComponentId | null) => void;
-}
-
-function Pick({ id, children, onSelect, onHover }: PickProps) {
-  return (
-    <group
-      userData={{ component: id }}
-      onClick={(e: ThreeEvent<MouseEvent>) => {
-        e.stopPropagation();
-        if (e.delta > 4) return; // ignore orbit drags
-        onSelect(id);
-      }}
-      onPointerOver={(e: ThreeEvent<PointerEvent>) => {
-        e.stopPropagation();
-        onHover(id);
-      }}
-      onPointerOut={() => onHover(null)}
-    >
-      {children}
-    </group>
-  );
-}
-
-function Label({ children, position }: { children: ReactNode; position: [number, number, number] }) {
-  return (
-    <Html position={position} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-      <div className="sim-label">{children}</div>
-    </Html>
-  );
-}
 
 /* ---------- model ---------- */
 
@@ -215,8 +138,6 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
         SPRING_MODULE.radius,
         SPRING_MODULE.canisterStart - SPRING_MODULE.canisterEnd,
       ),
-      valveBody: buildValveBody(),
-      ball: buildBall(),
     }),
     [],
   );
@@ -231,9 +152,6 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
       geo.yokePlate.dispose();
       geo.cylTube.dispose();
       geo.canister.dispose();
-      geo.valveBody.dispose();
-      geo.ball.outer.dispose();
-      geo.ball.bore.dispose();
     },
     [geo, helix],
   );
@@ -245,14 +163,6 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
     () =>
       makeShellRaycast(
         () => (cutRef.current === "section" ? [SECTION_PLANE] : []),
-        () => cutRef.current === "ghost",
-      ),
-    [],
-  );
-  const valveRaycast = useMemo(
-    () =>
-      makeShellRaycast(
-        () => (cutRef.current === "section" ? [VALVE_SECTION_PLANE, SECTION_PLANE] : [VALVE_SECTION_PLANE]),
         () => cutRef.current === "ghost",
       ),
     [],
@@ -473,74 +383,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
       {/* mechanical-mode guides: pin travel line and yoke swing arc */}
       {showLabels && <MotionGuides />}
 
-      {/* ---------------- Mounting bracket ---------------- */}
-      <Pick id="bracket" {...pick}>
-        <mesh position={[0, BRACKET.top - 0.03, 0]} material={mats.bracket}>
-          <boxGeometry args={[BRACKET.halfX * 2, 0.06, BRACKET.halfZ * 2]} />
-        </mesh>
-        <mesh position={[0, BRACKET.bottom + 0.03, 0]} material={mats.bracket}>
-          <boxGeometry args={[BRACKET.halfX * 2, 0.06, BRACKET.halfZ * 2]} />
-        </mesh>
-        {[-1, 1].map((sgn) => (
-          <mesh key={sgn} position={[sgn * (BRACKET.halfX - 0.03), (BRACKET.top + BRACKET.bottom) / 2, 0]} material={mats.bracket}>
-            <boxGeometry args={[0.06, BRACKET.top - BRACKET.bottom - 0.12, BRACKET.halfZ * 2]} />
-          </mesh>
-        ))}
-      </Pick>
-
-      {/* ---------------- Ball valve ---------------- */}
-      <group position={[0, VALVE.centerY, 0]}>
-        <Pick id="valve-body" {...pick}>
-          <mesh geometry={geo.valveBody} material={mats.valveBody} raycast={valveRaycast} />
-          {[-1, 1].map((sgn) => (
-            <mesh key={sgn} position={[0, 0, sgn * (VALVE.bodyHalfLength + 0.04)]} rotation={[Math.PI / 2, 0, 0]} material={mats.valveBody} raycast={valveRaycast}>
-              <cylinderGeometry args={[VALVE.flangeRadius, VALVE.flangeRadius, 0.08, 40, 1, true]} />
-            </mesh>
-          ))}
-          {/* bonnet neck and mounting pad */}
-          <mesh position={[0, 0.54, 0]} material={mats.valveBody} raycast={valveRaycast}>
-            <cylinderGeometry args={[0.14, 0.17, 0.08, 28, 1, true]} />
-          </mesh>
-          <mesh position={[0, 0.6, 0]} material={mats.valveBody} raycast={valveRaycast}>
-            <cylinderGeometry args={[0.26, 0.26, 0.04, 28]} />
-          </mesh>
-          {/* seats */}
-          {[-1, 1].map((sgn) => (
-            <mesh key={`seat${sgn}`} position={[0, 0, sgn * 0.29]} material={mats.seat}>
-              <torusGeometry args={[0.23, 0.026, 10, 40]} />
-            </mesh>
-          ))}
-          {/* pipe stubs (flow passage) */}
-          {[-1, 1].map((sgn) => (
-            <mesh
-              key={`pipe${sgn}`}
-              position={[0, 0, sgn * (VALVE.bodyHalfLength + 0.08 + (VALVE.pipeHalfLength - VALVE.bodyHalfLength) / 2)]}
-              rotation={[Math.PI / 2, 0, 0]}
-              material={mats.pipe}
-              raycast={valveRaycast}
-            >
-              <cylinderGeometry args={[VALVE.pipeRadius, VALVE.pipeRadius, VALVE.pipeHalfLength - VALVE.bodyHalfLength, 36, 1, true]} />
-            </mesh>
-          ))}
-        </Pick>
-
-        <group ref={ball} rotation={[0, shaftRotationY(0) + couplingOffset, 0]}>
-          <Pick id="ball" {...pick}>
-            <mesh geometry={geo.ball.outer} material={mats.ball} />
-            <mesh geometry={geo.ball.bore} material={mats.bore} />
-          </Pick>
-          <Pick id="stem" {...pick}>
-            <mesh position={[0, 0.55, 0]} material={mats.stem}>
-              <cylinderGeometry args={[0.06, 0.06, 0.5, 16]} />
-            </mesh>
-            {/* tang engaging the ball slot */}
-            <mesh position={[0, VALVE.ballRadius - 0.02, 0]} material={mats.stem}>
-              <boxGeometry args={[0.04, 0.08, 0.16]} />
-            </mesh>
-          </Pick>
-          {showLabels && <Label position={[0.0, -0.55, 0]}>Ball turns with the shaft</Label>}
-        </group>
-      </group>
+      <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={shaftRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
 
       <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} />
     </group>

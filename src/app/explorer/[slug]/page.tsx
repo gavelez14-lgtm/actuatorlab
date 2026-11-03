@@ -52,10 +52,10 @@ async function FamilyPageContent({ params }: { params: PageProps<"/explorer/[slu
         </div>
         {live ? (
           <div className="flex flex-wrap gap-2">
-            <ButtonLink href="/simulator" variant="primary" size="lg">
+            <ButtonLink href={f.simulatorHref ?? "/simulator"} variant="primary" size="lg">
               <Box aria-hidden /> Launch simulator
             </ButtonLink>
-            <ButtonLink href="/simulator?mode=mechanical" variant="secondary" size="lg">
+            <ButtonLink href={`${f.simulatorHref ?? "/simulator"}${(f.simulatorHref ?? "").includes("?") ? "&" : "?"}mode=mechanical`} variant="secondary" size="lg">
               See the mechanism
             </ButtonLink>
           </div>

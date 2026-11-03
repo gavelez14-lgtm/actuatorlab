@@ -125,7 +125,7 @@ export function ConfigPanel() {
             />
           </div>
         )}
-        <Switch checked={s.showLabels} onChange={(v) => engine.dispatch({ type: "set-labels", value: v })} label="Movement labels" description="Label the piston, pin, yoke and shaft in the scene." />
+        <Switch checked={s.showLabels} onChange={(v) => engine.dispatch({ type: "set-labels", value: v })} label="Movement labels" description="Label the moving parts in the scene." />
       </div>
     </div>
   );

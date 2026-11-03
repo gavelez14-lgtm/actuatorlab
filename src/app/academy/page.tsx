@@ -9,7 +9,7 @@ export default function AcademyPage() {
     <Page>
       <PageHeader
         title="Academy"
-        lead="A path from what an actuator is to how it is sized. Seven lessons are available now. The rest are listed so you can see where the path leads."
+        lead="A path from what an actuator is to how it is sized. Eight lessons are available now. The rest are listed so you can see where the path leads."
       />
       <Curriculum />
     </Page>

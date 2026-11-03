@@ -1,7 +1,8 @@
 "use client";
 
 import { Crosshair, MousePointerClick, X } from "lucide-react";
-import { COMPONENTS, COMPONENT_MAP, type ComponentRole } from "@/data/components";
+import { componentInfo, componentsFor, type ComponentRole } from "@/data/components";
+import { mechanismFor } from "@/lib/sim/mechanisms";
 import { Button, Tag } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useEngine, useSimSelector } from "./SimulationProvider";
@@ -20,8 +21,9 @@ export function ComponentInspector() {
   const { engine, camera } = useEngine();
   const selected = useSimSelector((s) => s.selectedComponent);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
-  const info = selected ? COMPONENT_MAP[selected] : null;
-  const list = COMPONENTS.filter((c) => !c.springReturnOnly || sr);
+  const kind = useSimSelector((s) => mechanismFor(s.config.family));
+  const info = selected ? (componentInfo(kind, selected) ?? null) : null;
+  const list = componentsFor(kind).filter((c) => !c.springReturnOnly || sr);
 
   return (
     <div className="space-y-5">

@@ -14,7 +14,9 @@ export type FigureId =
   | "scotch-yoke-live"
   | "torque-curves"
   | "spring-return-live"
-  | "fail-comparison";
+  | "fail-comparison"
+  | "rack-pinion-live"
+  | "rack-pinion-torque";
 
 export interface Question {
   id: string;
@@ -393,8 +395,80 @@ export const LESSONS: Lesson[] = [
     number: 7,
     title: "Rack and pinion mechanics",
     level: "Intermediate",
-    status: "planned",
-    summary: "Toothed racks and a pinion gear: near-constant torque through the stroke.",
+    status: "available",
+    minutes: 12,
+    summary: "Two opposed pistons, two racks and one pinion: why the torque stays nearly flat across the stroke.",
+    objectives: [
+      "Describe the twin-piston layout and the two air chambers.",
+      "Explain why both racks turn the pinion the same way.",
+      "Explain why rack-and-pinion torque is nearly constant.",
+      "Compare spring-return torque on the air and spring strokes.",
+    ],
+    sections: [
+      {
+        heading: "Two pistons, one pinion",
+        body: [
+          "A twin-piston rack and pinion has one cylinder bore with **two opposed pistons**. The **pinion**, a gear on the output shaft, crosses the bore at the centre.",
+          "Each piston carries a toothed **rack**. The two racks sit on opposite sides of the pinion. When the pistons move apart, one rack travels left on one side and the other travels right on the other side. Both push the pinion round in the same direction, so their torques add, and the sideways loads on the pinion largely cancel.",
+          "Air in the **centre chamber** drives the pistons apart. Air in the two **outer chambers**, or springs in spring-return builds, drives them back together.",
+        ],
+        figure: "rack-pinion-live",
+      },
+      {
+        heading: "Why the torque is flat",
+        stat: { value: "T = F·r", label: "The racks always act at the pinion's pitch radius r, so torque per unit of piston force is the same at every angle." },
+        body: [
+          "In a Scotch yoke, the lever arm changes with angle. In a rack and pinion it does not: the rack teeth always push at the **pitch radius**. For a double-acting actuator at constant pressure, the output torque is essentially a flat line, apart from friction.",
+          "Rack travel and rotation are locked together: travel = pitch radius × angle in radians. A 90° stroke moves each piston by r × π/2.",
+        ],
+        figure: "rack-pinion-torque",
+      },
+      {
+        heading: "Spring return changes the shape",
+        body: [
+          "Spring-return builds put spring cartridges between each piston and its end cap. On the air stroke the springs compress, so the **net air torque falls** as the stroke goes on. On the spring stroke the springs extend, so **spring torque falls** too.",
+          "The gearing still has a constant lever arm. The slope comes from the springs, not from the mechanism. That is why rack-and-pinion spring-return sizing focuses on the end of each stroke.",
+          "The number of springs fitted is matched to the supply pressure, which is also why many designs can be converted between spring return and double acting.",
+        ],
+      },
+      {
+        heading: "Where it fits",
+        body: [
+          "Rack and pinion actuators are compact and symmetrical, and are common on small to medium quarter-turn valves. Accessory interfaces for solenoid valves, switch boxes and positioners commonly follow standard patterns such as VDI/VDE 3845 (NAMUR), and valve mounting commonly follows ISO 5211.",
+          "Because the torque is flat, the actuator must be sized for the valve's highest torque, wherever in the stroke it occurs. A Scotch yoke puts its highest torque at the ends, which suits valves that need it there.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Rack", definition: "A straight toothed bar. Moving it along its length turns the gear it meshes with." },
+      { term: "Pinion", definition: "The gear on the output shaft that the racks drive." },
+      { term: "Pitch radius", definition: "The effective radius at which the rack teeth push on the pinion." },
+      { term: "Centre chamber", definition: "The space between the two pistons. Pressure here drives them apart." },
+      { term: "Spring cartridge", definition: "A pre-loaded spring assembly that can be removed safely as a unit." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Why do the two racks turn the pinion in the same direction?",
+        options: ["They are on opposite sides of the pinion and move in opposite directions", "They both move the same way", "One rack is reversed by a second gear", "The springs make them agree"],
+        answer: 0,
+        explanation: "Opposite sides plus opposite motion gives the same rotation sense, so the two torques add.",
+      },
+      {
+        id: "q2",
+        prompt: "In a double-acting rack and pinion at constant pressure, the torque curve is…",
+        options: ["U-shaped, highest at the ends", "Nearly flat", "Highest at mid-stroke", "Zero at the ends"],
+        answer: 1,
+        explanation: "The pitch radius does not change, so T = F·r is constant apart from friction.",
+      },
+      {
+        id: "q3",
+        prompt: "In spring return, why does the net air torque fall during the air stroke?",
+        options: ["The pinion radius shrinks", "The springs compress and push back harder", "The racks disengage", "The valve gets lighter"],
+        answer: 1,
+        explanation: "Spring force rises as the springs compress. The gearing itself is constant.",
+      },
+    ],
   },
   {
     slug: "double-acting-vs-spring-return",

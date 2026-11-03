@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Box, Hourglass } from "lucide-react";
+import { Box } from "lucide-react";
 import { COMPARE_ROWS, MECHANISMS, type MechanismKey } from "@/data/compare";
 import { ButtonLink, Illustrative, Page, PageHeader, Tag } from "@/components/ui/primitives";
 
@@ -134,10 +134,11 @@ export default function ComparePage() {
           </ButtonLink>
         </div>
         <div className="rounded-2xl bg-panel p-5">
-          <h2 className="flex items-center gap-2 text-[20px] text-fg">
-            <Hourglass className="size-4 text-muted" aria-hidden /> Rack and pinion in 3D
-          </h2>
-          <p className="mt-1 text-[14px] text-muted">Not built yet. It will reuse the same simulation engine with a gear-based kinematic model and constant lever arm.</p>
+          <h2 className="text-[20px] text-fg">Rack and pinion in 3D</h2>
+          <p className="mt-1 text-[14px] text-fg-2">Watch two opposed racks turn the pinion, and see the flat torque line in the engineering view.</p>
+          <ButtonLink href="/simulator?type=rack-pinion&mode=engineering" variant="primary" className="mt-4">
+            <Box aria-hidden /> Open in engineering view
+          </ButtonLink>
         </div>
       </section>
     </Page>

@@ -20,6 +20,8 @@ export interface ActuatorFamily {
   powerSource: PowerSource;
   movement: string;
   status: "interactive" | "planned";
+  /** Simulator deep link when interactive. */
+  simulatorHref?: string;
   summary: string;
   operation: string[];
   configurations: { name: string; note: string }[];
@@ -37,6 +39,7 @@ export const FAMILIES: ActuatorFamily[] = [
     powerSource: "Pneumatic",
     movement: "Quarter-turn (90°)",
     status: "interactive",
+    simulatorHref: "/simulator",
     summary: "Compressed air drives a piston; a slotted yoke converts its straight-line stroke into a quarter turn.",
     operation: [
       "Air pressure acts on a piston in a cylinder and produces a linear force.",
@@ -69,7 +72,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Rack and pinion",
     powerSource: "Pneumatic",
     movement: "Quarter-turn (90°, longer rotations possible)",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=rack-pinion",
     summary: "Two opposed pistons carry toothed racks that turn a pinion gear on the output shaft, giving near-constant torque through the stroke.",
     operation: [
       "Air enters the centre chamber and drives two opposed pistons outward. Air on the outer chambers drives them back.",
