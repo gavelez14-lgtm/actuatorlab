@@ -1,0 +1,49 @@
+"use client";
+
+import { Illustrative } from "@/components/ui/primitives";
+import { cn } from "@/lib/utils";
+import { useSimState } from "./SimulationProvider";
+import { TorqueChart } from "./TorqueChart";
+
+function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <dt className="text-[12px] text-muted">{label}</dt>
+      <dd
+        className={cn(
+          "num text-[13px] font-medium",
+          tone === "air" ? "text-air" : tone === "warn" ? "text-warn" : tone === "danger" ? "text-danger" : tone === "ok" ? "text-ok" : "text-fg",
+        )}
+      >
+        {value}
+        {unit && <span className="ml-0.5 text-muted">{unit}</span>}
+      </dd>
+    </div>
+  );
+}
+
+export function EngineeringOverlay() {
+  const s = useSimState();
+  const sr = s.config.actionType === "spring-return";
+  const t = s.torque;
+  return (
+    <div className="pointer-events-auto w-[340px] max-w-[calc(100vw-2rem)] glass rounded-2xl p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="font-sans text-[13px] font-semibold text-fg">Engineering view</h3>
+        <Illustrative>Illustrative, not certified</Illustrative>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-5 divide-rule border-y border-rule py-1">
+        <Row label="Valve position" value={`${(s.position * 100).toFixed(1)}`} unit="%" />
+        <Row label="Output angle" value={s.outputAngle.toFixed(1)} unit="°" />
+        <Row label="Supply" value={s.supplyAvailable ? s.supplyPressure.toFixed(1) : "0.0"} unit="bar" tone={s.supplyAvailable ? "air" : "danger"} />
+        <Row label="Chamber A" value={s.chamberA} tone={s.chamberA === "supply" ? "air" : undefined} />
+        <Row label="Air torque" value={t.air.toFixed(2)} tone="air" />
+        <Row label="Chamber B" value={s.chamberB} tone={s.chamberB === "supply" ? "air" : undefined} />
+        {sr && <Row label="Spring torque" value={t.spring.toFixed(2)} tone="warn" />}
+        <Row label="Valve demand" value={t.valveDemand.toFixed(2)} />
+        <Row label="Margin" value={t.net.toFixed(2)} tone={t.net > 0 ? "ok" : "danger"} />
+      </dl>
+      <TorqueChart config={s.config} pressure={s.supplyPressure} position={s.position} className="mt-2" />
+    </div>
+  );
+}

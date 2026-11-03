@@ -1,0 +1,486 @@
+/**
+ * Academy curriculum. Only lessons with status "available" have content.
+ * Planned lessons are listed so learners can see the path, and are never
+ * shown as completed or as if they had content.
+ */
+
+export type Level = "Beginner" | "Intermediate" | "Advanced";
+
+export type FigureId =
+  | "actuator-system"
+  | "power-sources"
+  | "linear-rotary"
+  | "quarter-turn"
+  | "scotch-yoke-live"
+  | "torque-curves"
+  | "spring-return-live"
+  | "fail-comparison";
+
+export interface Question {
+  id: string;
+  prompt: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+}
+
+export interface LessonSection {
+  heading: string;
+  body: string[];
+  figure?: FigureId;
+  /** One real, memorable number, set large like a presentation slide. */
+  stat?: { value: string; label: string };
+}
+
+export interface Lesson {
+  slug: string;
+  number: number;
+  title: string;
+  level: Level;
+  status: "available" | "planned";
+  minutes?: number;
+  summary: string;
+  objectives?: string[];
+  sections?: LessonSection[];
+  terms?: { term: string; definition: string }[];
+  checks?: Question[];
+}
+
+export const LESSONS: Lesson[] = [
+  {
+    slug: "what-is-an-actuator",
+    number: 1,
+    title: "What is an actuator?",
+    level: "Beginner",
+    status: "available",
+    minutes: 8,
+    summary: "The device that turns a control signal and a source of energy into mechanical movement.",
+    objectives: [
+      "Define an actuator in one sentence.",
+      "Name the three things every actuator needs: a power source, a control signal and a mechanism.",
+      "Explain why process plants automate valves.",
+    ],
+    sections: [
+      {
+        heading: "Movement on command",
+        body: [
+          "An **actuator** is a device that produces mechanical movement when it is told to. In process plants, that movement usually opens, closes or positions a valve.",
+          "Every actuator combines three things: a **source of energy** (compressed air, hydraulic fluid or electricity), a **control signal** that says when and where to move, and a **mechanism** that turns the energy into the right kind of movement.",
+        ],
+        figure: "actuator-system",
+      },
+      {
+        heading: "Why automate a valve?",
+        body: [
+          "A person with a handwheel can operate a valve, but not from a control room, not in a fraction of a second during an emergency, and not thousands of times a day.",
+          "Actuators let a control system operate valves remotely, repeatably and, when designed for it, automatically move them to a safe position if something goes wrong.",
+        ],
+      },
+      {
+        heading: "What an actuator is not",
+        body: [
+          "The actuator does not control the fluid directly. The **valve** does that. The actuator supplies the torque or thrust the valve needs. Keeping those two roles separate makes sizing and troubleshooting much easier, and is the subject of the next lesson.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Actuator", definition: "A device that converts energy into mechanical movement in response to a control signal." },
+      { term: "Motive power", definition: "The energy source that drives the actuator, such as compressed air, hydraulic fluid or electricity." },
+      { term: "Control signal", definition: "The command that tells the actuator to move, for example energising a solenoid valve." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Which of these is an actuator's job?",
+        options: ["Seal against process pressure", "Provide the movement that operates the valve", "Measure flow in the pipe", "Store process fluid"],
+        answer: 1,
+        explanation: "The actuator provides torque or thrust to move the valve. Sealing and controlling the fluid is the valve's job.",
+      },
+      {
+        id: "q2",
+        prompt: "Which list contains the three things every actuator needs?",
+        options: ["Power source, control signal, mechanism", "Valve, pipe, pump", "Motor, battery, display", "Spring, piston, solenoid"],
+        answer: 0,
+        explanation: "Every actuator needs energy, an instruction to move and a mechanism. The other lists name specific parts that only some actuators have.",
+      },
+    ],
+  },
+  {
+    slug: "actuator-vs-valve",
+    number: 2,
+    title: "Actuator versus valve",
+    level: "Beginner",
+    status: "available",
+    minutes: 8,
+    summary: "Where the valve's job ends and the actuator's begins, and how the two are joined.",
+    objectives: ["Separate the roles of valve and actuator.", "Describe the mounting interface between them.", "Explain why valve torque drives actuator selection."],
+    sections: [
+      {
+        heading: "Two devices, one assembly",
+        body: [
+          "A **valve** controls fluid: it contains pressure, seals, and opens or restricts a passage. An **actuator** moves the valve's closure member (ball, disc, plug or gate).",
+          "They are usually bought, sized and maintained as separate items, then joined with a mounting bracket and a coupling so the actuator's output shaft drives the valve stem.",
+        ],
+      },
+      {
+        heading: "The interface",
+        body: [
+          "The bracket holds the actuator square and concentric to the valve. The coupling transmits torque from the actuator shaft to the valve stem. Any misalignment adds side loads and wear, and any backlash shows up as lost motion.",
+          "Many valves and actuators follow standard mounting patterns (ISO 5211 is common for part-turn valves), which makes them easier to pair. Always check the specific documentation.",
+        ],
+      },
+      {
+        heading: "The valve sets the requirement",
+        body: [
+          "The valve's torque requirement depends on its type, size, seat materials, pressure and service. The actuator must exceed it at every point of the stroke, with a safety margin. That is why sizing starts with the valve data, not the actuator catalogue.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Closure member", definition: "The part of a valve that blocks or opens the flow path: ball, disc, plug or gate." },
+      { term: "Coupling", definition: "The part that connects the actuator output shaft to the valve stem and transmits torque." },
+      { term: "Mounting bracket", definition: "The structure that fixes the actuator to the valve and keeps the shafts aligned." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Which device contains process pressure?",
+        options: ["The actuator", "The valve", "The solenoid", "The coupling"],
+        answer: 1,
+        explanation: "The valve body and seats contain the process fluid. The actuator only provides movement.",
+      },
+      {
+        id: "q2",
+        prompt: "Where should actuator sizing start?",
+        options: ["The largest actuator in stock", "The valve's torque requirement", "The pipe colour", "The control room layout"],
+        answer: 1,
+        explanation: "The actuator must exceed the valve's torque requirement with margin, so valve data comes first.",
+      },
+    ],
+  },
+  {
+    slug: "power-sources",
+    number: 3,
+    title: "Pneumatic, hydraulic and electric power",
+    level: "Beginner",
+    status: "available",
+    minutes: 10,
+    summary: "How each energy source produces force, and the practical trade-offs between them.",
+    objectives: ["Describe how each power source produces force.", "Compare them on speed, force density, fail-safe ability and infrastructure.", "Recognise electro-hydraulic as a combination."],
+    sections: [
+      {
+        heading: "Three ways to make force",
+        stat: { value: "F = P × A", label: "Piston force is pressure times area, whether the fluid is air or oil. Electric actuators get their force from a motor and gears instead." },
+        body: [
+          "**Pneumatic** actuators use compressed air acting on a piston or diaphragm. Force equals pressure times area. Plant instrument air is widely available, and springs give simple fail-safe action.",
+          "**Hydraulic** actuators use pressurised oil. Hydraulic systems run at much higher pressures than plant air, so they produce large forces from compact cylinders, and the fluid is effectively incompressible, which gives stiff, steady movement.",
+          "**Electric** actuators use a motor and gearbox. They need only a power cable, offer precise positioning and diagnostics, and usually stop where they are if power is lost unless a fail-safe option is fitted.",
+        ],
+        figure: "power-sources",
+      },
+      {
+        heading: "Combinations",
+        body: [
+          "**Electro-hydraulic** actuators contain their own motor and pump, so they need only electrical power yet deliver hydraulic force and can include a spring for fail-safe action. They suit remote sites with no air or hydraulic supply.",
+        ],
+      },
+      {
+        heading: "Choosing between them",
+        body: [
+          "The choice depends on what the site already has, the force needed, how fast the valve must move, what must happen on loss of power, and the environment. None of the three is best in every case.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Instrument air", definition: "Clean, dry compressed air supplied for control equipment." },
+      { term: "Force density", definition: "How much force a device produces for its size. Hydraulics are high; pneumatics are lower." },
+      { term: "Electro-hydraulic", definition: "An actuator with an integral motor-driven pump that creates its own hydraulic pressure." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Why can a hydraulic cylinder be smaller than a pneumatic one for the same force?",
+        options: ["Oil is lighter than air", "Hydraulic systems operate at much higher pressure", "Hydraulic pistons are made of steel", "Hydraulic actuators are always electric"],
+        answer: 1,
+        explanation: "Force = pressure × area. Higher pressure means less area is needed for the same force.",
+      },
+      {
+        id: "q2",
+        prompt: "A standard electric actuator loses power mid-stroke. What does it typically do?",
+        options: ["Returns to closed", "Returns to open", "Stops where it is", "Oscillates"],
+        answer: 2,
+        explanation: "Without stored energy (battery, spring or capacitor), there is nothing to drive it, so it stays in place.",
+      },
+    ],
+  },
+  {
+    slug: "linear-vs-rotary",
+    number: 4,
+    title: "Rotary versus linear movement",
+    level: "Beginner",
+    status: "available",
+    minutes: 7,
+    summary: "Linear, multi-turn and quarter-turn outputs, and which valves need which.",
+    objectives: ["Distinguish linear, multi-turn and quarter-turn output.", "Match valve types to the movement they need.", "Explain why many actuators convert linear to rotary motion."],
+    sections: [
+      {
+        heading: "Three kinds of output",
+        stat: { value: "90°", label: "All a ball, butterfly or plug valve needs to go from fully closed to fully open." },
+        body: [
+          "**Linear** actuators push and pull a stem in a straight line, for example on many globe control valves.",
+          "**Multi-turn** actuators rotate the output many revolutions, typically to drive a threaded stem on gate or globe valves.",
+          "**Quarter-turn** (part-turn) actuators rotate the output through about 90°, which is all a ball, butterfly or plug valve needs to go from closed to open.",
+        ],
+        figure: "linear-rotary",
+      },
+      {
+        heading: "Converting linear to rotary",
+        body: [
+          "A piston naturally produces linear force. To drive a quarter-turn valve, a pneumatic or hydraulic actuator needs a mechanism that converts linear movement to rotation. The two most common are the **Scotch yoke** and the **rack and pinion**, covered in the intermediate lessons.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Quarter-turn", definition: "A 90° rotation, used by ball, butterfly and plug valves." },
+      { term: "Multi-turn", definition: "Output that rotates many revolutions, often driving a threaded valve stem." },
+      { term: "Thrust", definition: "Linear force, the output of a linear actuator. Torque is its rotary equivalent." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Which valve type normally needs a quarter-turn actuator?",
+        options: ["Rising-stem gate valve", "Ball valve", "Globe valve with linear stem", "Diaphragm valve"],
+        answer: 1,
+        explanation: "A ball valve goes from closed to open in a 90° rotation.",
+      },
+      {
+        id: "q2",
+        prompt: "Why do piston actuators for ball valves need a conversion mechanism?",
+        options: ["Pistons move in a straight line, the valve needs rotation", "Pistons rotate too fast", "Ball valves need multi-turn input", "To reduce air consumption"],
+        answer: 0,
+        explanation: "The piston produces linear force; a Scotch yoke or rack and pinion converts it into rotation.",
+      },
+    ],
+  },
+  {
+    slug: "quarter-turn-valves",
+    number: 5,
+    title: "Quarter-turn valve fundamentals",
+    level: "Beginner",
+    status: "available",
+    minutes: 10,
+    summary: "Ball, butterfly and plug valves, and why valve position is not the same as flow.",
+    objectives: ["Describe how ball, butterfly and plug valves close.", "Explain where valve torque comes from.", "Explain why 50% open does not mean 50% flow."],
+    sections: [
+      {
+        heading: "Three common types",
+        body: [
+          "A **ball valve** turns a ball with a bore through it. Aligned with the pipe, it is open; turned 90°, the solid side faces the seats and it is closed.",
+          "A **butterfly valve** turns a disc in the flow stream. A **plug valve** turns a plug with a port through it. All three need only a quarter turn.",
+        ],
+        figure: "quarter-turn",
+      },
+      {
+        heading: "Where valve torque comes from",
+        body: [
+          "Most of a ball valve's torque comes from friction between the ball and its seats, and in the stem packing. It is usually highest when breaking the ball out of the closed seat, and again as it re-seats on closing. Flow and pressure add dynamic torques, especially on butterfly valves.",
+          "The valve manufacturer provides the torque values for the specific valve, size and service. The simulator uses an illustrative shape, not real numbers.",
+        ],
+      },
+      {
+        heading: "Position is not flow",
+        stat: { value: "50% ≠ 50%", label: "Half of the stroke is not half of the flow. The valve characteristic and the system around it decide." },
+        body: [
+          "At 50% position the ball has turned 45°. That does **not** mean half of the full flow passes. Flow through a partly open valve depends on the shape of the opening (the valve's inherent characteristic) and on the pressure drop across it, which depends on the rest of the system.",
+          "This is why ActuatorLab always says \"valve position\" and never \"flow\".",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Seat", definition: "The sealing ring the closure member presses against to shut off flow." },
+      { term: "Break-out torque", definition: "The torque needed to start moving a valve from its seated position." },
+      { term: "Inherent characteristic", definition: "The relationship between valve position and flow at constant pressure drop." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "A ball valve is at 50% position. What can you say about flow?",
+        options: ["It is exactly 50% of maximum", "It depends on the valve characteristic and the system", "It is zero", "It is always more than 50%"],
+        answer: 1,
+        explanation: "Position and flow are related through the valve characteristic and the system pressure drop. They are not equal.",
+      },
+      {
+        id: "q2",
+        prompt: "Where does a ball valve usually need the highest torque?",
+        options: ["At mid-stroke", "When breaking out of the closed seat", "When fully open", "Only when the pipe is empty"],
+        answer: 1,
+        explanation: "Seat friction makes break-out from closed the usual peak.",
+      },
+    ],
+  },
+  {
+    slug: "scotch-yoke-mechanics",
+    number: 6,
+    title: "Scotch yoke mechanics",
+    level: "Intermediate",
+    status: "available",
+    minutes: 14,
+    summary: "How a pin in a slotted yoke turns straight-line force into a quarter turn, and why the torque curve is U-shaped.",
+    objectives: [
+      "Trace the force path from piston to output shaft.",
+      "Explain why the pin slides along the yoke slot.",
+      "Derive the shape of the symmetric yoke torque curve.",
+      "Relate that curve to ball valve torque demand.",
+    ],
+    sections: [
+      {
+        heading: "The mechanism",
+        body: [
+          "The piston rod drives a **guide block** that can only travel in a straight line. A **pin** on the block sits in a slot in the **yoke**, which is fixed to the output shaft.",
+          "When the block moves, the pin pushes against the side of the slot and swings the yoke. Because the pin travels in a straight line while the slot swings in an arc, the pin also slides along the slot. Watch it in the model below.",
+        ],
+        figure: "scotch-yoke-live",
+      },
+      {
+        heading: "Why the torque changes",
+        stat: { value: "2×", label: "Torque at ±45° compared with mid-stroke, for the same piston force, in a symmetric Scotch yoke." },
+        body: [
+          "Let **d** be the distance from the shaft to the pin's line of travel and **φ** the yoke's angle from centre. The pin sits at distance d/cos φ from the shaft, and only the part of the force perpendicular to the yoke turns it. Combining both gives **T = F · d / cos²φ**.",
+          "At mid-stroke (φ = 0) the lever arm is shortest and torque is lowest. At the ends (φ = ±45°) cos²φ = 0.5, so torque is twice the mid-stroke value for the same force.",
+        ],
+        figure: "torque-curves",
+      },
+      {
+        heading: "Why that suits many valves",
+        body: [
+          "A ball valve usually needs most torque at break-out and re-seating, at the ends of travel. A symmetric Scotch yoke delivers most torque in exactly those places. **Canted** yokes shift the curve to favour one end, a topic in a later lesson.",
+          "The guide bar matters too: it reacts the side load the yoke puts on the pin, so the piston rod and seals see mainly axial load.",
+        ],
+      },
+    ],
+    terms: [
+      { term: "Yoke", definition: "A slotted arm fixed to the output shaft that the pin drives." },
+      { term: "Guide block", definition: "The crosshead that carries the pin and travels in a straight line." },
+      { term: "Symmetric yoke", definition: "A yoke whose slot is centred so the torque curve is the same at both ends." },
+      { term: "Canted yoke", definition: "A yoke with an angled slot that shifts peak torque toward one end of travel." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "Why does the pin slide along the yoke slot during the stroke?",
+        options: ["The slot is worn", "The pin moves in a straight line while the slot swings in an arc", "The yoke changes length", "Air pressure pushes it"],
+        answer: 1,
+        explanation: "The pin's distance from the shaft is d/cos φ, which changes with angle, so it must slide in the slot.",
+      },
+      {
+        id: "q2",
+        prompt: "In a symmetric Scotch yoke with constant piston force, where is output torque lowest?",
+        options: ["At the start of travel", "At mid-stroke", "At the end of travel", "It is constant"],
+        answer: 1,
+        explanation: "At mid-stroke φ = 0 and cos²φ = 1, so T = F·d, the minimum.",
+      },
+      {
+        id: "q3",
+        prompt: "At φ = 45°, how does torque compare with mid-stroke for the same force?",
+        options: ["Half", "Equal", "About 1.4 times", "Twice"],
+        answer: 3,
+        explanation: "cos²45° = 0.5, so T = F·d / 0.5 = 2·F·d.",
+      },
+    ],
+  },
+  {
+    slug: "rack-and-pinion-mechanics",
+    number: 7,
+    title: "Rack and pinion mechanics",
+    level: "Intermediate",
+    status: "planned",
+    summary: "Toothed racks and a pinion gear: near-constant torque through the stroke.",
+  },
+  {
+    slug: "double-acting-vs-spring-return",
+    number: 8,
+    title: "Double acting versus spring return",
+    level: "Intermediate",
+    status: "available",
+    minutes: 12,
+    summary: "Where the energy for each stroke comes from, and what that means when the air supply fails.",
+    objectives: [
+      "Describe the air path for each stroke in both configurations.",
+      "Explain why spring return provides a fail position and double acting does not.",
+      "Read spring-return torque curves for the air and spring strokes.",
+    ],
+    sections: [
+      {
+        heading: "Double acting",
+        stat: { value: "0", label: "Stored energy in a double-acting actuator with no reservoir. Lose the supply and it stays where it is." },
+        body: [
+          "Air is supplied to one side of the piston to drive it one way, and to the other side to drive it back. A directional control valve (often a 5/2 solenoid valve) routes air to one chamber while venting the other.",
+          "There is no spring. If the supply fails, **nothing stores energy** to move the valve, so it stays where it is. Fail-open or fail-closed behaviour needs extra stored energy, such as an air reservoir with its own control circuit.",
+        ],
+      },
+      {
+        heading: "Spring return",
+        body: [
+          "Air drives the piston in one direction and **compresses a spring**. To move back, the cylinder is vented (often through a 3/2 solenoid valve) and the spring drives the stroke.",
+          "If the supply is lost, the cylinder vents and the spring returns the actuator to the **spring end of travel**. Whether that end is valve open or valve closed depends on how the actuator is arranged on the valve. That is the fail position.",
+          "Try it below. Open the valve, then turn the supply off.",
+        ],
+        figure: "spring-return-live",
+      },
+      {
+        heading: "Two torque curves",
+        body: [
+          "On the air stroke, the air must overcome the valve and compress the spring, so **net air torque falls** as the spring is compressed. On the spring stroke, **spring torque falls** as the spring extends. Both are shaped by the yoke's 1/cos²φ factor.",
+          "Sizing a spring-return actuator means checking both: the spring alone must move the valve at the end of the spring stroke, and the air must beat valve plus spring at the end of the air stroke, at the minimum expected supply pressure.",
+        ],
+        figure: "fail-comparison",
+      },
+    ],
+    terms: [
+      { term: "Air stroke", definition: "The stroke driven by air pressure. In spring return, this compresses the spring." },
+      { term: "Spring stroke", definition: "The stroke driven by the spring when the cylinder vents." },
+      { term: "Fail position", definition: "Where the valve goes, or stays, when motive power is lost." },
+      { term: "Fail in place", definition: "Remains at its last position on loss of supply. Typical of double acting without stored energy." },
+    ],
+    checks: [
+      {
+        id: "q1",
+        prompt: "A double-acting actuator with no reservoir loses supply at 40% open. What happens?",
+        options: ["It closes", "It opens", "It stays near 40%", "It cycles"],
+        answer: 2,
+        explanation: "No stored energy means no driving force, so it stays where it is.",
+      },
+      {
+        id: "q2",
+        prompt: "What determines whether a spring-return actuator fails open or fails closed?",
+        options: ["The animation speed", "Which end of travel the spring drives to, as arranged on the valve", "The supply pressure", "The colour of the spring"],
+        answer: 1,
+        explanation: "The spring always drives to the spring end of travel. The mounting arrangement decides whether that is open or closed.",
+      },
+      {
+        id: "q3",
+        prompt: "In spring return, why does net air torque fall during the air stroke?",
+        options: ["The air leaks", "The spring is compressed more, so it pushes back harder", "The valve gets lighter", "The yoke shortens"],
+        answer: 1,
+        explanation: "Spring force rises as it compresses, and it opposes the air.",
+      },
+    ],
+  },
+  { slug: "fail-open-vs-fail-closed", number: 9, title: "Fail-open versus fail-closed", level: "Intermediate", status: "planned", summary: "Choosing the safe position for a process, and how the actuator is arranged to achieve it." },
+  { slug: "symmetric-vs-canted-yoke", number: 10, title: "Symmetric versus canted yoke concepts", level: "Intermediate", status: "planned", summary: "Shaping the torque curve to match the valve." },
+  { slug: "torque-requirements", number: 11, title: "Torque requirements and torque curves", level: "Advanced", status: "planned", summary: "Break-out, run, re-seat and end torques, and safety factors." },
+  { slug: "supply-pressure-sizing", number: 12, title: "Supply pressure and actuator sizing principles", level: "Advanced", status: "planned", summary: "Sizing at minimum supply pressure and checking spring end torque." },
+  { slug: "valve-mounting", number: 13, title: "Valve mounting and interfaces", level: "Advanced", status: "planned", summary: "Brackets, couplings, standards and alignment." },
+  { slug: "control-panels", number: 14, title: "Control panels and accessories", level: "Advanced", status: "planned", summary: "What sits between the control system and the actuator." },
+  { slug: "solenoids-boosters-switches", number: 15, title: "Solenoid valves, volume boosters and limit switches", level: "Advanced", status: "planned", summary: "Directing air, moving it faster and confirming position." },
+  { slug: "speed-control", number: 16, title: "Speed control and operating times", level: "Advanced", status: "planned", summary: "Restrictors, exhaust control and what sets stroke time." },
+];
+
+export const LESSON_MAP = Object.fromEntries(LESSONS.map((l) => [l.slug, l])) as Record<string, Lesson>;
+export const AVAILABLE_LESSONS = LESSONS.filter((l) => l.status === "available");
+
+export function neighbours(slug: string) {
+  const list = AVAILABLE_LESSONS;
+  const i = list.findIndex((l) => l.slug === slug);
+  return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 && i < list.length - 1 ? list[i + 1] : null };
+}

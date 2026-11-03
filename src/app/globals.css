@@ -1,26 +1,253 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------------------------------------------------------------------------
+   ActuatorLab tokens, modelled on Apple's platform semantics:
+   tone separates surfaces (not borders), hairline separators divide lists,
+   labels step down in opacity, and colour is reserved for meaning.
+   - orange: primary actions, selection, live state
+   - blue:   pressurised air
+--------------------------------------------------------------------------- */
+:root,
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --panel: #1c1c1e; /* secondary grouped background */
+  --panel-2: #2c2c2e; /* tertiary */
+  --elevated: #3a3a3c;
+  --fill: rgb(120 120 128 / 0.24); /* control fill */
+  --fill-2: rgb(120 120 128 / 0.36);
+  --rule: rgb(84 84 88 / 0.5); /* separator */
+  --rule-strong: rgb(84 84 88 / 0.85);
+  --fg: #f5f5f7;
+  --fg-2: rgb(235 235 245 / 0.8);
+  --muted: rgb(235 235 245 / 0.56);
+  --accent: #ff9f0a;
+  --accent-hover: #ffb340;
+  --accent-ink: #000000;
+  --accent-soft: rgb(255 159 10 / 0.16);
+  --air: #0a84ff;
+  --air-soft: rgb(10 132 255 / 0.16);
+  --ok: #30d158;
+  --warn: #ffd60a;
+  --danger: #ff453a;
+  --viewport: radial-gradient(120% 90% at 50% 30%, #2b2b2f 0%, #121214 55%, #050505 100%);
+  --glass: rgb(30 30 32 / 0.72);
+  --seg-thumb: #636366;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #f5f5f7;
+  --panel: #ffffff;
+  --panel-2: #f2f2f7;
+  --elevated: #ffffff;
+  --fill: rgb(118 118 128 / 0.12);
+  --fill-2: rgb(118 118 128 / 0.2);
+  --rule: rgb(60 60 67 / 0.16);
+  --rule-strong: rgb(60 60 67 / 0.3);
+  --fg: #1d1d1f;
+  --fg-2: #424245;
+  --muted: #6e6e73;
+  --accent: #c45200;
+  --accent-hover: #a84600;
+  --accent-ink: #ffffff;
+  --accent-soft: rgb(196 82 0 / 0.1);
+  --air: #0066cc;
+  --air-soft: rgb(0 102 204 / 0.1);
+  --ok: #248a3d;
+  --warn: #946200;
+  --danger: #d70015;
+  --viewport: radial-gradient(120% 90% at 50% 30%, #ffffff 0%, #ececf0 60%, #dcdce1 100%);
+  --glass: rgb(255 255 255 / 0.72);
+  --seg-thumb: #ffffff;
+  --shadow: none;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-elevated: var(--elevated);
+  --color-fill: var(--fill);
+  --color-fill-2: var(--fill-2);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-air: var(--air);
+  --color-air-soft: var(--air-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-glass: var(--glass);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Variable", "Helvetica Neue", Arial, sans-serif;
+  --shadow-panel: var(--shadow);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.006em;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+h1 {
+  font-weight: 700;
+  letter-spacing: -0.028em;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-viewport {
+  background: var(--viewport);
+}
+
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--air) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--air) 30%, transparent);
+}
+
+/* Labels rendered inside the 3D scene */
+.sim-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  color: #f5f5f7;
+  background: rgb(28 28 30 / 0.78);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  padding: 3px 10px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.16);
+}
+.sim-label::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #ff9f0a;
+  vertical-align: 1px;
+}
+.sim-label--air::before {
+  background: #0a84ff;
+}
+
+/* Prose for lesson bodies */
+.prose-lab p {
+  margin: 0 0 1em;
+  max-width: 66ch;
+  color: var(--fg-2);
+}
+.prose-lab strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Apple-style slider */
+input[type="range"].range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 24px;
+  cursor: pointer;
+}
+input[type="range"].range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--fill-2) var(--fill, 0%));
+}
+input[type="range"].range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fill-2);
+}
+input[type="range"].range::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+input[type="range"].range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 0.5px 4px rgb(0 0 0 / 0.12), 0 6px 13px rgb(0 0 0 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.04);
+}
+input[type="range"].range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 0.5px 4px rgb(0 0 0 / 0.12), 0 6px 13px rgb(0 0 0 / 0.12);
+}
+input[type="range"].range:focus-visible {
+  outline: none;
+}
+input[type="range"].range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--air) 60%, transparent);
+}
+input[type="range"].range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--air) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
