@@ -136,6 +136,22 @@ export function ConfigPanel() {
             />
           </div>
         )}
+        <div>
+          <div className="mb-2 text-[13px] font-medium text-fg">Paint finish</div>
+          <Segmented
+            label="Paint finish"
+            className="w-full"
+            value={s.paint}
+            onChange={(v) => engine.dispatch({ type: "set-paint", value: v })}
+            options={[
+              { value: "graphite", label: "Graphite" },
+              { value: "red", label: "Red" },
+              { value: "blue", label: "Blue" },
+              { value: "yellow", label: "Yellow" },
+            ]}
+          />
+          <p className="mt-1.5 text-[12.5px] text-muted">Actuators are painted to customer specification; colour does not identify a manufacturer here.</p>
+        </div>
         <Switch checked={s.showLabels} onChange={(v) => engine.dispatch({ type: "set-labels", value: v })} label="Movement labels" description="Label the moving parts in the scene." />
       </div>
     </div>

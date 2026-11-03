@@ -11,7 +11,7 @@ import { useEngine, useSimSelector } from "@/components/sim/SimulationProvider";
 import { usePrefersReducedMotion } from "@/lib/hooks";
 import { SECTION_PLANE, VALVE_SECTION_PLANE, makeShellRaycast, type MaterialSet } from "./materials";
 import { Label, Pick } from "./parts";
-import { DisplayFace, HelixCurve } from "./ElectricPartTurnModel";
+import { ControlCover, HelixCurve } from "./ElectricPartTurnModel";
 
 /**
  * Electric multi-turn actuator on a rising-stem wedge gate valve.
@@ -57,6 +57,7 @@ export function ElectricMultiTurnModel({
   const mode = useSimSelector((s) => s.mode);
   const selector = useSimSelector((s) => s.electric.selector);
   const handMode = useSimSelector((s) => s.electric.handMode);
+  const motorDir = useSimSelector((s) => (s.electric.motorRunning ? (s.direction === "opening" ? 1 : -1) : 0));
   const reduced = usePrefersReducedMotion();
   const pick = { onSelect, onHover };
 
@@ -177,6 +178,7 @@ export function ElectricMultiTurnModel({
   const coverY = gy;
   const coverZ = gz + sz / 2;
   const selectorAngle = selector === "local" ? Math.PI / 4 : selector === "remote" ? -Math.PI / 4 : 0;
+  const openCloseAngle = motorDir > 0 && selector === "local" ? -Math.PI / 4 : motorDir < 0 && selector === "local" ? Math.PI / 4 : 0;
   const bonnetFlangeY = V.cavityTop;
 
   return (
@@ -186,25 +188,7 @@ export function ElectricMultiTurnModel({
         <RoundedBox args={[sx, sy, sz]} radius={0.08} smoothness={4} position={[gx, gy, gz]} material={mats.housing} raycast={shellRaycast} />
       </Pick>
 
-      <Pick id="local-controls" {...pick}>
-        <mesh position={[0, coverY, coverZ + 0.06]} rotation={[Math.PI / 2, 0, 0]} material={mats.controlCover} raycast={shellRaycast}>
-          <cylinderGeometry args={[0.3, 0.3, 0.12, 48]} />
-        </mesh>
-        {[
-          { x: -0.13, angle: selectorAngle },
-          { x: 0.13, angle: 0 },
-        ].map((k) => (
-          <group key={k.x} position={[k.x, coverY - 0.14, coverZ + 0.15]} rotation={[0, 0, k.angle]}>
-            <mesh rotation={[Math.PI / 2, 0, 0]} material={mats.knob}>
-              <cylinderGeometry args={[0.05, 0.055, 0.06, 24]} />
-            </mesh>
-            <mesh position={[0, 0, 0.032]} material={mats.indicatorStripe}>
-              <boxGeometry args={[0.014, 0.075, 0.006]} />
-            </mesh>
-          </group>
-        ))}
-      </Pick>
-      <DisplayFace mats={mats} pick={pick} y={coverY} z={coverZ + 0.12} />
+      <ControlCover mats={mats} pick={pick} y={coverY} z={coverZ} selectorAngle={selectorAngle} openCloseAngle={openCloseAngle} raycast={shellRaycast} />
 
       <Pick id="terminal" {...pick}>
         <RoundedBox args={[0.5, 0.1, 0.36]} radius={0.03} smoothness={3} position={[0, gy + sy / 2 + 0.05, -0.33]} material={mats.terminalBox} raycast={shellRaycast} />
@@ -220,6 +204,9 @@ export function ElectricMultiTurnModel({
         </mesh>
         <mesh position={[MT.motor.x1, W.y, W.z]} rotation={[0, 0, Math.PI / 2]} material={mats.motor} raycast={shellRaycast}>
           <cylinderGeometry args={[MT.motor.radius, MT.motor.radius - 0.03, 0.05, 40]} />
+        </mesh>
+        <mesh position={[MT.motor.x1 + 0.01, W.y, W.z]} rotation={[0, 0, -Math.PI / 2]} scale={[1, 0.35, 1]} material={mats.motor} raycast={shellRaycast}>
+          <sphereGeometry args={[MT.motor.radius - 0.01, 40, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
         </mesh>
         <group ref={rotor} position={[(MT.motor.x0 + MT.motor.x1) / 2, W.y, W.z]}>
           <mesh rotation={[0, 0, Math.PI / 2]} material={mats.rotor}>

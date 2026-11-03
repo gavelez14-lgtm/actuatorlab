@@ -96,6 +96,7 @@ export function createInitialState(config: Partial<ActuatorConfiguration> = {}):
       closeOnTorque: true,
       seated: false,
     },
+    paint: "graphite",
   };
   derive(state);
   return state;
@@ -444,7 +445,7 @@ export class SimulationEngine {
         this.command(cmd.type);
         break;
       case "reset": {
-        const keep = { config: s.config, mode: s.mode, cutaway: s.cutaway, housingOpacity: s.housingOpacity, showLabels: s.showLabels, speed: s.speed, selectedComponent: s.selectedComponent };
+        const keep = { paint: s.paint, config: s.config, mode: s.mode, cutaway: s.cutaway, housingOpacity: s.housingOpacity, showLabels: s.showLabels, speed: s.speed, selectedComponent: s.selectedComponent };
         this.s = { ...createInitialState(s.config), ...keep };
         // Spring-return rests at its spring end; that is the fail position.
         this.s.stroke = 0;
@@ -566,6 +567,9 @@ export class SimulationEngine {
         break;
       case "set-obstruction":
         s.electric.obstruction = cmd.value;
+        break;
+      case "set-paint":
+        s.paint = cmd.value;
         break;
       case "set-close-on-torque":
         s.electric.closeOnTorque = cmd.value;

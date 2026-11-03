@@ -54,16 +54,79 @@ const FLOW_STREAMS: { curve: keyof typeof FLOW_CURVES; color: THREE.Color }[] = 
 ];
 const PER_STREAM = 7;
 
+/**
+ * Front control cover in the style of intelligent electric actuators: a
+ * painted drum with a bezelled glass display window above two selector
+ * handles (red Local/Stop/Remote, black Open/Close). Selectors are shown as
+ * through-cover handles; no maker's marks are reproduced.
+ */
+export function ControlCover({
+  mats,
+  pick,
+  y,
+  z,
+  selectorAngle,
+  openCloseAngle,
+  raycast,
+}: {
+  mats: MaterialSet;
+  pick: { onSelect: (id: ComponentId) => void; onHover: (id: ComponentId | null) => void };
+  y: number;
+  z: number;
+  selectorAngle: number;
+  openCloseAngle: number;
+  raycast: THREE.Mesh["raycast"];
+}) {
+  const depth = 0.15;
+  return (
+    <>
+      <Pick id="local-controls" {...pick}>
+        <mesh position={[0, y, z + depth / 2]} rotation={[Math.PI / 2, 0, 0]} material={mats.controlCover} raycast={raycast}>
+          <cylinderGeometry args={[0.35, 0.36, depth, 64]} />
+        </mesh>
+        {/* raised face */}
+        <mesh position={[0, y, z + depth + 0.008]} rotation={[Math.PI / 2, 0, 0]} material={mats.controlCover} raycast={raycast}>
+          <cylinderGeometry args={[0.33, 0.35, 0.016, 64]} />
+        </mesh>
+        {/* display bezel */}
+        <mesh position={[0, y + 0.07, z + depth + 0.02]} material={mats.bezel}>
+          <torusGeometry args={[0.175, 0.016, 12, 64]} />
+        </mesh>
+        {[
+          { x: -0.13, angle: selectorAngle, mat: mats.selectorKnob },
+          { x: 0.13, angle: openCloseAngle, mat: mats.knob },
+        ].map((k) => (
+          <group key={k.x} position={[k.x, y - 0.19, z + depth + 0.03]} rotation={[0, 0, k.angle]}>
+            <mesh rotation={[Math.PI / 2, 0, 0]} material={k.mat}>
+              <cylinderGeometry args={[0.048, 0.055, 0.04, 28]} />
+            </mesh>
+            {/* lever handle */}
+            <mesh position={[0, 0, 0.035]} material={k.mat}>
+              <boxGeometry args={[0.034, 0.13, 0.045]} />
+            </mesh>
+            <mesh position={[0, 0.055, 0.059]} material={mats.indicatorStripe}>
+              <boxGeometry args={[0.012, 0.02, 0.004]} />
+            </mesh>
+          </group>
+        ))}
+      </Pick>
+      <DisplayFace mats={mats} pick={pick} y={y + 0.02} z={z + depth + 0.012} radius={0.16} />
+    </>
+  );
+}
+
 export function DisplayFace({
   mats,
   pick,
   y = EPT.cover.y,
   z = EPT.cover.z + EPT.cover.depth,
+  radius = 0.135,
 }: {
   mats: MaterialSet;
   pick: { onSelect: (id: ComponentId) => void; onHover: (id: ComponentId | null) => void };
   y?: number;
   z?: number;
+  radius?: number;
 }) {
   const pctOpen = useSimSelector((s) => Math.round(s.position * 100));
   const label = useSimSelector((s) =>
@@ -103,10 +166,10 @@ export function DisplayFace({
   return (
     <Pick id="local-controls" {...pick}>
       <mesh position={[0, y + 0.05, z + 0.006]} material={mats.knob}>
-        <circleGeometry args={[0.135, 48]} />
+        <circleGeometry args={[radius, 48]} />
       </mesh>
       <mesh position={[0, y + 0.05, z + 0.008]}>
-        <circleGeometry args={[0.125, 48]} />
+        <circleGeometry args={[radius - 0.01, 48]} />
         <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
     </Pick>
@@ -130,6 +193,7 @@ export function ElectricPartTurnModel({
   const mode = useSimSelector((s) => s.mode);
   const selector = useSimSelector((s) => s.electric.selector);
   const handMode = useSimSelector((s) => s.electric.handMode);
+  const motorDir = useSimSelector((s) => (s.electric.motorRunning ? (s.direction === "opening" ? 1 : -1) : 0));
   const reduced = usePrefersReducedMotion();
   const pick = { onSelect, onHover };
 
@@ -239,6 +303,7 @@ export function ElectricPartTurnModel({
   const [gx, gy, gz] = EPT.gearcase.centre;
   const [sx, sy, sz] = EPT.gearcase.size;
   const selectorAngle = selector === "local" ? Math.PI / 4 : selector === "remote" ? -Math.PI / 4 : 0;
+  const openCloseAngle = motorDir > 0 && selector === "local" ? -Math.PI / 4 : motorDir < 0 && selector === "local" ? Math.PI / 4 : 0;
   const stopAngles = [geo.a0 - 0.05 + eptOutputRotationY(1), geo.a1 + 0.05 + eptOutputRotationY(0)];
 
   return (
@@ -252,25 +317,7 @@ export function ElectricPartTurnModel({
       </Pick>
 
       {/* Front control cover with display and two selectors */}
-      <Pick id="local-controls" {...pick}>
-        <mesh position={[0, EPT.cover.y, EPT.cover.z + EPT.cover.depth / 2]} rotation={[Math.PI / 2, 0, 0]} material={mats.controlCover} raycast={shellRaycast}>
-          <cylinderGeometry args={[EPT.cover.radius, EPT.cover.radius, EPT.cover.depth, 48]} />
-        </mesh>
-        {[
-          { x: -0.13, angle: selectorAngle },
-          { x: 0.13, angle: 0 },
-        ].map((k) => (
-          <group key={k.x} position={[k.x, EPT.cover.y - 0.14, EPT.cover.z + EPT.cover.depth + 0.03]} rotation={[0, 0, k.angle]}>
-            <mesh rotation={[Math.PI / 2, 0, 0]} material={mats.knob}>
-              <cylinderGeometry args={[0.05, 0.055, 0.06, 24]} />
-            </mesh>
-            <mesh position={[0, 0.0, 0.032]} material={mats.indicatorStripe}>
-              <boxGeometry args={[0.014, 0.075, 0.006]} />
-            </mesh>
-          </group>
-        ))}
-      </Pick>
-      <DisplayFace mats={mats} pick={pick} />
+      <ControlCover mats={mats} pick={pick} y={EPT.cover.y} z={EPT.cover.z} selectorAngle={selectorAngle} openCloseAngle={openCloseAngle} raycast={shellRaycast} />
 
       {/* Terminal compartment and incoming cable */}
       <Pick id="terminal" {...pick}>
@@ -289,11 +336,10 @@ export function ElectricPartTurnModel({
         <mesh position={[EPT.motor.x1, W.y, W.z]} rotation={[0, 0, Math.PI / 2]} material={mats.motor} raycast={shellRaycast}>
           <cylinderGeometry args={[EPT.motor.radius, EPT.motor.radius - 0.03, 0.05, 40]} />
         </mesh>
-        {[0.15, 0.3, 0.45].map((f) => (
-          <mesh key={f} position={[EPT.motor.x0 + f, W.y, W.z]} rotation={[0, 0, Math.PI / 2]} material={mats.motor} raycast={shellRaycast}>
-            <torusGeometry args={[EPT.motor.radius + 0.005, 0.012, 6, 40]} />
-          </mesh>
-        ))}
+        {/* smooth cast end bell */}
+        <mesh position={[EPT.motor.x1 + 0.01, W.y, W.z]} rotation={[0, 0, -Math.PI / 2]} scale={[1, 0.35, 1]} material={mats.motor} raycast={shellRaycast}>
+          <sphereGeometry args={[EPT.motor.radius - 0.01, 40, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        </mesh>
         <group ref={rotor} position={[(EPT.motor.x0 + EPT.motor.x1) / 2, W.y, W.z]}>
           <mesh rotation={[0, 0, Math.PI / 2]} material={mats.rotor}>
             <cylinderGeometry args={[0.13, 0.13, EPT.motor.x1 - EPT.motor.x0 - 0.12, 32]} />

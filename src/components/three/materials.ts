@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ComponentId, CutawayStyle } from "@/lib/sim/types";
+import type { ComponentId, CutawayStyle, PaintFinish } from "@/lib/sim/types";
 
 /**
  * Per-component materials. Each clickable component gets its own material
@@ -37,6 +37,8 @@ const SPECS = {
   encoder: { color: "#9EC79A", metalness: 0.3, roughness: 0.5, component: "encoder" },
   controlCover: { color: "#4B525C", metalness: 0.4, roughness: 0.5, component: "local-controls", shell: true },
   knob: { color: "#24282E", metalness: 0.2, roughness: 0.6, component: "local-controls" },
+  selectorKnob: { color: "#C8352B", metalness: 0.15, roughness: 0.5, component: "local-controls" },
+  bezel: { color: "#C9CED3", metalness: 0.9, roughness: 0.25, component: "local-controls" },
   terminalBox: { color: "#454C55", metalness: 0.4, roughness: 0.5, component: "terminal", shell: true },
   cable: { color: "#1E2227", metalness: 0, roughness: 0.8, component: "terminal" },
   gate: { color: "#C3CAD1", metalness: 0.5, roughness: 0.38, component: "gate" },
@@ -154,4 +156,21 @@ export function makeShellRaycast(getPlanes: () => THREE.Plane[], isGhost: () => 
       if (planes.every((p) => p.distanceToPoint(hit.point) >= 0)) intersects.push(hit);
     }
   };
+}
+
+/** Painted enclosure parts and their per-finish colours. */
+const PAINTED: MaterialKey[] = ["housing", "housingTrim", "canister", "endCaps", "motor", "controlCover", "terminalBox", "thrustBase"];
+export const PAINT_COLOURS: Record<PaintFinish, { main: string; trim: string }> = {
+  graphite: { main: "#525A65", trim: "#3C434C" },
+  red: { main: "#A6231C", trim: "#7E1A15" },
+  blue: { main: "#2E5B8A", trim: "#22466B" },
+  yellow: { main: "#D29B19", trim: "#9F7512" },
+};
+
+export function applyPaint(set: MaterialSet, paint: PaintFinish) {
+  const c = PAINT_COLOURS[paint];
+  for (const key of PAINTED) {
+    const trim = key === "housingTrim" || key === "thrustBase";
+    set[key].color.set(trim ? c.trim : c.main);
+  }
 }

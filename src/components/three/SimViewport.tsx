@@ -14,7 +14,7 @@ import { ActuatorModel } from "./ActuatorModel";
 import { RackPinionModel } from "./RackPinionModel";
 import { ElectricPartTurnModel } from "./ElectricPartTurnModel";
 import { ElectricMultiTurnModel } from "./ElectricMultiTurnModel";
-import { applyCutaway, applyHighlight, createMaterials, disposeMaterials } from "./materials";
+import { applyCutaway, applyHighlight, applyPaint, createMaterials, disposeMaterials } from "./materials";
 import { WebGLFallback } from "./WebGLFallback";
 
 const DEFAULT_TARGET = new THREE.Vector3(-0.15, -0.5, -0.35);
@@ -225,6 +225,11 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
     applyCutaway(mats, cutaway, opacity);
     invalidate();
   }, [mats, cutaway, opacity, invalidate]);
+  const paint = useSimSelector((s) => s.paint);
+  useEffect(() => {
+    applyPaint(mats, paint);
+    invalidate();
+  }, [mats, paint, invalidate]);
   useEffect(() => {
     if (!interactive) return;
     document.body.style.cursor = hovered ? "pointer" : "";

@@ -100,6 +100,9 @@ export interface TorqueSnapshot {
 
 export type LocalSelector = "local" | "stop" | "remote";
 
+/** Enclosure paint. Real actuators ship in customer-specified colours. */
+export type PaintFinish = "graphite" | "red" | "blue" | "yellow";
+
 /** Electric actuator state. Present for every family; only used by electric ones. */
 export interface ElectricState {
   /** Local/Stop/Remote selector on the actuator's local controls. */
@@ -176,6 +179,7 @@ export interface SimulationState {
   time: number;
 
   electric: ElectricState;
+  paint: PaintFinish;
 }
 
 export type SimulationCommand =
@@ -202,4 +206,5 @@ export type SimulationCommand =
   | { type: "handwheel"; dir: -1 | 0 | 1 }
   | { type: "set-torque-limit"; value: number }
   | { type: "set-obstruction"; value: boolean }
-  | { type: "set-close-on-torque"; value: boolean };
+  | { type: "set-close-on-torque"; value: boolean }
+  | { type: "set-paint"; value: PaintFinish };
