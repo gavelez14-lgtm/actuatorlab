@@ -17,7 +17,8 @@ export type ActuatorFamilyId =
   | "hydraulic-rack-pinion"
   | "electro-hydraulic"
   | "electric-compact-part-turn"
-  | "gas-scotch-yoke";
+  | "gas-scotch-yoke"
+  | "gas-over-oil";
 
 /** How motive energy drives the actuator. */
 export type ActionType = "double-acting" | "spring-return";
@@ -87,7 +88,8 @@ export type ComponentId =
   | "hydraulic-override"
   | "hand-pump"
   | "gas-controls"
-  | "gas-tank";
+  | "gas-tank"
+  | "flow-controls";
 
 export interface ActuatorConfiguration {
   family: ActuatorFamilyId;
@@ -160,6 +162,12 @@ export interface GasState {
   tripped: boolean;
   /** Hydraulic manual override selected (gas controls isolated). */
   manual: boolean;
+  /** Gas-over-oil: low-pressure trip set point, bar. */
+  lowSet: number;
+  /** Gas-over-oil: flow-control valve opening, 0.2..1 (sets stroke speed). */
+  flow: number;
+  /** Which condition tripped the line-break control. */
+  tripCause: "rate" | "low" | null;
   /** Hand pump: +1 pumping toward open, -1 toward closed, 0 idle. */
   pumpDir: -1 | 0 | 1;
   /** Pump lever phase, radians (visual). */
@@ -254,4 +262,6 @@ export type SimulationCommand =
   | { type: "set-line-break-rate"; value: number }
   | { type: "reset-line-break" }
   | { type: "set-manual"; value: boolean }
+  | { type: "set-flow"; value: number }
+  | { type: "set-low-set"; value: number }
   | { type: "pump"; dir: -1 | 0 | 1 };

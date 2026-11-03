@@ -100,6 +100,7 @@ export function SimulatorWorkbench() {
   const multiTurn = family === "electric-multi-turn";
   const compact = family === "electric-compact-part-turn";
   const gas = family === "gas-scotch-yoke";
+  const gasOil = family === "gas-over-oil";
   const electric = family === "electric-part-turn" || multiTurn || compact;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("configure");
@@ -108,7 +109,9 @@ export function SimulatorWorkbench() {
 
   useEffect(() => {
     touchRecent(
-      gas
+      gasOil
+        ? { id: "sim-gas-over-oil", title: "Gas-over-oil simulator", href: "/simulator?type=gas-over-oil" }
+        : gas
         ? { id: "sim-gas", title: "Direct gas Scotch yoke simulator", href: "/simulator?type=gas-scotch-yoke" }
         : compact
         ? { id: "sim-electric-compact", title: "Compact electric part-turn simulator", href: "/simulator?type=electric-compact-part-turn" }
@@ -120,7 +123,7 @@ export function SimulatorWorkbench() {
           ? { id: "sim-rack-pinion", title: "Pneumatic rack and pinion simulator", href: "/simulator?type=rack-pinion" }
           : { id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" },
     );
-  }, [touchRecent, rackPinion, electric, multiTurn, compact, gas]);
+  }, [touchRecent, rackPinion, electric, multiTurn, compact, gas, gasOil]);
 
   // Selecting a part in the scene brings the Components tab forward
   // (state adjusted during render, per React guidance, not in an effect).
@@ -168,6 +171,8 @@ export function SimulatorWorkbench() {
     ? "Motor, worm gear and stem nut, fails in place"
     : electric
     ? "Motor and self-locking worm gear, fails in place"
+    : gasOil
+    ? actionType === "double-acting" ? "Double acting, gas pressure on oil, line-break and low-pressure close" : `Spring return, gas over oil, ${fail === "fail-closed" ? "fails closed" : "fails open"}`
     : gas
     ? actionType === "double-acting" ? "Double acting on pipeline gas, line-break close" : `Spring return on pipeline gas, ${fail === "fail-closed" ? "fails closed" : "fails open"}`
     : actionType === "double-acting" ? "Double acting, fails in place" : `Spring return, ${fail === "fail-closed" ? "fails closed" : "fails open"}`;
@@ -177,7 +182,7 @@ export function SimulatorWorkbench() {
       <header className="flex flex-col gap-3 border-b border-rule bg-panel px-4 py-3 md:flex-row md:items-center md:justify-between lg:px-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] text-fg">{gas ? "Direct gas Scotch yoke" : compact ? "Compact electric part-turn" : multiTurn ? "Electric multi-turn" : electric ? "Electric part-turn" : rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
+            <h1 className="text-[24px] text-fg">{gasOil ? "Gas-over-oil Scotch yoke" : gas ? "Direct gas Scotch yoke" : compact ? "Compact electric part-turn" : multiTurn ? "Electric multi-turn" : electric ? "Electric part-turn" : rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">
@@ -190,7 +195,7 @@ export function SimulatorWorkbench() {
             <select
               aria-label="Actuator type"
               className="cursor-pointer appearance-none bg-transparent font-medium text-fg outline-none"
-              value={gas ? "gas-scotch-yoke" : compact ? "electric-compact-part-turn" : multiTurn ? "electric-multi-turn" : electric ? "electric-part-turn" : rackPinion ? "rack-pinion" : "scotch-yoke"}
+              value={gasOil ? "gas-over-oil" : gas ? "gas-scotch-yoke" : compact ? "electric-compact-part-turn" : multiTurn ? "electric-multi-turn" : electric ? "electric-part-turn" : rackPinion ? "rack-pinion" : "scotch-yoke"}
               onChange={(ev) => {
                 const v = ev.target.value;
                 const params = new URLSearchParams();
@@ -213,6 +218,7 @@ export function SimulatorWorkbench() {
               </optgroup>
               <optgroup label="Gas">
                 <option value="gas-scotch-yoke">Direct gas (high pressure)</option>
+                <option value="gas-over-oil">Gas over oil</option>
               </optgroup>
             </select>
             <ChevronDown className="pointer-events-none absolute right-2.5 size-4 text-muted" aria-hidden />

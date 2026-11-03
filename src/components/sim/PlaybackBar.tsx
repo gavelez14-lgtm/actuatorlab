@@ -1,5 +1,6 @@
 "use client";
 
+import { isGas } from "@/lib/sim/gas";
 import { ArrowDownToLine, ArrowUpFromLine, Pause, Play, Repeat, RotateCcw, Square } from "lucide-react";
 import { MULTI_TURN, isElectric, isMultiTurn } from "@/lib/sim/electric";
 import { Button } from "@/components/ui/primitives";
@@ -149,7 +150,7 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
               s.supplyAvailable ? "bg-air-soft text-air" : "bg-danger/10 text-danger",
             )}
           >
-            {electric ? (s.supplyAvailable ? "Power on" : "Power lost") : s.config.family === "gas-scotch-yoke" ? (s.supplyAvailable ? "Gas on" : "Gas isolated") : s.supplyAvailable ? "Supply on" : "Supply lost"}
+            {electric ? (s.supplyAvailable ? "Power on" : "Power lost") : isGas(s.config.family) ? (s.supplyAvailable ? "Gas on" : "Gas isolated") : s.supplyAvailable ? "Supply on" : "Supply lost"}
           </span>
         </div>
       </div>

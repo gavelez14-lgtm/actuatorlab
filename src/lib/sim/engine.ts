@@ -14,7 +14,7 @@
  * throttled rate during motion to avoid re-rendering on every frame.
  */
 import { MODEL, computeTorques, strokeFromValvePosition, valvePositionFromStroke } from "./model";
-import { GAS, isGas, pipelineToModel } from "./gas";
+import { GAS, goStrokeTime, isGas, isGasOverOil, pipelineToModel } from "./gas";
 import { COMPACT, ELECTRIC, MULTI_TURN, electricDemand, isCompact, isElectric, isMultiTurn, torqueLimitValue } from "./electric";
 import type {
   ActuatorConfiguration,
@@ -108,6 +108,9 @@ export function createInitialState(config: Partial<ActuatorConfiguration> = {}):
       overFor: 0,
       tripped: false,
       manual: false,
+      lowSet: GAS.lowDefault,
+      flow: GAS.flowDefault,
+      tripCause: null,
       pumpDir: 0,
       pumpPhase: 0,
     },
@@ -270,11 +273,16 @@ export class SimulationEngine {
 
     let vTarget = 0;
     if (dir !== 0 && !atEnd(dir)) {
-      const vmax = 1 / MODEL.nominalStrokeTime;
-      const margin = Math.min(1.25, 0.35 + 0.65 * Math.sqrt(excess / MODEL.referenceMargin));
       const distToEnd = dir > 0 ? 1 - s.stroke : s.stroke;
-      const cushion = 0.3 + 0.7 * smoothstep(0, 0.09, distToEnd);
-      vTarget = dir * vmax * margin * cushion;
+      if (isGasOverOil(s.config.family)) {
+        // Oil is metered through the flow controls: steady speed set by the valve opening.
+        vTarget = (dir / goStrokeTime(s.gas.flow)) * (0.5 + 0.5 * smoothstep(0, 0.04, distToEnd));
+      } else {
+        const vmax = 1 / MODEL.nominalStrokeTime;
+        const margin = Math.min(1.25, 0.35 + 0.65 * Math.sqrt(excess / MODEL.referenceMargin));
+        const cushion = 0.3 + 0.7 * smoothstep(0, 0.09, distToEnd);
+        vTarget = dir * vmax * margin * cushion;
+      }
     }
 
     const prevStalled = s.stalled;
@@ -333,17 +341,23 @@ export class SimulationEngine {
     const raw = (g.pipeline - prev) / dt;
     g.rate += (raw - g.rate) * (1 - Math.exp(-dt / GAS.rateFilter));
     if (g.pipeline > g.tank) g.tank = g.pipeline;
-    if (g.armed && !g.tripped && -g.rate > g.setPoint) {
+    const low = isGasOverOil(s.config.family) && g.pipeline < g.lowSet;
+    if (g.armed && !g.tripped && (-g.rate > g.setPoint || low)) {
       g.overFor += dt;
       if (g.overFor >= GAS.tripDelay) {
         g.tripped = true;
+        g.tripCause = -g.rate > g.setPoint ? "rate" : "low";
         g.manual = false;
         g.pumpDir = 0;
         s.commandedStroke = strokeFromValvePosition(s.config, 0) as 0 | 1;
-        this.flash(`Line break: pipeline pressure fell faster than ${g.setPoint.toFixed(1)} bar/s for ${GAS.tripDelay} s. The control closes the valve on gas from the reserve tank and latches until reset.`);
+        this.flash(
+          g.tripCause === "rate"
+            ? `Line break: pipeline pressure fell faster than ${g.setPoint.toFixed(1)} bar/s for ${GAS.tripDelay} s. The control closes the valve on stored gas and latches until reset.`
+            : `Low pressure: the pipeline stayed below ${g.lowSet.toFixed(0)} bar for ${GAS.tripDelay} s. The control closes the valve on stored gas and latches until reset.`,
+        );
         this.emit();
       }
-    } else if (-g.rate <= g.setPoint) {
+    } else if (-g.rate <= g.setPoint && !low) {
       g.overFor = 0;
     }
   }
@@ -639,9 +653,20 @@ export class SimulationEngine {
           this.flash("Cannot reset yet: the pipeline is still ruptured. Repair it first; a reset on a broken line would let the valve reopen into the leak.");
           break;
         }
+        if (isGasOverOil(s.config.family) && s.gas.pipeline < s.gas.lowSet) {
+          this.flash("Cannot reset yet: pipeline pressure is still below the low-pressure set point.");
+          break;
+        }
         s.gas.tripped = false;
+        s.gas.tripCause = null;
         s.gas.overFor = 0;
         this.flash("Line-break trip reset. The valve stays closed until an Open command.");
+        break;
+      case "set-flow":
+        s.gas.flow = Math.min(1, Math.max(GAS.flowMin, cmd.value));
+        break;
+      case "set-low-set":
+        s.gas.lowSet = Math.min(GAS.lowMax, Math.max(GAS.lowMin, cmd.value));
         break;
       case "set-manual":
         s.gas.manual = cmd.value;
@@ -764,7 +789,7 @@ export class SimulationEngine {
           : `Manual override at ${pct(s.position)} open. The trapped oil holds the actuator${sr ? " against the spring" : ""}.`);
       if (g.tripped)
         return void (s.status = s.airFlowing
-          ? "Line break tripped: closing on gas from the reserve tank."
+          ? `${g.tripCause === "low" ? "Low-pressure trip" : "Line break tripped"}: closing on stored gas.`
           : `Line break tripped and latched. Valve ${s.position < 0.02 ? "closed" : `at ${pct(s.position)}`}. Reset when the line is safe.`);
       if (g.ruptured && g.armed && g.overFor > 0)
         return void (s.status = `Pressure falling at ${(-g.rate).toFixed(1)} bar/s, above the ${g.setPoint.toFixed(1)} bar/s set point for ${g.overFor.toFixed(1)} of ${GAS.tripDelay} s.`);
@@ -775,6 +800,8 @@ export class SimulationEngine {
       const verb = s.direction === "opening" ? "Opening" : "Closing";
       if (sr && s.chamberA !== "supply") msg = `${verb}: spring stroke. Cylinder air is exhausting while the spring extends.`;
       else if (sr) msg = `${verb}: air stroke. Air pressure drives the piston and compresses the spring.`;
+      else if (isGasOverOil(s.config.family)) msg = `${verb}: gas pushes oil into one side of the piston; oil from the other side returns to its tank.`;
+      else if (isGas(s.config.family)) msg = `${verb}: pipeline gas drives the piston; the opposite chamber exhausts.`;
       else msg = `${verb}: air drives the piston; the opposite chamber exhausts.`;
     } else if (s.stalled) {
       msg = `Stalled at ${pct(s.position)}: available torque does not exceed the load. Raise supply pressure (illustrative model).`;

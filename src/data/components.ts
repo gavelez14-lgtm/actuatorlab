@@ -1,4 +1,4 @@
-import type { ComponentId } from "@/lib/sim/types";
+import type { ActuatorFamilyId, ComponentId } from "@/lib/sim/types";
 import { CYLINDER, SPRING_MODULE, VALVE, YOKE_OFFSET } from "@/lib/sim/geometry";
 import { RP } from "@/lib/sim/rackPinionGeometry";
 import { EPT } from "@/lib/sim/electricGeometry";
@@ -709,7 +709,7 @@ export const GAS_COMPONENTS: ComponentInfo[] = [
     description:
       "The check valve lets the tank fill from the pipeline but not drain back into it. When a line break drops pipeline pressure, the tank still holds enough gas to close the valve. Each stroke spends some of it, which is why the tank must be sized for the strokes it must guarantee.",
     caveat: "Tank volume and the number of guaranteed strokes come from the actuator and valve sizing, not from this model.",
-    focus: [1.67, -0.9, GZ - 1.15],
+    focus: [1.67, -0.9, 0.8],
     distance: 2.6,
     group: "actuator",
   },
@@ -721,22 +721,74 @@ export const GAS_COMPONENTS: ComponentInfo[] = [
     description:
       "A pipeline rupture shows up as pressure falling much faster than normal operation ever causes. The control compares the rate of drop with a set point, and only trips if it stays above it for a delay, so short transients do not shut the line. Once tripped it latches until an operator resets it.",
     caveat: "Real line-break systems may combine rate-of-drop with low-pressure and high-pressure trips, and can be mechanical or electronic.",
-    focus: [0.92, -0.78, GZ - 1.15],
+    focus: [0.92, -0.78, 0.8],
     distance: 2.4,
     group: "actuator",
   },
 ];
 
-export function componentsFor(kind: MechanismKind, gas = false): ComponentInfo[] {
-  if (gas) return [...COMPONENTS.map((c) => GAS_COMPONENTS.find((g) => g.id === c.id) ?? c), ...GAS_COMPONENTS.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];
+/** Gas-over-oil overrides on top of the direct-gas list. */
+export const GAS_OVER_OIL_COMPONENTS: ComponentInfo[] = [
+  {
+    id: "cylinder",
+    name: "Hydraulic cylinder",
+    role: "Pressure containment",
+    function: "Contains the oil that drives the piston.",
+    description:
+      "In a gas-over-oil actuator the gas never enters the cylinder. Gas pushes on oil in the tanks, and the oil drives the piston. Oil is nearly incompressible, so the stroke is smooth and its speed can be metered precisely.",
+    focus: [(CYLINDER.tubeStart + CYLINDER.tubeEnd) / 2, 0, GZ],
+    distance: 3.2,
+    group: "actuator",
+  },
+  {
+    id: "gas-tank",
+    name: "Gas/oil tanks",
+    role: "Energy storage",
+    function: "Two tanks where gas pressure acts on oil; one feeds each side of the cylinder.",
+    description:
+      "Control valves admit pipeline gas to the top of one tank. Its oil is pushed into the cylinder while oil from the other side returns to the second tank, whose gas is vented. Watch the oil levels swap as the valve strokes. Tank volume must cover a full stroke of oil.",
+    caveat: "Tank arrangement, volumes and any separate gas storage vary with design and duty.",
+    focus: [1.67, -0.9, 0.8],
+    distance: 2.8,
+    group: "actuator",
+  },
+  {
+    id: "flow-controls",
+    name: "Flow-control valves",
+    role: "Flow control",
+    function: "Meter the oil to set the stroke speed in each direction.",
+    description:
+      "Because oil is metered rather than gas, stroke time is steady and adjustable, and it barely changes with pipeline pressure. That control is a main reason to choose gas over oil for large pipeline valves, where slamming shut can cause surge.",
+    focus: [1.3, -1.0, 0.8],
+    distance: 2.4,
+    group: "actuator",
+  },
+  {
+    id: "gas-controls",
+    name: "Line-break and low-pressure control",
+    role: "Sensing and control",
+    function: "Closes the valve on a fast pressure drop or a sustained low pipeline pressure.",
+    description:
+      "As on the direct-gas actuator, a rate-of-drop monitor detects a rupture. A low-pressure trip adds a second condition: if pipeline pressure stays below a set point, the valve closes even if it fell slowly. Both latch until reset.",
+    focus: [0.92, -0.78, 0.8],
+    distance: 2.4,
+    group: "actuator",
+  },
+];
+
+export function componentsFor(kind: MechanismKind, gasFamily: ActuatorFamilyId | null = null): ComponentInfo[] {
+  if (gasFamily) {
+    const extra = gasFamily === "gas-over-oil" ? [...GAS_OVER_OIL_COMPONENTS, ...GAS_COMPONENTS.filter((g) => !GAS_OVER_OIL_COMPONENTS.some((o) => o.id === g.id))] : GAS_COMPONENTS;
+    return [...COMPONENTS.map((c) => extra.find((g) => g.id === c.id) ?? c), ...extra.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];
+  }
   if (kind === "compact-electric") return COMPACT_COMPONENTS;
   if (kind === "multi-turn") return MULTI_TURN_COMPONENTS;
   if (kind === "worm-gear") return ELECTRIC_PART_TURN_COMPONENTS;
   return kind === "rack-pinion" ? RACK_PINION_COMPONENTS : COMPONENTS;
 }
 
-export function componentInfo(kind: MechanismKind, id: ComponentId, gas = false): ComponentInfo | undefined {
-  return componentsFor(kind, gas).find((c) => c.id === id);
+export function componentInfo(kind: MechanismKind, id: ComponentId, gasFamily: ActuatorFamilyId | null = null): ComponentInfo | undefined {
+  return componentsFor(kind, gasFamily).find((c) => c.id === id);
 }
 
 /** @deprecated Scotch yoke only; use componentInfo(kind, id). */

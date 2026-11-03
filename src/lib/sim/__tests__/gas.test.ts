@@ -89,3 +89,36 @@ describe("direct gas Scotch yoke", () => {
     expect(minimumPressureForFullStroke({ family: "gas-scotch-yoke", actionType: "spring-return", failPosition: "fail-closed", yoke: "canted" })).toBeGreaterThan(0);
   });
 });
+
+describe("gas over oil", () => {
+  const make = () => new SimulationEngine({ family: "gas-over-oil", actionType: "double-acting" });
+
+  it("stroke time follows the flow controls, not pipeline pressure", () => {
+    const time = (flow: number, bar: number) => {
+      const e = make();
+      e.dispatch({ type: "set-flow", value: flow });
+      e.dispatch({ type: "set-pressure", bar });
+      e.dispatch({ type: "open" });
+      let t = 0;
+      while (e.getState().position < 0.99 && t < 60) {
+        e.advance(1 / 60);
+        t += 1 / 60;
+      }
+      return t;
+    };
+    expect(time(0.5, 70)).toBeGreaterThan(time(1, 70) * 1.7);
+    expect(Math.abs(time(0.5, 70) - time(0.5, 95)) / time(0.5, 70)).toBeLessThan(0.05);
+  });
+
+  it("closes on sustained low pressure that the rate trip would miss", () => {
+    const e = make();
+    e.dispatch({ type: "open" });
+    run(e, 12);
+    e.dispatch({ type: "set-pressure", bar: 25 }); // operator change: no rate transient, but below the 30 bar low set
+    run(e, 20);
+    const s = e.getState();
+    expect(s.gas.tripped).toBe(true);
+    expect(s.gas.tripCause).toBe("low");
+    expect(s.position).toBeLessThan(0.01);
+  });
+});

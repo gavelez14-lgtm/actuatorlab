@@ -223,6 +223,31 @@ const GAS_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   },
 };
 
+/** Gas over oil: overrides on top of the direct-gas text. */
+const GO_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "Pipeline gas never reaches the cylinder. It pushes down on oil in two tanks behind the actuator, and the oil drives the piston. Watch the sight glasses: oil leaves one tank and returns to the other as the valve strokes.",
+      "Flow-control valves under the tanks meter the oil, so the stroke is steady and its time is adjustable. The line-break control can also close on sustained low pressure.",
+    ],
+  },
+  energy: {
+    title: "Oil flow (illustrative)",
+    body: [
+      "Amber shows oil being driven into a chamber; darker amber shows oil returning to its tank. The gas side of the tanks is pressurised or vented by the control valves.",
+      "Markers show direction only, not flow rate.",
+    ],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: [
+      "Readouts show pipeline and tank pressure, rate of change and trip state. Try lowering the pipeline slowly below the low-pressure set point: the rate trip will not see it, the low-pressure trip will.",
+      "Unlike a direct-gas actuator, stroke speed here is set by the flow controls, not by how much torque margin the gas pressure gives. Values are normalised and illustrative.",
+    ],
+  },
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
@@ -231,8 +256,9 @@ export function ModeGuide() {
   const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
   const multi = useSimSelector((s) => s.config.family === "electric-multi-turn");
   const compact = useSimSelector((s) => s.config.family === "electric-compact-part-turn");
-  const gasFamily = useSimSelector((s) => s.config.family === "gas-scotch-yoke");
-  const t = (gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const gasFamily = useSimSelector((s) => s.config.family === "gas-scotch-yoke" || s.config.family === "gas-over-oil");
+  const gasOil = useSimSelector((s) => s.config.family === "gas-over-oil");
+  const t = (gasOil ? (GO_MODE_TEXT[mode] ?? GAS_MODE_TEXT[mode]) : gasFamily ? GAS_MODE_TEXT[mode] : compact ? CPT_MODE_TEXT[mode] : multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>

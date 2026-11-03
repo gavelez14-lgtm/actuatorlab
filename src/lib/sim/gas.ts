@@ -34,12 +34,30 @@ export const GAS = {
   pumpStrokeTime: 28,
   /** Pump lever cycles per second while pumping (visual only). */
   pumpCadence: 1.4,
+  /** Gas-over-oil: stroke time with the flow controls fully open, s. */
+  goStrokeTime: 4,
+  flowMin: 0.2,
+  flowDefault: 0.6,
+  /** Gas-over-oil low-pressure trip set point range and default, bar. */
+  lowMin: 10,
+  lowMax: 60,
+  lowDefault: 30,
   /** Canted yoke: slot angle offset that moves the torque peak to the breakout end, rad. */
   cant: (-6 * Math.PI) / 180,
 } as const;
 
+/** Pipeline-gas powered families (direct gas and gas over oil). */
 export function isGas(family: ActuatorFamilyId) {
-  return family === "gas-scotch-yoke";
+  return family === "gas-scotch-yoke" || family === "gas-over-oil";
+}
+
+export function isGasOverOil(family: ActuatorFamilyId) {
+  return family === "gas-over-oil";
+}
+
+/** Gas over oil: oil flow, not force margin, sets the speed. */
+export function goStrokeTime(flow: number) {
+  return GAS.goStrokeTime / Math.max(GAS.flowMin, flow);
 }
 
 /**

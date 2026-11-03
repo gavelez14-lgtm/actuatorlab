@@ -8,7 +8,7 @@ import { RotateCcw, RotateCw } from "lucide-react";
 import { Segmented, Switch, Range } from "@/components/ui/controls";
 import { Illustrative } from "@/components/ui/primitives";
 import { useEngine, useSimState } from "./SimulationProvider";
-import { GAS, isGas } from "@/lib/sim/gas";
+import { GAS, goStrokeTime, isGas, isGasOverOil } from "@/lib/sim/gas";
 import { mechanismFor } from "@/lib/sim/mechanisms";
 
 export function ConfigPanel() {
@@ -42,7 +42,9 @@ export function ConfigPanel() {
           {sr
             ? `${gas ? "Gas" : "Air"} drives one direction against a spring. The spring drives the other direction and provides the fail action.`
             : gas
-              ? "Gas drives both directions. With no spring, the reserve tank is the stored energy that closes the valve after a line break."
+              ? isGasOverOil(s.config.family)
+                ? "Gas pushes oil to either side of the piston. With no spring, stored gas is what closes the valve after a trip."
+                : "Gas drives both directions. With no spring, the reserve tank is the stored energy that closes the valve after a line break."
               : "Air drives both directions. There is no spring, so there is no stored energy to reach a fail position."}
         </p>
       </fieldset>
@@ -68,7 +70,9 @@ export function ConfigPanel() {
             ? s.config.failPosition === "fail-closed"
               ? "The coupling is oriented so the spring end of the stroke is valve closed."
               : "The coupling is turned 90° so the spring end of the stroke is valve open. Same mechanism, different orientation."
-            : "Fail-open or fail-closed needs stored energy. Add a spring module, or an accumulator and control circuit (not modelled here)."}
+            : gas
+              ? "Loss of power gas leaves the valve in place. The line-break control is what drives it closed, using stored gas."
+              : "Fail-open or fail-closed needs stored energy. Add a spring module, or an accumulator and control circuit (not modelled here)."}
         </p>
       </fieldset>
 
@@ -321,6 +325,7 @@ function GasConfig({ sr }: { sr: boolean }) {
   const { engine } = useEngine();
   const s = useSimState();
   const g = s.gas;
+  const go = isGasOverOil(s.config.family);
   const minBar = minimumPressureForFullStroke(s.config) / GAS.scale;
   return (
     <>
@@ -352,7 +357,7 @@ function GasConfig({ sr }: { sr: boolean }) {
           <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             <span>
-              The actuator runs on the gas it controls. This model needs about <span className="num text-fg-2">{minBar.toFixed(0)} bar</span> in the reserve tank to complete a stroke. <Illustrative>Illustrative model</Illustrative>
+              {go ? "Pipeline gas pushes the oil that drives the actuator." : "The actuator runs on the gas it controls."} This model needs about <span className="num text-fg-2">{minBar.toFixed(0)} bar</span> in the reserve tank to complete a stroke. <Illustrative>Illustrative model</Illustrative>
             </span>
           </p>
         </div>
@@ -366,6 +371,15 @@ function GasConfig({ sr }: { sr: boolean }) {
             <span className="num text-fg">{g.setPoint.toFixed(1)} bar/s</span>
           </div>
           <Range id="lb-rate" label="Rate-of-drop set point" valueText={`${g.setPoint.toFixed(1)} bar per second`} min={GAS.rateMin} max={GAS.rateMax} step={0.1} value={g.setPoint} onChange={(v) => engine.dispatch({ type: "set-line-break-rate", value: v })} />
+          {go && (
+            <div className="mt-4">
+              <div className="mb-1 flex items-baseline justify-between text-[13px]">
+                <label htmlFor="lb-low" className="text-fg">Low-pressure trip</label>
+                <span className="num text-fg">{g.lowSet.toFixed(0)} bar</span>
+              </div>
+              <Range id="lb-low" label="Low-pressure trip" valueText={`${g.lowSet.toFixed(0)} bar`} min={GAS.lowMin} max={GAS.lowMax} step={1} value={g.lowSet} onChange={(v) => engine.dispatch({ type: "set-low-set", value: v })} />
+            </div>
+          )}
           <p className="mt-1.5 text-[12.5px] leading-snug text-muted">The rate must stay above the set point for {GAS.tripDelay} s before it trips. Too low and normal transients cause spurious closures; too high and a small rupture is missed.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -379,6 +393,17 @@ function GasConfig({ sr }: { sr: boolean }) {
           )}
         </div>
       </div>
+
+      {go && (
+        <div className="border-t border-rule pt-5">
+          <div className="mb-1 flex items-baseline justify-between text-[13px]">
+            <label htmlFor="go-flow" className="text-fg">Flow-control setting</label>
+            <span className="num text-fg">{goStrokeTime(g.flow).toFixed(1)} s stroke</span>
+          </div>
+          <Range id="go-flow" label="Flow-control setting" valueText={`${goStrokeTime(g.flow).toFixed(1)} second stroke`} min={GAS.flowMin} max={1} step={0.01} value={g.flow} onChange={(v) => engine.dispatch({ type: "set-flow", value: v })} />
+          <p className="mt-1.5 text-[12.5px] leading-snug text-muted">Oil is metered, so the stroke runs at a steady speed set here. Change pipeline pressure and the speed barely moves; on a direct-gas actuator it would. <Illustrative>Illustrative</Illustrative></p>
+        </div>
+      )}
 
       <div className="space-y-3 border-t border-rule pt-5">
         <Switch checked={g.manual} onChange={(v) => engine.dispatch({ type: "set-manual", value: v })} label="Hydraulic manual override" description="Isolates the gas controls. The hand pump moves the actuator; trapped oil holds it." />

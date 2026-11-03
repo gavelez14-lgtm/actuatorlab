@@ -83,7 +83,8 @@ function PneumaticEngineering() {
             <Row label="Pipeline" value={s.gas.pipeline.toFixed(1)} unit="bar" tone={s.gas.ruptured ? "danger" : "air"} />
             <Row label="Reserve tank" value={s.gas.tank.toFixed(1)} unit="bar" tone="air" />
             <Row label="Rate of change" value={s.gas.rate.toFixed(2)} unit="bar/s" tone={-s.gas.rate > s.gas.setPoint ? "danger" : undefined} />
-            <Row label="Line break" value={s.gas.tripped ? "tripped" : s.gas.armed ? "armed" : "off"} tone={s.gas.tripped ? "danger" : s.gas.armed ? "ok" : "warn"} />
+            {s.config.family === "gas-over-oil" && <Row label="Low trip at" value={s.gas.lowSet.toFixed(0)} unit="bar" tone={s.gas.pipeline < s.gas.lowSet ? "danger" : undefined} />}
+            <Row label="Line break" value={s.gas.tripped ? (s.gas.tripCause === "low" ? "low P" : "tripped") : s.gas.armed ? "armed" : "off"} tone={s.gas.tripped ? "danger" : s.gas.armed ? "ok" : "warn"} />
           </>
         ) : (
           <Row label="Supply" value={s.supplyAvailable ? s.supplyPressure.toFixed(1) : "0.0"} unit="bar" tone={s.supplyAvailable ? "air" : "danger"} />

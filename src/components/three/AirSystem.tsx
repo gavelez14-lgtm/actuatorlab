@@ -89,6 +89,8 @@ const MAX_STREAMS = 5;
 const MAX_SEGMENTS = 2; // per chamber
 const SUPPLY_COLOR = new THREE.Color("#5DB7EE");
 const EXHAUST_COLOR = new THREE.Color("#C3C9D0");
+const OIL_COLOR = new THREE.Color("#E3A12B");
+const OIL_RETURN_COLOR = new THREE.Color("#9C7A3C");
 
 function streamsFor(a: ChamberCondition, b: ChamberCondition, springReturn: boolean, velocity: number): Stream[] {
   const out: Stream[] = [];
@@ -114,7 +116,10 @@ export function AirSystem({
   springReturn,
   active,
   layout = SCOTCH_YOKE_AIR,
+  oil = false,
 }: {
+  /** Show the working fluid as oil (gas over oil) instead of air or gas. */
+  oil?: boolean;
   mats: MaterialSet;
   springReturn: boolean;
   active: boolean;
@@ -170,7 +175,7 @@ export function AirSystem({
         mesh.position.set((seg.x0 + seg.x1) / 2, seg.y, seg.z);
         mesh.scale.set(len, seg.r, seg.r);
         const mat = mesh.material as THREE.MeshBasicMaterial;
-        mat.color.copy(cond === "supply" ? SUPPLY_COLOR : EXHAUST_COLOR);
+        mat.color.copy(cond === "supply" ? (oil ? OIL_COLOR : SUPPLY_COLOR) : oil ? OIL_RETURN_COLOR : EXHAUST_COLOR);
         mat.opacity = cond === "supply" ? 0.38 : 0.14;
       }
     };
@@ -198,7 +203,7 @@ export function AirSystem({
         tmp.q.setFromUnitVectors(tmp.f, tmp.t.normalize());
         tmp.m.compose(tmp.p, tmp.q, tmp.s);
         im.setMatrixAt(n, tmp.m);
-        im.setColorAt(n, st.kind === "supply" ? SUPPLY_COLOR : EXHAUST_COLOR);
+        im.setColorAt(n, st.kind === "supply" ? (oil ? OIL_COLOR : SUPPLY_COLOR) : oil ? OIL_RETURN_COLOR : EXHAUST_COLOR);
         n++;
       }
     }

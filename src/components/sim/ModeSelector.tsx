@@ -17,6 +17,7 @@ export function ModeSelector() {
   const { engine, camera } = useEngine();
   const mode = useSimSelector((s) => s.mode);
   const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
+  const fluid = useSimSelector((s) => (s.config.family === "gas-over-oil" ? "Oil flow" : s.config.family === "gas-scotch-yoke" ? "Gas flow" : null));
   return (
     <Segmented
       label="Visualisation mode"
@@ -32,7 +33,7 @@ export function ModeSelector() {
         label: (
           <>
             {electric && m.value === "energy" ? <Zap aria-hidden /> : <m.icon aria-hidden />}
-            <span className="max-sm:sr-only">{electric && m.value === "energy" ? "Power flow" : m.label}</span>
+            <span className="max-sm:sr-only">{electric && m.value === "energy" ? "Power flow" : fluid && m.value === "energy" ? fluid : m.label}</span>
           </>
         ),
       }))}

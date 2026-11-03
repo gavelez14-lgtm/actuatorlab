@@ -197,6 +197,38 @@ export const FAMILIES: ActuatorFamily[] = [
     relatedLessons: ["power-sources", "symmetric-vs-canted-yoke"],
   },
   {
+    id: "gas-over-oil",
+    short: "Gas over oil",
+    name: "Gas-over-oil Scotch yoke",
+    technology: "Scotch yoke",
+    powerSource: "Gas over oil",
+    movement: "Quarter-turn (90°)",
+    status: "interactive",
+    simulatorHref: "/simulator?type=gas-over-oil",
+    summary: "Pipeline gas pressurises oil in two tanks; the oil drives a Scotch yoke at a speed set by flow-control valves.",
+    operation: [
+      "Control valves admit pipeline gas to the top of one gas/oil tank and vent the other.",
+      "Gas pressure pushes oil from that tank into one side of a hydraulic cylinder; oil from the other side returns to the vented tank.",
+      "Flow-control valves meter the oil, so stroke speed is steady and adjustable, largely independent of pipeline pressure.",
+      "Line-break (rate of drop) and low-pressure monitoring close the valve on stored gas. Hand pumps give manual operation.",
+    ],
+    configurations: [
+      { name: "Double acting", note: "Oil drives both directions. The common arrangement for pipeline block valves." },
+      { name: "Spring return", note: "Oil strokes against a spring for a mechanical fail action." },
+    ],
+    objectives: [
+      "Explain why putting oil between gas and piston gives smoother, controllable strokes.",
+      "Follow oil from one tank, through the cylinder, to the other.",
+      "Compare rate-of-drop and low-pressure trips.",
+    ],
+    principles: [
+      "Oil is nearly incompressible, so metering it controls speed precisely; compressed gas would surge.",
+      "Controlled closing speed helps avoid pressure surge in long pipelines.",
+      "Gas used to drive the tanks is vented or recovered, as for direct gas.",
+    ],
+    relatedLessons: ["power-sources", "symmetric-vs-canted-yoke"],
+  },
+  {
     id: "electric-compact-part-turn",
     short: "Compact",
     name: "Compact electric part-turn",

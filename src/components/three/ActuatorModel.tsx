@@ -1,5 +1,6 @@
 "use client";
 
+import { isGas, isGasOverOil } from "@/lib/sim/gas";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
@@ -128,7 +129,8 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
   const showLabels = useSimSelector((s) => s.showLabels);
   const mode = useSimSelector((s) => s.mode);
   const springReturn = actionType === "spring-return";
-  const gas = useSimSelector((s) => s.config.family === "gas-scotch-yoke");
+  const gas = useSimSelector((s) => isGas(s.config.family));
+  const overOil = useSimSelector((s) => isGasOverOil(s.config.family));
 
   const geo = useMemo(
     () => ({
@@ -391,8 +393,8 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
       <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={shaftRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
 
-      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} />
-      {gas && <GasSystem mats={mats} pick={pick} showLabels={showLabels} shellRaycast={shellRaycast} />}
+      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil} />
+      {gas && <GasSystem mats={mats} pick={pick} showLabels={showLabels} shellRaycast={shellRaycast} overOil={overOil} />}
     </group>
   );
 }
