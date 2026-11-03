@@ -59,7 +59,11 @@ src/
     types.ts          state, configuration, commands
     geometry.ts       reference geometry + Scotch yoke kinematics, checkGeometry()
     model.ts          illustrative force/torque model, torque curves
-    engine.ts         time-based SimulationEngine (rAF loop, commands, throttled snapshots)
+    engine.ts         time-based core: clock, snapshots, notices, generic commands
+    families/         one behaviour module per family: chambers, forces, step,
+                      open/close, family-only commands, status text
+                      (fluid.ts: pneumatic + hydraulic, gas.ts, electric.ts,
+                      electroHydraulic.ts; shared.ts holds the contract)
     __tests__/        Vitest: kinematics, supply loss, fail actions, frame-rate independence
   components/three/   React Three Fiber renderer (reads engine state in useFrame)
   components/sim/     simulator UI (provider, panels, playback, torque chart)
