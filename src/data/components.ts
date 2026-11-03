@@ -2,6 +2,7 @@ import type { ComponentId } from "@/lib/sim/types";
 import { CYLINDER, SPRING_MODULE, VALVE, YOKE_OFFSET } from "@/lib/sim/geometry";
 import { RP } from "@/lib/sim/rackPinionGeometry";
 import { EPT } from "@/lib/sim/electricGeometry";
+import { MT } from "@/lib/sim/multiTurnGeometry";
 import type { MechanismKind } from "@/lib/sim/mechanisms";
 
 export type ComponentRole =
@@ -425,7 +426,133 @@ export const ELECTRIC_PART_TURN_COMPONENTS: ComponentInfo[] = [
   ...VALVE_PARTS,
 ];
 
+const pt = (id: ComponentId) => ELECTRIC_PART_TURN_COMPONENTS.find((c) => c.id === id)!;
+
+/**
+ * Electric multi-turn on a rising-stem wedge gate valve. Architecture follows
+ * public IQ literature; proportions are original.
+ */
+export const MULTI_TURN_COMPONENTS: ComponentInfo[] = [
+  { ...pt("motor"), focus: [0.72, MT.worm.y, MT.worm.z] },
+  { ...pt("worm"), focus: [0, MT.worm.y, MT.worm.z] },
+  {
+    id: "worm-wheel",
+    name: "Worm wheel",
+    role: "Torque conversion",
+    function: "Full wheel on the hollow output, driven by the worm.",
+    description: "A multi-turn actuator turns its output many times per stroke, so it needs a full wheel rather than a segment. The wheel is fixed to the hollow output shaft that the valve stem passes through.",
+    focus: [0, MT.wheel.y, -0.1],
+    distance: 1.8,
+    group: "actuator",
+  },
+  { ...pt("torque-sensor"), focus: [0.44, MT.worm.y, MT.worm.z] },
+  {
+    id: "output-shaft",
+    name: "Hollow output shaft",
+    role: "Output transmission",
+    function: "Turns the drive bush; the rising stem passes up through its centre.",
+    description: "The output is hollow so a rising stem can travel up through the actuator. Drive dogs at its lower end engage slots in the drive bush in the thrust base.",
+    focus: [0, 0.2, 0],
+    distance: 1.8,
+    group: "actuator",
+  },
+  {
+    id: "encoder",
+    name: "Absolute position encoder",
+    role: "Sensing and control",
+    function: "Tracks output turns, with or without power.",
+    description: "On a multi-turn actuator the encoder must know how many turns the output has made, not just an angle. An absolute design keeps that count through a power cut and while the valve is moved by hand.",
+    focus: [0, 0.5, 0],
+    distance: 1.5,
+    group: "actuator",
+  },
+  {
+    id: "thrust-base",
+    name: "Thrust base",
+    role: "Structure and alignment",
+    function: "Separate base that carries the stem thrust into the valve flange.",
+    description: "The thrust base holds the drive bush on a thrust bearing. The reaction to pushing the stem up or down passes through the bearing and base into the valve, not through the gearbox. The flange interface commonly follows ISO 5210.",
+    focus: [0, -0.14, 0],
+    distance: 1.6,
+    group: "actuator",
+  },
+  {
+    id: "stem-nut",
+    name: "Drive bush (stem nut)",
+    role: "Torque conversion",
+    function: "Threaded nut turned by the output; drives the stem up or down.",
+    description: "The drive bush is machined with the valve stem's thread. It turns but cannot move axially; the stem moves axially but cannot turn. So each output turn raises or lowers the stem by one thread lead, converting torque into thrust.",
+    focus: [0, -0.14, 0],
+    distance: 1.3,
+    group: "actuator",
+  },
+  {
+    id: "handwheel",
+    name: "Handwheel and hand/auto lever",
+    role: "Output transmission",
+    function: "Manual operation on top of the actuator.",
+    description: "Moving the lever to Hand and turning the handwheel engages hand drive. It stays engaged until the actuator runs electrically, which automatically returns it to motor drive. Hand operation works with no power.",
+    focus: [0, MT.handwheel.y, 0],
+    distance: 1.8,
+    group: "actuator",
+  },
+  {
+    id: "stem-cover",
+    name: "Stem cover tube",
+    role: "Structure and alignment",
+    function: "Protects the rising stem where it emerges above the actuator.",
+    description: "As the valve opens, the stem rises through the hollow output and above the handwheel. The sealed cover tube keeps weather and dirt off the stem thread.",
+    focus: [0, 0.95, 0],
+    distance: 1.8,
+    group: "actuator",
+  },
+  { ...pt("local-controls"), focus: [0, MT.gearcase.centre[1], 0.5] },
+  { ...pt("terminal"), focus: [0, 0.58, -0.33] },
+  { ...pt("housing"), focus: [0, 0.25, -0.1] },
+  {
+    id: "stem",
+    name: "Valve stem",
+    role: "Output transmission",
+    function: "Threaded, non-rotating stem that carries the gate.",
+    description: "The stem is prevented from turning, so when the nut turns the stem travels up or down. Its thread lead sets how far the gate moves per turn, and therefore how many turns a full stroke takes.",
+    focus: [0, -0.6, 0],
+    distance: 2.2,
+    group: "valve",
+  },
+  {
+    id: "gate",
+    name: "Wedge gate",
+    role: "Flow control",
+    function: "Slides across the bore to shut off flow.",
+    description: "Lifted clear of the bore, the gate leaves a full, unobstructed passage. Lowered, its wedge faces press into the seats. Gate valves are for isolation, open or shut; they are not suited to throttling.",
+    focus: [0, MT.valve.pipeY, 0],
+    distance: 2.2,
+    group: "valve",
+  },
+  {
+    id: "bonnet",
+    name: "Bonnet and packing",
+    role: "Pressure containment",
+    function: "Closes the top of the body; packing seals around the moving stem.",
+    description: "The bonnet carries the stem out of the pressure boundary. Packing around the stem seals it while letting it slide. Packing friction adds to the torque the actuator must supply.",
+    focus: [0, -0.4, 0],
+    distance: 1.8,
+    group: "valve",
+  },
+  {
+    id: "valve-body",
+    name: "Gate valve body",
+    role: "Pressure containment",
+    function: "Contains the process fluid and houses the gate and seats.",
+    description: "The body has a cavity above the bore to receive the gate when open. It is shown sectioned so the gate can be seen.",
+    focus: [0, MT.valve.pipeY, 0],
+    distance: 2.8,
+    group: "valve",
+  },
+];
+
 export function componentsFor(kind: MechanismKind): ComponentInfo[] {
+  if (kind === "multi-turn") return MULTI_TURN_COMPONENTS;
   if (kind === "worm-gear") return ELECTRIC_PART_TURN_COMPONENTS;
   return kind === "rack-pinion" ? RACK_PINION_COMPONENTS : COMPONENTS;
 }

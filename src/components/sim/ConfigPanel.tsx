@@ -2,7 +2,7 @@
 
 import { Info } from "lucide-react";
 import { MODEL, minimumPressureForFullStroke } from "@/lib/sim/model";
-import { ELECTRIC, isElectric } from "@/lib/sim/electric";
+import { ELECTRIC, isElectric, isMultiTurn } from "@/lib/sim/electric";
 import { Button } from "@/components/ui/primitives";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { Segmented, Switch, Range } from "@/components/ui/controls";
@@ -251,6 +251,14 @@ function ElectricConfig() {
             </span>
           </p>
         </div>
+        {isMultiTurn(s.config.family) && (
+          <Switch
+            checked={e.closeOnTorque}
+            onChange={(v) => engine.dispatch({ type: "set-close-on-torque", value: v })}
+            label="Close on torque"
+            description={e.closeOnTorque ? "The wedge is driven into its seats until torque reaches the limit. Common for wedge gate valves." : "The motor stops at the set closed position, before the wedge is driven fully home."}
+          />
+        )}
         <Switch checked={e.obstruction} onChange={(v) => engine.dispatch({ type: "set-obstruction", value: v })} label="Jam the valve at about 55% open" description="Teaching aid: watch the torque protection stop the motor instead of forcing the valve." />
       </div>
     </>

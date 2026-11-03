@@ -13,6 +13,7 @@ import { usePrefersReducedMotion, useWebGLSupport } from "@/lib/hooks";
 import { ActuatorModel } from "./ActuatorModel";
 import { RackPinionModel } from "./RackPinionModel";
 import { ElectricPartTurnModel } from "./ElectricPartTurnModel";
+import { ElectricMultiTurnModel } from "./ElectricMultiTurnModel";
 import { applyCutaway, applyHighlight, createMaterials, disposeMaterials } from "./materials";
 import { WebGLFallback } from "./WebGLFallback";
 
@@ -48,7 +49,17 @@ const ELECTRIC_VIEWS: Record<VisualizationMode, View> = {
   engineering: { target: [0.15, -0.45, 0], dir: [0.5, 0.4, 0.77], distance: 4.9 },
 };
 
+/** Multi-turn on a gate valve: tall stack, from cover tube down to the pipe. */
+const MULTI_TURN_VIEWS: Record<VisualizationMode, View> = {
+  normal: { target: [0.1, -0.3, 0], dir: [0.5, 0.32, 0.8], distance: 6.6 },
+  cutaway: { target: [0.05, -0.35, 0], dir: [0.45, 0.55, 0.7], distance: 6.0 },
+  mechanical: { target: [0.05, 0.05, -0.1], dir: [0.4, 0.62, 0.68], distance: 3.4 },
+  energy: { target: [0.25, -0.3, -0.1], dir: [0.45, 0.4, 0.8], distance: 6.4 },
+  engineering: { target: [0.1, -0.3, 0], dir: [0.5, 0.32, 0.8], distance: 6.6 },
+};
+
 function viewsFor(kind: MechanismKind) {
+  if (kind === "multi-turn") return MULTI_TURN_VIEWS;
   if (kind === "worm-gear") return ELECTRIC_VIEWS;
   return kind === "rack-pinion" ? RACK_PINION_VIEWS : SCOTCH_YOKE_VIEWS;
 }
@@ -249,7 +260,14 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
         <Lightformer form="ring" intensity={0.6} position={[0, -3, 0]} scale={4} />
       </Environment>
 
-      {mechanism === "worm-gear" ? (
+      {mechanism === "multi-turn" ? (
+        <ElectricMultiTurnModel
+          mats={mats}
+          rootRef={root}
+          onSelect={(id) => interactive && engine.dispatch({ type: "select", id })}
+          onHover={(id) => interactive && setHovered(id)}
+        />
+      ) : mechanism === "worm-gear" ? (
         <ElectricPartTurnModel
           mats={mats}
           rootRef={root}

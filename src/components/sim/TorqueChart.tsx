@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { torqueCurves } from "@/lib/sim/model";
 import { MECHANISMS, mechanismFor } from "@/lib/sim/mechanisms";
 import { ELECTRIC, electricDemand, torqueLimitValue } from "@/lib/sim/electric";
-import type { ActuatorConfiguration } from "@/lib/sim/types";
+import type { ActuatorConfiguration, ActuatorFamilyId } from "@/lib/sim/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -110,7 +110,9 @@ export function ElectricTorqueChart({
   position,
   outputTorque,
   className,
+  family = "electric-part-turn",
 }: {
+  family?: ActuatorFamilyId;
   torqueLimit: number;
   obstruction: boolean;
   position?: number;
@@ -125,7 +127,8 @@ export function ElectricTorqueChart({
   const x = (v: number) => pad.l + v * (W - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - v / maxY) * (H - pad.t - pad.b);
   const pts = Array.from({ length: 121 }, (_, i) => i / 120);
-  const demand = pts.map((p, i) => `${i ? "L" : "M"}${x(p).toFixed(1)},${y(electricDemand(p, obstruction, true)).toFixed(1)}`).join(" ");
+  const demand = pts.map((p, i) => `${i ? "L" : "M"}${x(p).toFixed(1)},${y(electricDemand(p, obstruction, true, family)).toFixed(1)}`).join(" ");
+  const closing = family === "electric-multi-turn" ? pts.map((p, i) => `${i ? "L" : "M"}${x(p).toFixed(1)},${y(Math.min(maxY, electricDemand(p, false, false, family))).toFixed(1)}`).join(" ") : null;
   const limit = torqueLimitValue(torqueLimit);
   return (
     <figure className={cn("w-full", className)}>
@@ -146,6 +149,7 @@ export function ElectricTorqueChart({
         <line x1={x(0)} x2={x(1)} y1={y(rated)} y2={y(rated)} stroke="var(--muted)" strokeWidth={1} strokeDasharray="1 3" />
         <line x1={x(0)} x2={x(1)} y1={y(limit)} y2={y(limit)} stroke="var(--accent)" strokeWidth={1.5} />
         <path d={demand} fill="none" stroke="var(--air)" strokeWidth={2} />
+        {closing && <path d={closing} fill="none" stroke="var(--warn)" strokeWidth={1.5} strokeDasharray="4 2" />}
         {position !== undefined && (
           <>
             <line x1={x(position)} x2={x(position)} y1={pad.t} y2={H - pad.b} stroke="var(--fg-2)" strokeWidth={0.75} />
@@ -158,6 +162,12 @@ export function ElectricTorqueChart({
           <span className="h-0.5 w-3 bg-air" aria-hidden />
           Valve demand (opening)
         </span>
+        {family === "electric-multi-turn" && (
+          <span className="flex items-center gap-1.5">
+            <span className="h-0 w-3 border-t border-dashed border-warn" aria-hidden />
+            Closing (wedging at the seat)
+          </span>
+        )}
         <span className="flex items-center gap-1.5">
           <span className="h-0.5 w-3 bg-accent" aria-hidden />
           Torque limit

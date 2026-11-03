@@ -169,7 +169,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Electric gearbox",
     powerSource: "Electric",
     movement: "Multi-turn (many revolutions)",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=electric-multi-turn",
     summary: "A motor and gear train turn a hollow output drive through many revolutions to operate gate, globe and sluice valves.",
     operation: [
       "A motor drives a reduction gear train to a hollow output sleeve that turns many times per stroke.",
@@ -200,7 +201,8 @@ export const FAMILIES: ActuatorFamily[] = [
     technology: "Linear",
     powerSource: "Pneumatic or electric",
     movement: "Linear stroke",
-    status: "planned",
+    status: "interactive",
+    simulatorHref: "/simulator?type=electric-multi-turn",
     summary: "The valve stem moves straight up and down. Driven directly by a linear actuator, or by a multi-turn actuator through a threaded stem nut.",
     operation: [
       "In a rising-stem valve, such as many gate and globe valves, the closure member is lifted off or pressed onto its seat by the stem moving axially.",

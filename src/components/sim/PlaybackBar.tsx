@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownToLine, ArrowUpFromLine, Pause, Play, Repeat, RotateCcw, Square } from "lucide-react";
-import { isElectric } from "@/lib/sim/electric";
+import { MULTI_TURN, isElectric, isMultiTurn } from "@/lib/sim/electric";
 import { Button } from "@/components/ui/primitives";
 import { Range, Segmented } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
   const s = useSimState();
   const pct = Math.round(s.position * 100);
   const electric = isElectric(s.config.family);
+  const multiTurn = isMultiTurn(s.config.family);
   const travel = s.targetPosition === null ? null : 1 - Math.abs(s.targetPosition - s.position);
   const speedValue = (SPEEDS.find((v) => Math.abs(Number(v) - s.speed) < 0.01) ?? "custom") as (typeof SPEEDS)[number];
 
@@ -110,14 +111,26 @@ export function PlaybackBar({ compact = false }: { compact?: boolean }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <AngleDial angle={s.outputAngle} />
-          <div className="leading-tight">
-            <div className="text-[12px] text-muted">Output angle</div>
-            <div className="num font-display text-[24px] font-semibold text-fg">
-              {s.outputAngle.toFixed(0)}
-              <span className="ml-0.5 text-[15px] text-muted">°</span>
+          {multiTurn ? (
+            <div className="leading-tight">
+              <div className="text-[12px] text-muted">Output turns</div>
+              <div className="num font-display text-[24px] font-semibold text-fg">
+                {(s.stroke * MULTI_TURN.outputTurns).toFixed(1)}
+                <span className="ml-1 text-[15px] text-muted">of {MULTI_TURN.outputTurns}</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <AngleDial angle={s.outputAngle} />
+              <div className="leading-tight">
+                <div className="text-[12px] text-muted">Output angle</div>
+                <div className="num font-display text-[24px] font-semibold text-fg">
+                  {s.outputAngle.toFixed(0)}
+                  <span className="ml-0.5 text-[15px] text-muted">°</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="col-span-2 flex items-center gap-2 md:col-span-1">

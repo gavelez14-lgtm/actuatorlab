@@ -72,7 +72,12 @@ export type ComponentId =
   | "torque-sensor"
   | "encoder"
   | "local-controls"
-  | "terminal";
+  | "terminal"
+  | "thrust-base"
+  | "stem-nut"
+  | "stem-cover"
+  | "gate"
+  | "bonnet";
 
 export interface ActuatorConfiguration {
   family: ActuatorFamilyId;
@@ -112,6 +117,10 @@ export interface ElectricState {
   motorRunning: boolean;
   /** Output torque the actuator is producing, illustrative units (rated = 1 on the display scale). */
   outputTorque: number;
+  /** Multi-turn: stop closing when torque reaches the limit (torque-seated) rather than at the position limit. */
+  closeOnTorque: boolean;
+  /** Multi-turn: the last close finished by seating on torque. */
+  seated: boolean;
 }
 
 export interface SimulationState {
@@ -192,4 +201,5 @@ export type SimulationCommand =
   | { type: "set-hand"; value: boolean }
   | { type: "handwheel"; dir: -1 | 0 | 1 }
   | { type: "set-torque-limit"; value: number }
-  | { type: "set-obstruction"; value: boolean };
+  | { type: "set-obstruction"; value: boolean }
+  | { type: "set-close-on-torque"; value: boolean };

@@ -23,7 +23,7 @@ import { ValveAssembly } from "./ValveAssembly";
 const W = EPT.worm;
 const TOOTH = 0.026;
 
-class HelixCurve extends THREE.Curve<THREE.Vector3> {
+export class HelixCurve extends THREE.Curve<THREE.Vector3> {
   constructor(
     private x0: number,
     private length: number,
@@ -54,7 +54,17 @@ const FLOW_STREAMS: { curve: keyof typeof FLOW_CURVES; color: THREE.Color }[] = 
 ];
 const PER_STREAM = 7;
 
-function DisplayFace({ mats, pick }: { mats: MaterialSet; pick: { onSelect: (id: ComponentId) => void; onHover: (id: ComponentId | null) => void } }) {
+export function DisplayFace({
+  mats,
+  pick,
+  y = EPT.cover.y,
+  z = EPT.cover.z + EPT.cover.depth,
+}: {
+  mats: MaterialSet;
+  pick: { onSelect: (id: ComponentId) => void; onHover: (id: ComponentId | null) => void };
+  y?: number;
+  z?: number;
+}) {
   const pctOpen = useSimSelector((s) => Math.round(s.position * 100));
   const label = useSimSelector((s) =>
     s.electric.tripped ? "TORQUE TRIP" : s.electric.handMode ? "HAND" : s.airFlowing ? (s.direction === "opening" ? "OPENING" : "CLOSING") : !s.supplyAvailable ? "BATTERY" : s.position > 0.995 ? "OPEN" : s.position < 0.005 ? "CLOSED" : "STOPPED",
@@ -92,10 +102,10 @@ function DisplayFace({ mats, pick }: { mats: MaterialSet; pick: { onSelect: (id:
   }, [pctOpen, label, canvas, texture, invalidate]);
   return (
     <Pick id="local-controls" {...pick}>
-      <mesh position={[0, EPT.cover.y + 0.05, EPT.cover.z + EPT.cover.depth + 0.006]} material={mats.knob}>
+      <mesh position={[0, y + 0.05, z + 0.006]} material={mats.knob}>
         <circleGeometry args={[0.135, 48]} />
       </mesh>
-      <mesh position={[0, EPT.cover.y + 0.05, EPT.cover.z + EPT.cover.depth + 0.008]}>
+      <mesh position={[0, y + 0.05, z + 0.008]}>
         <circleGeometry args={[0.125, 48]} />
         <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
@@ -336,7 +346,7 @@ export function ElectricPartTurnModel({
           <cylinderGeometry args={[0.03, 0.03, Math.abs(EPT.handwheel.x + sx / 2), 12]} />
         </mesh>
         <group position={[-sx / 2 - 0.015, -0.1, 0.12]} rotation={[handMode ? -0.7 : 0, 0, 0]}>
-          <mesh position={[0, 0.06, 0]} material={mats.indicatorStripe}>
+          <mesh position={[0, 0.06, 0]} material={mats.lever} raycast={shellRaycast}>
             <boxGeometry args={[0.025, 0.14, 0.03]} />
           </mesh>
         </group>

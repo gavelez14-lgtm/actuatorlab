@@ -16,7 +16,7 @@ export const MODES: { value: VisualizationMode; label: string; icon: typeof Eye;
 export function ModeSelector() {
   const { engine, camera } = useEngine();
   const mode = useSimSelector((s) => s.mode);
-  const electric = useSimSelector((s) => s.config.family === "electric-part-turn");
+  const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
   return (
     <Segmented
       label="Visualisation mode"

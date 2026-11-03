@@ -98,7 +98,8 @@ export function SimulatorWorkbench() {
   const fail = useSimSelector((s) => s.config.failPosition);
   const family = useSimSelector((s) => s.config.family);
   const rackPinion = family === "pneumatic-rack-pinion";
-  const electric = family === "electric-part-turn";
+  const multiTurn = family === "electric-multi-turn";
+  const electric = family === "electric-part-turn" || multiTurn;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("configure");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -106,13 +107,15 @@ export function SimulatorWorkbench() {
 
   useEffect(() => {
     touchRecent(
-      electric
+      multiTurn
+        ? { id: "sim-electric-multi-turn", title: "Electric multi-turn simulator", href: "/simulator?type=electric-multi-turn" }
+        : electric
         ? { id: "sim-electric-part-turn", title: "Electric part-turn simulator", href: "/simulator?type=electric-part-turn" }
         : rackPinion
           ? { id: "sim-rack-pinion", title: "Pneumatic rack and pinion simulator", href: "/simulator?type=rack-pinion" }
           : { id: "sim-scotch-yoke", title: "Pneumatic Scotch yoke simulator", href: "/simulator" },
     );
-  }, [touchRecent, rackPinion, electric]);
+  }, [touchRecent, rackPinion, electric, multiTurn]);
 
   // Selecting a part in the scene brings the Components tab forward
   // (state adjusted during render, per React guidance, not in an effect).
@@ -154,7 +157,9 @@ export function SimulatorWorkbench() {
     tabRefs.current[n]?.focus();
   };
 
-  const configLabel = electric
+  const configLabel = multiTurn
+    ? "Motor, worm gear and stem nut, fails in place"
+    : electric
     ? "Motor and self-locking worm gear, fails in place"
     : actionType === "double-acting" ? "Double acting, fails in place" : `Spring return, ${fail === "fail-closed" ? "fails closed" : "fails open"}`;
 
@@ -163,22 +168,22 @@ export function SimulatorWorkbench() {
       <header className="flex flex-col gap-3 border-b border-rule bg-panel px-4 py-3 md:flex-row md:items-center md:justify-between lg:px-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] text-fg">{electric ? "Electric part-turn" : rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
+            <h1 className="text-[24px] text-fg">{multiTurn ? "Electric multi-turn" : electric ? "Electric part-turn" : rackPinion ? "Pneumatic rack and pinion" : "Pneumatic Scotch yoke"}</h1>
             <Tag tone="live">Interactive</Tag>
           </div>
           <p className="mt-0.5 text-[13px] text-muted">
-            {configLabel}, on a quarter-turn ball valve. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
+            {configLabel}, {multiTurn ? "on a rising-stem wedge gate valve" : "on a quarter-turn ball valve"}. <Illustrative>Educational model, not manufacturer geometry</Illustrative>
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Segmented
             size="sm"
             label="Mechanism"
-            value={electric ? "electric-part-turn" : rackPinion ? "rack-pinion" : "scotch-yoke"}
+            value={multiTurn ? "electric-multi-turn" : electric ? "electric-part-turn" : rackPinion ? "rack-pinion" : "scotch-yoke"}
             onChange={(v) => {
               const params = new URLSearchParams();
               if (v !== "scotch-yoke") params.set("type", v);
-              if (!electric && v !== "electric-part-turn") {
+              if (!electric && !v.startsWith("electric")) {
                 if (actionType === "double-acting") params.set("action", "double-acting");
                 if (fail === "fail-open") params.set("fail", "open");
               }
@@ -187,7 +192,8 @@ export function SimulatorWorkbench() {
             options={[
               { value: "scotch-yoke", label: "Scotch yoke" },
               { value: "rack-pinion", label: "Rack and pinion" },
-              { value: "electric-part-turn", label: "Electric" },
+              { value: "electric-part-turn", label: "Part-turn" },
+              { value: "electric-multi-turn", label: "Multi-turn" },
             ]}
           />
           <ModeSelector />

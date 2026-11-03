@@ -14,7 +14,7 @@
  * throttled rate during motion to avoid re-rendering on every frame.
  */
 import { MODEL, computeTorques, strokeFromValvePosition, valvePositionFromStroke } from "./model";
-import { ELECTRIC, electricDemand, isElectric, torqueLimitValue } from "./electric";
+import { ELECTRIC, MULTI_TURN, electricDemand, isElectric, isMultiTurn, torqueLimitValue } from "./electric";
 import type {
   ActuatorConfiguration,
   ChamberCondition,
@@ -93,6 +93,8 @@ export function createInitialState(config: Partial<ActuatorConfiguration> = {}):
       tripped: null,
       motorRunning: false,
       outputTorque: 0,
+      closeOnTorque: true,
+      seated: false,
     },
   };
   derive(state);
@@ -220,7 +222,10 @@ export class SimulationEngine {
     const s = this.s;
     s.time += dt;
     if (isElectric(s.config.family)) {
-      this.electricStep(dt);
+      // Fixed sub-steps so narrow events (wedge seating, a jam) are never
+      // stepped over on slow devices: behaviour must not depend on frame rate.
+      const n = Math.max(1, Math.ceil(dt / (1 / 120)));
+      for (let i = 0; i < n; i++) this.electricStep(dt / n);
       return;
     }
     derive(s);
@@ -291,22 +296,38 @@ export class SimulationEngine {
     let vTarget = 0;
     let running = false;
     const prevTrip = e.tripped;
+    const multi = isMultiTurn(s.config.family);
+    const strokeTime = multi ? MULTI_TURN.strokeTime : ELECTRIC.strokeTime;
+    const handTime = multi ? MULTI_TURN.handStrokeTime : ELECTRIC.handStrokeTime;
+    const prevSeated = e.seated;
 
     if (e.handMode) {
       if (e.handDir !== 0 && !atEnd(e.handDir)) {
         const [a, b] = ELECTRIC.obstructionWindow;
         const jammed = e.obstruction && e.handDir > 0 && s.position >= a && s.position <= b;
-        if (!jammed) vTarget = e.handDir / ELECTRIC.handStrokeTime;
+        if (!jammed) vTarget = e.handDir / handTime;
       }
-    } else if (s.supplyAvailable && e.selector !== "stop" && s.commandedStroke !== null && !e.tripped) {
+    } else if (s.supplyAvailable && e.selector !== "stop" && s.commandedStroke !== null && !e.tripped && !(e.seated && s.commandedStroke === 0)) {
       const dir = s.commandedStroke === 1 ? 1 : -1;
       if (!atEnd(dir)) {
-        const demand = electricDemand(s.position, e.obstruction, dir > 0);
-        if (demand > torqueLimitValue(e.torqueLimit)) {
-          e.tripped = dir > 0 ? "opening" : "closing";
+        const demand = electricDemand(s.position, e.obstruction, dir > 0, s.config.family);
+        const closingIntoSeat = multi && dir < 0 && s.position < MULTI_TURN.wedgeZone;
+        if (closingIntoSeat && !e.closeOnTorque && s.position <= MULTI_TURN.wedgeZone * 0.5) {
+          // position-limit close: stop at the set position as the wedge touches
+          s.stroke = 0;
+          s.velocity = 0;
+        } else if (demand > torqueLimitValue(e.torqueLimit)) {
+          if (closingIntoSeat && e.closeOnTorque) {
+            // torque-seated close: the wedge is driven home until torque reaches the limit
+            e.seated = true;
+            s.stroke = 0;
+            s.velocity = 0;
+          } else {
+            e.tripped = dir > 0 ? "opening" : "closing";
+          }
         } else {
           running = true;
-          vTarget = dir / ELECTRIC.strokeTime;
+          vTarget = dir / strokeTime;
         }
       }
     }
@@ -320,8 +341,8 @@ export class SimulationEngine {
 
     derive(s);
     e.motorRunning = running;
-    const demandNow = electricDemand(s.position, e.obstruction, s.velocity >= 0);
-    e.outputTorque = running ? demandNow : e.tripped && !prevTrip ? torqueLimitValue(e.torqueLimit) : 0;
+    const demandNow = electricDemand(s.position, e.obstruction, s.velocity >= 0, s.config.family);
+    e.outputTorque = running ? demandNow : (e.tripped && !prevTrip) || (e.seated && !prevSeated) ? torqueLimitValue(e.torqueLimit) : 0;
     s.torque = { air: 0, spring: 0, valveDemand: demandNow, net: torqueLimitValue(e.torqueLimit) - demandNow };
     s.stalled = false;
     s.airFlowing = Math.abs(s.velocity) > 0.004;
@@ -338,7 +359,7 @@ export class SimulationEngine {
       this.dwell = 0;
     }
 
-    if (prevTrip !== e.tripped) this.emit();
+    if (prevTrip !== e.tripped || prevSeated !== e.seated) this.emit();
     this.updateStatus();
   }
 
@@ -346,7 +367,7 @@ export class SimulationEngine {
     const s = this.s;
     if (isElectric(s.config.family)) {
       const e = s.electric;
-      const demand = electricDemand(s.position, e.obstruction, s.velocity >= 0);
+      const demand = electricDemand(s.position, e.obstruction, s.velocity >= 0, s.config.family);
       s.torque = { air: 0, spring: 0, valveDemand: demand, net: torqueLimitValue(e.torqueLimit) - demand };
       return { active: 0, air: 0, spring: 0, demand };
     }
@@ -372,9 +393,17 @@ export class SimulationEngine {
       }
       s.commandedStroke = targetStroke;
       e.tripped = null;
+      if (targetStroke === 1) e.seated = false;
       derive(s);
-      if (silent) return;
       const source = e.selector === "local" ? "Local control" : "Remote command";
+      // Multi-turn (IQ-style): running electrically disengages hand drive automatically.
+      if (isMultiTurn(s.config.family) && e.handMode) {
+        e.handMode = false;
+        e.handDir = 0;
+        if (!silent) this.flash(`${source}: the motor drive re-engaged automatically and the handwheel disengaged.`);
+        return;
+      }
+      if (silent) return;
       if (e.handMode) this.flash(`${source} recorded. The hand/auto lever is locked in hand, so the motor is declutched until it is released.`);
       else if (!s.supplyAvailable) this.flash(`${source} recorded, but there is no power. An electric actuator without stored energy stays where it is until power returns.`);
       if (!s.playing) this.flash("Simulation is paused. Press Play to see the command execute.");
@@ -538,6 +567,9 @@ export class SimulationEngine {
       case "set-obstruction":
         s.electric.obstruction = cmd.value;
         break;
+      case "set-close-on-torque":
+        s.electric.closeOnTorque = cmd.value;
+        break;
       case "seek":
         // Manual scrubbing is a teaching aid. It pauses the clock so the
         // physics does not immediately fight the user.
@@ -590,13 +622,19 @@ export class SimulationEngine {
         return `Handwheel will not turn further at ${pct(s.position)}: the valve is jammed.`;
       return e.handDir !== 0
         ? `Hand operation: handwheel turning the valve ${e.handDir > 0 ? "open" : "closed"}, ${pct(s.position)} open.`
-        : `Hand operation locked. Motor declutched at ${pct(s.position)} open; turn the handwheel.`;
+        : isMultiTurn(s.config.family)
+          ? `Hand operation engaged at ${pct(s.position)} open. Turn the handwheel; any motor command re-engages motor drive.`
+          : `Hand operation locked. Motor declutched at ${pct(s.position)} open; turn the handwheel.`;
     }
     if (e.tripped) return `Torque trip while ${e.tripped} at ${pct(s.position)}: output torque reached the limit, so the motor stopped to protect the valve.`;
     if (s.airFlowing) return `${s.direction === "opening" ? "Opening" : "Closing"} on the motor at constant speed, until a limit or a torque trip.`;
     if (!s.supplyAvailable) return `Power lost. Stopped at ${pct(s.position)} open (fails in place). The encoder still knows the position.`;
     if (e.selector === "stop") return "Local selector at Stop. Commands are ignored.";
     if (s.commandedStroke === null) return `Idle at ${pct(s.position)} open. Issue an Open or Close command.`;
+    if (isMultiTurn(s.config.family) && s.position < 0.005)
+      return e.seated
+        ? "Closed on torque: the wedge was driven into its seats until torque reached the limit, then the motor stopped."
+        : "Closed on the position limit: the motor stopped at the set position as the wedge reached its seats.";
     return `Stopped at the ${s.position > 0.5 ? "open" : "closed"} limit. The self-locking worm holds the valve with the motor off.`;
   }
 

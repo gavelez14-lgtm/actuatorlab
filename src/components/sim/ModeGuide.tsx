@@ -117,13 +117,54 @@ const EPT_MODE_TEXT: Partial<typeof MODE_TEXT> = {
   },
 };
 
+/** Multi-turn on a rising-stem gate valve. */
+const MT_MODE_TEXT: Partial<typeof MODE_TEXT> = {
+  normal: {
+    title: "Normal operation",
+    body: [
+      "An electric multi-turn actuator sits directly on the bonnet of a wedge gate valve. Its output turns many times per stroke; a nut in the thrust base turns with it, and the threaded stem, which cannot turn, rises or falls.",
+      "As the valve opens, the stem climbs up through the hollow output into the cover tube on top. The display shows valve position; the encoder counts output turns, so it knows the stem height even without power.",
+    ],
+  },
+  cutaway: {
+    title: "Cutaway",
+    body: [
+      "Half section removes the top of the gearcase, thrust base and cover tube, so you can follow the drive: worm, full wheel, hollow output, stem nut, stem.",
+      "The valve is always shown sectioned. Watch the gate rise into the body cavity above the bore. When fully open it leaves an unobstructed passage.",
+    ],
+  },
+  mechanical: {
+    title: "How rotation becomes thrust",
+    body: [
+      "The motor drives the worm, the worm drives a full wheel on the hollow output, and the output turns the drive bush (stem nut) in the thrust base.",
+      "The nut turns but cannot move up or down; the stem moves up or down but cannot turn. So each output turn moves the stem by one thread lead. Thrust is roughly torque × 2π ÷ lead, less thread friction.",
+      "Closing on torque drives the wedge into its seats until the sensed torque reaches the limit. That gives a tight shut-off, and it is why the closing curve rises steeply in the last few percent. Animation is slowed to 0.35× in this mode.",
+    ],
+  },
+  energy: {
+    title: "Power flow (illustrative)",
+    body: [
+      "Yellow shows electrical power to the motor. Orange shows mechanical power: along the worm, round the wheel, down through the stem nut, and into the stem that pushes the gate.",
+      "Markers appear only while the motor runs and show direction, not amount.",
+    ],
+  },
+  engineering: {
+    title: "Engineering view",
+    body: [
+      "Blue is the illustrative opening demand: high while unseating the wedge, then the running load. Dashed yellow is closing: flat until the wedge meets the seats, then rising steeply.",
+      "With Close on torque on, the motor stops when closing demand reaches the torque limit: the valve is seated, not tripped. Stem thrust is shown from the same torque via the thread. Values are normalised and illustrative.",
+    ],
+  },
+};
+
 export function ModeGuide() {
   const mode = useSimSelector((s) => s.mode);
   const sr = useSimSelector((s) => s.config.actionType === "spring-return");
   const fail = useSimSelector((s) => s.config.failPosition);
   const rp = useSimSelector((s) => s.config.family.includes("rack-pinion"));
-  const electric = useSimSelector((s) => s.config.family === "electric-part-turn");
-  const t = (electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
+  const electric = useSimSelector((s) => s.config.family.startsWith("electric"));
+  const multi = useSimSelector((s) => s.config.family === "electric-multi-turn");
+  const t = (multi ? MT_MODE_TEXT[mode] : electric ? EPT_MODE_TEXT[mode] : rp ? RP_MODE_TEXT[mode] : undefined) ?? MODE_TEXT[mode];
   return (
     <div className="space-y-6">
       <section>
@@ -170,7 +211,16 @@ export function ModeGuide() {
       </section>
 
       <section>
-        <h3 className="text-[17px] text-fg">Valve position is not flow</h3>
+        {multi ? (
+          <>
+            <h3 className="text-[17px] text-fg">Gate valves isolate, they do not throttle</h3>
+            <p className="mt-2 max-w-[60ch] text-[13.5px] text-fg-2">
+              A gate valve is meant to be fully open or fully closed. Part-open, the gate edge sits in a high-velocity stream that erodes it and the seats, and the flow changes very unevenly with position. Use a globe, ball or butterfly control valve to regulate flow.
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="text-[17px] text-fg">Valve position is not flow</h3>
         <p className="mt-2 max-w-[60ch] text-[13.5px] text-fg-2">
           50% open means the ball has turned 45°. It does not mean 50% of full flow. Flow depends on the valve&apos;s inherent characteristic and on the system around it.{" "}
           <Link href="/academy/quarter-turn-valves" className="text-fg underline decoration-rule-strong underline-offset-2 hover:decoration-accent">
@@ -178,6 +228,9 @@ export function ModeGuide() {
           </Link>
           .
         </p>
+      
+          </>
+        )}
       </section>
 
       <section className="border-t border-rule pt-4">

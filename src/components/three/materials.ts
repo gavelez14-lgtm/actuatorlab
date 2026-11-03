@@ -39,6 +39,12 @@ const SPECS = {
   knob: { color: "#24282E", metalness: 0.2, roughness: 0.6, component: "local-controls" },
   terminalBox: { color: "#454C55", metalness: 0.4, roughness: 0.5, component: "terminal", shell: true },
   cable: { color: "#1E2227", metalness: 0, roughness: 0.8, component: "terminal" },
+  gate: { color: "#C3CAD1", metalness: 0.5, roughness: 0.38, component: "gate" },
+  lever: { color: "#E6E9EC", metalness: 0.2, roughness: 0.5, component: "handwheel", shell: true },
+  stemNut: { color: "#B48A55", metalness: 0.85, roughness: 0.35, component: "stem-nut" },
+  thrustBase: { color: "#3C434C", metalness: 0.4, roughness: 0.5, component: "thrust-base", shell: true },
+  coverTube: { color: "#8E969F", metalness: 0.8, roughness: 0.3, component: "stem-cover", shell: true },
+  bonnet: { color: "#545A62", metalness: 0.45, roughness: 0.6, component: "bonnet", shell: true, side: THREE.DoubleSide },
   piston: { color: "#8C959E", metalness: 0.8, roughness: 0.35, component: "piston" },
   pistonSeal: { color: "#1E2126", metalness: 0, roughness: 0.8, component: "piston" },
   rod: { color: "#D8DDE2", metalness: 1, roughness: 0.14, component: "connecting-mechanism" },
@@ -86,6 +92,7 @@ export function createMaterials(): MaterialSet {
   }
   out.valveBody.clippingPlanes = [VALVE_SECTION_PLANE];
   out.pipe.clippingPlanes = [VALVE_SECTION_PLANE];
+  out.bonnet.clippingPlanes = [VALVE_SECTION_PLANE];
   return out;
 }
 
@@ -114,7 +121,7 @@ export function applyHighlight(set: MaterialSet, selected: ComponentId | null, h
 export function applyCutaway(set: MaterialSet, style: CutawayStyle, opacity: number) {
   for (const [key, m] of Object.entries(set) as [MaterialKey, THREE.MeshStandardMaterial][]) {
     if (!m.userData.shell) continue;
-    const isValve = key === "valveBody";
+    const isValve = key === "valveBody" || key === "bonnet";
     const wantTransparent = style === "ghost";
     const planes = isValve
       ? style === "section"
