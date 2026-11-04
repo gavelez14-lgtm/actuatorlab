@@ -254,6 +254,9 @@ const VANE_CASE_COLOURS: Record<PaintFinish, string> = {
 export const STANDARD_FINISH: Partial<Record<string, { main: string; trim: string }>> = {
   // Self-contained electro-hydraulic units are photographed in a light grey finish.
   "electro-hydraulic": { main: "#C9CDD1", trim: "#AEB3B8" },
+  // Current intelligent electric ranges are photographed in a light silver-grey finish.
+  "electric-part-turn": { main: "#CDD1D5", trim: "#B0B5BA" },
+  "electric-multi-turn": { main: "#CDD1D5", trim: "#B0B5BA" },
 };
 
 export function applyPaint(set: MaterialSet, paint: PaintFinish, family?: string) {

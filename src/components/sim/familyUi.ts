@@ -174,8 +174,11 @@ export const FAMILY_UI: Record<ActuatorFamilyId, FamilyUi> = {
     noSpringNote: "Double acting: air drives the vane both ways and it fails in place. Spring-return vane actuators add a separate spring module, which is not modelled here.",
     supply: AIR_SUPPLY("vane"),
   },
-  "electric-part-turn": electric("Electric part-turn", "Intelligent part-turn", "electric-part-turn", "Motor and self-locking worm gear, fails in place"),
-  "electric-multi-turn": electric("Electric multi-turn", "Intelligent multi-turn", "electric-multi-turn", "Motor, worm gear and stem nut, fails in place", "on a rising-stem wedge gate valve"),
+  "electric-part-turn": { ...electric("Electric part-turn", "Intelligent part-turn", "electric-part-turn", "Motor and self-locking worm gear, fails in place"), standardFinish: "Silver (std)" },
+  "electric-multi-turn": {
+    ...electric("Electric multi-turn", "Intelligent multi-turn", "electric-multi-turn", "Motor, worm gear and stem nut, fails in place", "on a rising-stem wedge gate valve"),
+    standardFinish: "Silver (std)",
+  },
   "electric-compact-part-turn": electric(
     "Compact electric part-turn",
     "Compact part-turn",
