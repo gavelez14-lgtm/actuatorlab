@@ -51,11 +51,17 @@ const GO_TANKS = [
   { x: 1.94, side: "B" as const },
 ];
 const GO_R = 0.17;
+/** GO hand pumps beside the tanks: one strokes the actuator open, the other closed. */
+const GO_PUMPS = [
+  { x: 2.38, label: "open" },
+  { x: 2.86, label: "close" },
+] as const;
 
 export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = false }: { mats: MaterialSet; pick: PickProps; showLabels: boolean; shellRaycast: THREE.Mesh["raycast"]; overOil?: boolean }) {
   const { engine } = useEngine();
   const levels = useRef<(THREE.Mesh | null)[]>([]);
   const lever = useRef<THREE.Group>(null);
+  const goLevers = useRef<(THREE.Group | null)[]>([]);
   const needle = useRef<THREE.Group>(null);
   const oilA = useRef<THREE.Mesh>(null);
 
@@ -75,6 +81,12 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
   useFrame(() => {
     const s = engine.getState();
     if (lever.current) lever.current.rotation.z = 0.55 + 0.32 * Math.sin(s.gas.pumpPhase);
+    // GO: the open pump works while pumping toward open, the close pump toward closed.
+    goLevers.current.forEach((g, i) => {
+      if (!g) return;
+      const active = (i === 0 && s.gas.pumpDir > 0) || (i === 1 && s.gas.pumpDir < 0);
+      g.rotation.z = 0.55 + (active ? 0.32 * Math.sin(s.gas.pumpPhase) : 0);
+    });
     if (overOil) {
       const h = TANK.y1 - TANK.y0 - 0.06;
       [0.85 - 0.6 * s.stroke, 0.25 + 0.6 * s.stroke].forEach((lvl, i) => {
@@ -98,7 +110,9 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
   const len = OVERRIDE.x1 - OVERRIDE.x0;
   return (
     <>
-      {/* ---------- Tandem hydraulic override cylinder ---------- */}
+      {/* ---------- Direct gas: tandem hydraulic override cylinder and hand pump ---------- */}
+      {!overOil && (
+      <>
       <Pick id="hydraulic-override" {...pick}>
         <mesh position={[(CYLINDER.tubeEnd + 0.1 + OVERRIDE.x0) / 2, 0, Z]} rotation={[0, 0, Math.PI / 2]} material={mats.hydCylinder} raycast={shellRaycast}>
           <cylinderGeometry args={[0.13, 0.13, OVERRIDE.x0 - CYLINDER.tubeEnd - 0.1, 28]} />
@@ -141,6 +155,39 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
         <mesh geometry={geo.hoseA} material={mats.knob} />
         <mesh geometry={geo.hoseB} material={mats.knob} />
       </Pick>
+      </>
+      )}
+
+      {/* ---------- Gas over oil: two hand pumps, one per direction, feeding oil straight to the cylinder ---------- */}
+      {overOil && (
+        <Pick id="hand-pump" {...pick}>
+          {GO_PUMPS.map((pmp, i) => (
+            <group key={pmp.label} position={[pmp.x, -0.98, GAS_FRONT_Z + 0.06]}>
+              <RoundedBox args={[0.26, 0.12, 0.2]} radius={0.02} smoothness={2} material={mats.pumpBody} />
+              <mesh position={[0.17, 0.12, 0]} material={mats.pumpBody}>
+                <cylinderGeometry args={[0.06, 0.06, 0.22, 20]} />
+              </mesh>
+              <mesh position={[-0.09, 0.11, 0]} material={mats.pumpBody}>
+                <boxGeometry args={[0.05, 0.1, 0.07]} />
+              </mesh>
+              <group
+                ref={(g) => {
+                  goLevers.current[i] = g;
+                }}
+                position={[-0.09, 0.15, 0]}
+                rotation={[0, 0, 0.55]}
+              >
+                <mesh position={[0, 0.26, 0]} material={mats.pumpLever}>
+                  <cylinderGeometry args={[0.018, 0.018, 0.52, 12]} />
+                </mesh>
+                <mesh position={[0, 0.54, 0]} material={mats.knob}>
+                  <capsuleGeometry args={[0.03, 0.08, 4, 12]} />
+                </mesh>
+              </group>
+            </group>
+          ))}
+        </Pick>
+      )}
 
       {overOil ? (
         <>
@@ -226,12 +273,27 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
         <mesh geometry={geo.tap} material={mats.gasLine} />
         <mesh geometry={geo.feed} material={mats.gasLine} />
         <mesh geometry={geo.sense} material={mats.gasLine} />
+        {/* lever-operated poppet valves for local open / close on the control manifold */}
+        {[-0.11, 0.11].map((dx, i) => (
+          <group key={dx} position={[CONTROL.x + dx, CONTROL.y + 0.27, CONTROL.z + 0.02]}>
+            <mesh material={mats.vaneFixings}>
+              <boxGeometry args={[0.1, 0.05, 0.1]} />
+            </mesh>
+            <mesh position={[0, 0.07, 0.03]} rotation={[0.5, 0, i ? -0.25 : 0.25]} material={mats.gaugeNeedle}>
+              <cylinderGeometry args={[0.012, 0.012, 0.14, 8]} />
+            </mesh>
+          </group>
+        ))}
+        {/* particulate filter on the supply tap (stainless bowl) */}
+        <mesh position={[0.32, -1.32, TANK.z]} material={mats.vaneFixings}>
+          <cylinderGeometry args={[0.055, 0.045, 0.18, 20]} />
+        </mesh>
       </Pick>
 
       {showLabels && (
         <>
-          <Label position={[OVERRIDE.x0 + len / 2, 0.42, Z - 0.3]}>Hydraulic override</Label>
-          <Label position={[3.0, 1.05, Z]}>Hand pump</Label>
+          {!overOil && <Label position={[OVERRIDE.x0 + len / 2, 0.42, Z - 0.3]}>Hydraulic override</Label>}
+          {overOil ? <Label position={[2.62, -0.25, GAS_FRONT_Z + 0.06]}>Hand pumps: open and close</Label> : <Label position={[3.0, 1.05, Z]}>Hand pump</Label>}
           <Label position={[TANK.x, TANK.y1 + 0.42, TANK.z - 0.1]}>{overOil ? "Gas/oil tanks" : "Reserve gas tank"}</Label>
           <Label position={[CONTROL.x, CONTROL.y + 0.42, CONTROL.z]}>Line-break control</Label>
         </>

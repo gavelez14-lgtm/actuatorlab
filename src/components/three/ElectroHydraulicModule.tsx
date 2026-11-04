@@ -69,6 +69,7 @@ export function ElectroHydraulicModule({ mats, pick, showLabels }: { mats: Mater
   const { engine } = useEngine();
   const fan = useRef<THREE.Group>(null);
   const needle = useRef<THREE.Group>(null);
+  const beacon = useRef<THREE.Mesh>(null);
   const hose = useMemo(() => {
     const c = new THREE.CatmullRomCurve3([new THREE.Vector3(1.9, 0.33, PZ), new THREE.Vector3(1.9, 0.55, 0.05), new THREE.Vector3(1.75, 0.6, -0.25), new THREE.Vector3(1.7, 0.56, Z + 0.17)]);
     return new THREE.TubeGeometry(c, 40, 0.02, 8, false);
@@ -89,6 +90,11 @@ export function ElectroHydraulicModule({ mats, pick, showLabels }: { mats: Mater
     const s = engine.getState();
     // The engine ticks (and the canvas redraws) while the pump strokes the valve.
     if (fan.current && s.eh.motorRunning) fan.current.rotation.x += Math.min(delta, 0.05) * 30;
+    if (beacon.current) {
+      // glows while the actuator is moving (pump or dump), steady dim otherwise
+      const m = beacon.current.material as THREE.MeshStandardMaterial;
+      m.emissiveIntensity = s.eh.motorRunning || s.eh.dumping ? 1.2 : 0.05;
+    }
     if (needle.current) needle.current.rotation.z = Math.PI * 0.75 - (s.eh.pressure / (EH.workingPressure * 1.4)) * Math.PI * 1.5;
   });
 
@@ -96,7 +102,11 @@ export function ElectroHydraulicModule({ mats, pick, showLabels }: { mats: Mater
     <>
       <Pick id="power-unit" {...pick}>
         {/* oil reservoir */}
-        <RoundedBox args={[0.95, 0.42, 0.32]} radius={0.04} smoothness={3} position={[1.7, -0.08, PZ]} material={mats.gasTank} />
+        <RoundedBox args={[0.95, 0.42, 0.32]} radius={0.04} smoothness={3} position={[1.7, -0.08, PZ]} material={mats.ehReservoir} />
+        {/* fluid fill plug */}
+        <mesh position={[2.05, 0.14, PZ - 0.08]} material={mats.bezel}>
+          <cylinderGeometry args={[0.035, 0.035, 0.03, 6]} />
+        </mesh>
         {/* sight glass */}
         <mesh position={[1.4, -0.08, PZ + 0.165]} material={mats.knob}>
           <boxGeometry args={[0.06, 0.28, 0.01]} />
@@ -106,11 +116,11 @@ export function ElectroHydraulicModule({ mats, pick, showLabels }: { mats: Mater
         </mesh>
         {/* motor with cooling fins and fan cover */}
         <group position={[1.47, 0.27, PZ]}>
-          <mesh rotation={[0, 0, Math.PI / 2]} material={mats.motor}>
+          <mesh rotation={[0, 0, Math.PI / 2]} material={mats.ehMotor}>
             <cylinderGeometry args={[0.13, 0.13, 0.44, 32]} />
           </mesh>
           {[-0.14, -0.07, 0, 0.07, 0.14].map((x) => (
-            <mesh key={x} position={[x, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.motor}>
+            <mesh key={x} position={[x, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.ehMotor}>
               <cylinderGeometry args={[0.145, 0.145, 0.02, 32]} />
             </mesh>
           ))}
@@ -124,9 +134,9 @@ export function ElectroHydraulicModule({ mats, pick, showLabels }: { mats: Mater
           </group>
         </group>
         {/* pump and manifold */}
-        <RoundedBox args={[0.22, 0.2, 0.22]} radius={0.02} smoothness={2} position={[1.9, 0.23, PZ]} material={mats.pumpBody} />
+        <RoundedBox args={[0.22, 0.2, 0.22]} radius={0.02} smoothness={2} position={[1.9, 0.23, PZ]} material={mats.ehMotor} />
         {/* dump solenoid valve */}
-        <mesh position={[2.08, 0.24, PZ + 0.04]} material={mats.switchBody}>
+        <mesh position={[2.08, 0.24, PZ + 0.04]} material={mats.ehMotor}>
           <cylinderGeometry args={[0.055, 0.055, 0.16, 20]} />
         </mesh>
         <mesh position={[2.08, 0.33, PZ + 0.04]} material={mats.gaugeNeedle}>
@@ -150,20 +160,33 @@ export function ElectroHydraulicModule({ mats, pick, showLabels }: { mats: Mater
       </Pick>
 
       <Pick id="controller" {...pick}>
-        <RoundedBox args={[0.42, 0.52, 0.34]} radius={0.04} smoothness={3} position={[2.68, -0.02, PZ]} material={mats.controlCover} />
-        <mesh position={[2.68, 0.06, PZ + 0.171]} material={mats.knob}>
-          <planeGeometry args={[0.3, 0.23]} />
+        {/* sealed control module: display behind a round toughened-glass window, non-intrusive selectors */}
+        <RoundedBox args={[0.46, 0.56, 0.36]} radius={0.06} smoothness={4} position={[2.68, -0.02, PZ]} material={mats.ehController} />
+        <mesh position={[2.68, 0.05, PZ + 0.182]} rotation={[Math.PI / 2, 0, 0]} material={mats.bezel}>
+          <cylinderGeometry args={[0.165, 0.165, 0.02, 48]} />
         </mesh>
-        <ControllerDisplay position={[2.68, 0.06, PZ + 0.173]} />
-        {[-0.08, 0.08].map((dx, i) => (
-          <mesh key={dx} position={[2.68 + dx, -0.17, PZ + 0.19]} rotation={[Math.PI / 2, 0, 0]} material={i ? mats.selectorKnob : mats.knob}>
-            <cylinderGeometry args={[0.04, 0.04, 0.05, 20]} />
+        <mesh position={[2.68, 0.05, PZ + 0.193]} material={mats.knob}>
+          <circleGeometry args={[0.15, 48]} />
+        </mesh>
+        <ControllerDisplay position={[2.68, 0.05, PZ + 0.196]} />
+        {[-0.09, 0.09].map((dx, i) => (
+          <mesh key={dx} position={[2.68 + dx, -0.2, PZ + 0.2]} rotation={[Math.PI / 2, 0, 0]} material={i ? mats.selectorKnob : mats.knob}>
+            <cylinderGeometry args={[0.042, 0.042, 0.05, 20]} />
           </mesh>
         ))}
-        {/* cable entries */}
-        {[-0.1, 0.1].map((dx) => (
-          <mesh key={dx} position={[2.68 + dx, -0.3, PZ]} material={mats.cable}>
-            <cylinderGeometry args={[0.03, 0.03, 0.06, 14]} />
+        {/* indication beacon on top of the control module */}
+        <mesh position={[2.68, 0.28, PZ]} material={mats.ehController}>
+          <cylinderGeometry args={[0.07, 0.08, 0.04, 28]} />
+        </mesh>
+        <mesh ref={beacon} position={[2.68, 0.3, PZ]}>
+          <sphereGeometry args={[0.065, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#f2f2f0" emissive="#ff9f0a" emissiveIntensity={0} transparent opacity={0.85} roughness={0.2} />
+        </mesh>
+        {/* separate terminal enclosure with the cable entries */}
+        <RoundedBox args={[0.22, 0.3, 0.26]} radius={0.04} smoothness={3} position={[3.03, -0.1, PZ - 0.02]} material={mats.ehController} />
+        {[-0.06, 0.06].map((dz) => (
+          <mesh key={dz} position={[3.03, -0.27, PZ - 0.02 + dz]} material={mats.cable}>
+            <cylinderGeometry args={[0.028, 0.028, 0.06, 14]} />
           </mesh>
         ))}
         <mesh geometry={cable} material={mats.cable} />
@@ -172,7 +195,7 @@ export function ElectroHydraulicModule({ mats, pick, showLabels }: { mats: Mater
       {showLabels && (
         <>
           <Label position={[1.47, 0.62, PZ]}>Motor and pump</Label>
-          <Label position={[2.68, 0.45, PZ]}>Integral controller</Label>
+          <Label position={[2.68, 0.52, PZ]}>Control module and beacon</Label>
         </>
       )}
     </>

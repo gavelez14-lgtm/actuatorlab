@@ -318,7 +318,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
           </mesh>
         ))}
         {/* travel stop screw + lock nut on outer cap (the override cylinder takes this place on gas units) */}
-        {!gas && <>
+        {!(gas && !overOil) && <>
         <mesh position={[CYLINDER.tubeEnd + CYLINDER.outerCapThickness + 0.07, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.tieRods}>
           <cylinderGeometry args={[0.035, 0.035, 0.14, 16]} />
         </mesh>
@@ -420,7 +420,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
           </Pick>
         )}
 
-        {gas && <OverrideSliderParts mats={mats} pick={pick} shift={sh} />}
+        {gas && !overOil && <OverrideSliderParts mats={mats} pick={pick} shift={sh} />}
 
         {showLabels && (
           <>

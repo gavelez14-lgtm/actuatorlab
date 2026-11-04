@@ -57,6 +57,9 @@ function buildBody() {
   return g;
 }
 
+/** RH-style heavy-duty exterior (original proportions): centre housing, tube radius, flange half-size. */
+const RH = { housingHalfX: 0.42, tubeR: RP.body.boreRadius + 0.035, flange: RP.body.boreRadius + 0.075 } as const;
+
 /** Air layout: NAMUR-style solenoid block on the +Z face, ports either side. */
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const FACE = B.halfZ;
@@ -214,6 +217,30 @@ export function RackPinionModel({
   /** Fixed parts at one end: end cap, stop bolt, springs. Built for +X, mirrored for -X. */
   const endParts = () => (
     <>
+      {hydraulic ? (
+        <Pick id="end-caps" {...pick}>
+          {/* RH-style: square steel end flange, tie rods back to the head flange on the centre housing */}
+          <RoundedBox args={[RP.endCapThickness, RH.flange * 2, RH.flange * 2]} radius={0.02} smoothness={2} position={[capX, 0, 0]} material={mats.endCaps} raycast={shellRaycast} />
+          <RoundedBox args={[0.08, RH.flange * 2, RH.flange * 2]} radius={0.02} smoothness={2} position={[RH.housingHalfX + 0.04, 0, 0]} material={mats.endCaps} raycast={shellRaycast} />
+          {[
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ].map(([a, b2]) => (
+            <mesh key={`tr${a}${b2}`} position={[(RH.housingHalfX + capX) / 2, a * (RH.flange - 0.05), b2 * (RH.flange - 0.05)]} rotation={[0, 0, Math.PI / 2]} material={mats.tieRods}>
+              <cylinderGeometry args={[0.02, 0.02, capX - RH.housingHalfX + 0.12, 10]} />
+            </mesh>
+          ))}
+          {/* stop bolt cap nut */}
+          <mesh position={[B.halfX + RP.endCapThickness + 0.09, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.tieRods}>
+            <cylinderGeometry args={[0.048, 0.048, 0.08, 6]} />
+          </mesh>
+          <mesh position={[B.halfX + RP.endCapThickness + 0.13, 0, 0]} rotation={[0, 0, -Math.PI / 2]} material={mats.tieRods}>
+            <sphereGeometry args={[0.044, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          </mesh>
+        </Pick>
+      ) : (
       <Pick id="end-caps" {...pick}>
         {/* die-cast end cap: slightly proud of the extrusion, generously radiused */}
         <RoundedBox args={[RP.endCapThickness, B.halfY * 2 + 0.03, B.halfZ * 2 + 0.03]} radius={0.06} smoothness={4} position={[capX, 0, 0]} material={mats.rpEndCaps} raycast={shellRaycast} />
@@ -229,6 +256,7 @@ export function RackPinionModel({
           </mesh>
         ))}
       </Pick>
+      )}
       <Pick id="travel-stops" {...pick}>
         <mesh position={[(boltInsideStart + boltEnd) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.stainless}>
           <cylinderGeometry args={[RP.stopBolt.radius, RP.stopBolt.radius, boltEnd - boltInsideStart, 16]} />
@@ -250,6 +278,26 @@ export function RackPinionModel({
   return (
     <group ref={rootRef}>
       {/* Body */}
+      {hydraulic ? (
+        <Pick id="housing" {...pick}>
+          {/* RH-style cast centre housing with ENP hydraulic cylinders bolted either side */}
+          <RoundedBox args={[RH.housingHalfX * 2, B.halfY * 2 + 0.1, B.halfZ * 2 + 0.12]} radius={0.06} smoothness={3} material={mats.housing} raycast={shellRaycast} />
+          <mesh position={[0, B.halfY + 0.06, 0]} material={mats.housingTrim} raycast={shellRaycast}>
+            <cylinderGeometry args={[0.22, 0.24, 0.06, 40]} />
+          </mesh>
+          <mesh position={[0, -B.halfY - 0.06, 0]} material={mats.housingTrim} raycast={shellRaycast}>
+            <cylinderGeometry args={[0.24, 0.22, 0.06, 40]} />
+          </mesh>
+          {[-1, 1].map((sx) => (
+            <mesh key={sx} position={[sx * (RH.housingHalfX + 0.08 + (B.halfX - RH.housingHalfX - 0.08) / 2), 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.cylinder} raycast={shellRaycast}>
+              <cylinderGeometry args={[RH.tubeR, RH.tubeR, B.halfX - RH.housingHalfX - 0.08, 48, 1, true]} />
+            </mesh>
+          ))}
+          <mesh position={[-0.12, -0.02, B.halfZ + 0.064]} material={mats.nameplate} raycast={shellRaycast}>
+            <boxGeometry args={[0.32, 0.16, 0.006]} />
+          </mesh>
+        </Pick>
+      ) : (
       <Pick id="housing" {...pick}>
         <mesh geometry={body} material={mats.rpBody} raycast={shellRaycast} />
         {/* extrusion channels running the length of the anodised body */}
@@ -277,6 +325,7 @@ export function RackPinionModel({
           <cylinderGeometry args={[0.22, 0.2, 0.06, 40]} />
         </mesh>
       </Pick>
+      )}
 
       <group>{endParts()}</group>
       <group rotation={[0, Math.PI, 0]}>{endParts()}</group>

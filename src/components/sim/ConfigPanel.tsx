@@ -73,7 +73,7 @@ export function ConfigPanel() {
             value={s.paint}
             onChange={(v) => engine.dispatch({ type: "set-paint", value: v })}
             options={[
-              { value: "graphite", label: "Graphite" },
+              { value: "graphite", label: FAMILY_UI[s.config.family].standardFinish ?? "Graphite" },
               { value: "red", label: "Red" },
               { value: "blue", label: "Blue" },
               { value: "yellow", label: "Yellow" },

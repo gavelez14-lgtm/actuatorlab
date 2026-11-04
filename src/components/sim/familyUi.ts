@@ -55,6 +55,8 @@ export interface FamilyUi {
   };
   /** Recently-visited entry. */
   recentTitle: string;
+  /** Label for the first paint option when the family's standard finish is not graphite. */
+  standardFinish?: string;
 }
 
 const failWord = (fail: FailPosition) => (fail === "fail-closed" ? "fails closed" : "fails open");
@@ -168,6 +170,7 @@ export const FAMILY_UI: Record<ActuatorFamilyId, FamilyUi> = {
     ...pneumatic("Pneumatic vane", "Vane", "pneumatic-vane"),
     actionChoice: false,
     configLabel: () => "Single vane, double acting, fails in place",
+    standardFinish: "Green (std)",
     noSpringNote: "Double acting: air drives the vane both ways and it fails in place. Spring-return vane actuators add a separate spring module, which is not modelled here.",
     supply: AIR_SUPPLY("vane"),
   },

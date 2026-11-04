@@ -730,6 +730,17 @@ export const GAS_COMPONENTS: ComponentInfo[] = [
 /** Gas-over-oil overrides on top of the direct-gas list. */
 export const GAS_OVER_OIL_COMPONENTS: ComponentInfo[] = [
   {
+    id: "hand-pump",
+    name: "Hand pumps (open and close)",
+    role: "Motive power",
+    function: "Two lever pumps, one for each direction, that drive the hydraulic cylinder by hand.",
+    description:
+      "Because the cylinder is already hydraulic, manual override needs no separate cylinder: a selector valve lets each pump push oil into one side of the piston. Using one pump per direction keeps the two gas/oil tanks from leaking into each other.",
+    focus: [2.62, -0.9, 0.86],
+    distance: 2.2,
+    group: "actuator",
+  },
+  {
     id: "cylinder",
     name: "Hydraulic cylinder",
     role: "Pressure containment",
@@ -821,9 +832,9 @@ export const VANE_COMPONENTS: ComponentInfo[] = [
     id: "housing",
     name: "Vane housing",
     role: "Pressure containment",
-    function: "A drum with a sector-shaped chamber that the vane sweeps through.",
+    function: "Two cast outer cases bolted together, forming the sector-shaped chamber the vane sweeps through.",
     description:
-      "The housing contains the air on both sides of the vane. The chamber spans the 90° swing plus the vane's own width; the solid part of the housing forms the end walls (abutments) that the vane stops against.",
+      "The cases contain the air on both sides of the vane. The chamber spans the 90° swing plus the vane's own width; the solid part of the cases forms the end walls (abutments). Vane actuators often carry an integral NAMUR manifold so a solenoid valve mounts directly, with no tubing.",
     focus: [0, 0, -0.2],
     distance: 2.4,
     group: "actuator",
@@ -845,9 +856,19 @@ export const VANE_COMPONENTS: ComponentInfo[] = [
     name: "Hub and output shaft",
     role: "Output transmission",
     function: "Carries the vane and transmits its torque to the valve.",
-    description: "The vane is part of, or keyed to, the hub. The shaft runs through the housing to the coupling and position indicator, so the vane, shaft and ball turn as one.",
+    description: "The vane and shaft can be cast as one piece, so there is only one moving part. The top of the shaft has a flat parallel to the vane, which serves as the position indicator; the vane, shaft and ball turn as one.",
     focus: [0, -0.2, 0],
     distance: 2.4,
+    group: "actuator",
+  },
+  {
+    id: "travel-stops",
+    name: "Travel stops",
+    role: "Structure and alignment",
+    function: "Two stop bolts through the case set where the vane stops at each end.",
+    description: "Adjusting them trims the open and closed positions by a few degrees each way, so the valve seats exactly where it should.",
+    focus: [0.5, 0, -0.5],
+    distance: 2.2,
     group: "actuator",
   },
   ...VALVE_PARTS,
@@ -900,7 +921,34 @@ export function adaptForValve(list: ComponentInfo[], valve: "ball" | "butterfly"
  * Component list for a mechanism, with family-specific overrides (gas,
  * gas over oil, electro-hydraulic replace and add parts on the Scotch yoke).
  */
+/** Heavy-duty hydraulic rack and pinion: cast centre housing with bolted-on cylinders. */
+const RH_OVERRIDES: ComponentInfo[] = [
+  {
+    id: "housing",
+    name: "Centre housing and cylinders",
+    role: "Pressure containment",
+    function: "A cast centre housing for the rack and pinion, with a hydraulic cylinder bolted to each side.",
+    description:
+      "Heavy-duty hydraulic designs separate the parts: the rack and pinion sit in a totally enclosed cast housing, and nickel-plated hydraulic cylinders bolt on either side. Larger sizes can carry four cylinders and two racks for very high torque.",
+    caveat: "Single- and double-rack arrangements, and cylinder counts, vary with size.",
+    focus: [0, 0, 0],
+    distance: 3.0,
+    group: "actuator",
+  },
+  {
+    id: "end-caps",
+    name: "Cylinder flanges and tie rods",
+    role: "Pressure containment",
+    function: "Head and end flanges clamp each cylinder to the housing with tie rods; cap nuts seal the stop bolts.",
+    description: "The flanges react the hydraulic pressure load. The stop bolts set the ends of travel, and cap nuts seal them against leakage.",
+    focus: [0.75, 0, 0],
+    distance: 2.4,
+    group: "actuator",
+  },
+];
+
 export function componentsFor(kind: MechanismKind, family: ActuatorFamilyId | null = null): ComponentInfo[] {
+  if (family === "hydraulic-rack-pinion") return RACK_PINION_COMPONENTS.map((c) => RH_OVERRIDES.find((o) => o.id === c.id) ?? c);
   const gasFamily = family === "gas-scotch-yoke" || family === "gas-over-oil" || family === "electro-hydraulic" ? family : null;
   if (kind === "vane") return VANE_COMPONENTS;
   if (gasFamily === "electro-hydraulic") {
@@ -908,7 +956,10 @@ export function componentsFor(kind: MechanismKind, family: ActuatorFamilyId | nu
     return [...COMPONENTS.map((c) => extra.find((g) => g.id === c.id) ?? c), ...extra.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];
   }
   if (gasFamily) {
-    const extra = gasFamily === "gas-over-oil" ? [...GAS_OVER_OIL_COMPONENTS, ...GAS_COMPONENTS.filter((g) => !GAS_OVER_OIL_COMPONENTS.some((o) => o.id === g.id))] : GAS_COMPONENTS;
+    const extra =
+      gasFamily === "gas-over-oil"
+        ? [...GAS_OVER_OIL_COMPONENTS, ...GAS_COMPONENTS.filter((g) => g.id !== "hydraulic-override" && !GAS_OVER_OIL_COMPONENTS.some((o) => o.id === g.id))]
+        : GAS_COMPONENTS;
     return [...COMPONENTS.map((c) => extra.find((g) => g.id === c.id) ?? c), ...extra.filter((g) => !COMPONENTS.some((c) => c.id === g.id))];
   }
   if (kind === "compact-electric") return COMPACT_COMPONENTS;

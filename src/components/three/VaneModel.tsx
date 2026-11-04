@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { RoundedBox } from "@react-three/drei";
 import { CHAMBER_A0, CHAMBER_B1, VANE, vaneAngle } from "@/lib/sim/vaneGeometry";
 import type { ComponentId, CutawayStyle } from "@/lib/sim/types";
 import { useEngine, useSimSelector } from "@/components/sim/SimulationProvider";
@@ -138,14 +139,28 @@ export function VaneModel({ mats, onSelect, onHover, rootRef }: { mats: Material
   return (
     <group ref={rootRef}>
       <Pick id="housing" {...pick}>
-        <mesh geometry={geo.skin} material={mats.housing} raycast={shellRaycast} />
+        {/* two cast outer cases (upper and lower), joined at a bolted parting flange */}
+        <mesh geometry={geo.skin} material={mats.vaneCase} raycast={shellRaycast} />
         {[-1, 1].map((sg) => (
-          <mesh key={sg} position={[0, sg * (VANE.halfY - 0.04), 0]} material={mats.housingTrim} raycast={shellRaycast}>
-            <cylinderGeometry args={[VANE.drumR + 0.02, VANE.drumR + 0.02, 0.08, 64]} />
+          <mesh key={sg} position={[0, sg * (VANE.halfY - 0.04), 0]} material={mats.vaneCase} raycast={shellRaycast}>
+            <cylinderGeometry args={[VANE.drumR + 0.015, VANE.drumR + 0.015, 0.08, 64]} />
           </mesh>
         ))}
+        <mesh material={mats.vaneCase} raycast={shellRaycast}>
+          <cylinderGeometry args={[VANE.drumR + 0.05, VANE.drumR + 0.05, 0.07, 64]} />
+        </mesh>
+        <mesh material={mats.knob} raycast={shellRaycast}>
+          <cylinderGeometry args={[VANE.drumR + 0.052, VANE.drumR + 0.052, 0.006, 64]} />
+        </mesh>
+        {Array.from({ length: 12 }, (_, i) => (i / 12) * Math.PI * 2 + Math.PI / 12).map((a) => (
+          <mesh key={a} position={[(VANE.drumR + 0.03) * Math.sin(a), 0.045, (VANE.drumR + 0.03) * Math.cos(a)]} material={mats.vaneFixings}>
+            <cylinderGeometry args={[0.018, 0.018, 0.022, 6]} />
+          </mesh>
+        ))}
+        {/* integral NAMUR manifold pad for a direct-mount solenoid */}
+        <RoundedBox args={[0.3, 0.2, 0.06]} radius={0.015} smoothness={2} position={[0.33, 0.12, VANE.drumR - 0.08]} rotation={[0, 0.55, 0]} material={mats.vaneCase} raycast={shellRaycast} />
         {/* solid body around the chamber (non-chamber sector) and the chamber's curved wall */}
-        <mesh geometry={geo.filler} material={mats.housing} raycast={shellRaycast} />
+        <mesh geometry={geo.filler} material={mats.vaneCase} raycast={shellRaycast} />
         <mesh geometry={geo.wall} material={mats.endCaps} raycast={shellRaycast} />
         {/* chamber end walls (abutments) */}
         {[CHAMBER_A0, CHAMBER_B1].map((a) => (
@@ -153,10 +168,24 @@ export function VaneModel({ mats, onSelect, onHover, rootRef }: { mats: Material
             <boxGeometry args={[0.02, VANE.chamberHalfY * 2, VANE.chamberR - VANE.hubR]} />
           </mesh>
         ))}
-        {/* NAMUR-style top boss */}
-        <mesh position={[0, VANE.halfY + 0.03, 0]} material={mats.housingTrim} raycast={shellRaycast}>
-          <cylinderGeometry args={[0.24, 0.26, 0.06, 40]} />
+        {/* NAMUR accessory mount boss */}
+        <mesh position={[0, VANE.halfY + 0.03, 0]} material={mats.vaneCase} raycast={shellRaycast}>
+          <cylinderGeometry args={[0.2, 0.22, 0.06, 40]} />
         </mesh>
+      </Pick>
+
+      {/* bi-directional travel stops: stainless stop bolts through the case at each chamber end */}
+      <Pick id="travel-stops" {...pick}>
+        {[CHAMBER_A0, CHAMBER_B1].map((a) => (
+          <group key={a} position={dirAt(a, VANE.drumR + 0.06)} rotation={[0, -a, 0]}>
+            <mesh rotation={[Math.PI / 2, 0, 0]} material={mats.vaneStops}>
+              <cylinderGeometry args={[0.03, 0.03, 0.16, 14]} />
+            </mesh>
+            <mesh position={[0, 0, -0.06]} rotation={[Math.PI / 2, 0, 0]} material={mats.vaneStops}>
+              <cylinderGeometry args={[0.052, 0.052, 0.04, 6]} />
+            </mesh>
+          </group>
+        ))}
       </Pick>
 
       <mesh ref={secARef} geometry={geo.secA} material={fillA} visible={false} position={[0, VANE.chamberHalfY - 0.03, 0]} renderOrder={5} />
@@ -182,12 +211,13 @@ export function VaneModel({ mats, onSelect, onHover, rootRef }: { mats: Material
           <mesh position={[0, -0.68, 0]} material={mats.stem}>
             <cylinderGeometry args={[0.13, 0.13, 0.24, 6]} />
           </mesh>
-          <group position={[0, VANE.halfY + 0.1, 0]} rotation={[0, couplingOffset, 0]}>
-            <mesh material={mats.indicator}>
-              <cylinderGeometry args={[0.2, 0.2, 0.07, 40]} />
+          {/* NAMUR shaft end with a flat parallel to the vane: the vane position indicator */}
+          <group position={[0, VANE.halfY + 0.12, 0]}>
+            <mesh material={mats.shaft}>
+              <cylinderGeometry args={[0.06, 0.06, 0.12, 24]} />
             </mesh>
-            <mesh position={[0, 0.04, 0]} material={mats.indicatorStripe}>
-              <boxGeometry args={[0.05, 0.012, 0.36]} />
+            <mesh position={[0, 0.065, -0.02]} material={mats.indicatorStripe}>
+              <boxGeometry args={[0.028, 0.01, 0.12]} />
             </mesh>
           </group>
         </Pick>

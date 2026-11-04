@@ -29,6 +29,14 @@ const SPECS = {
   // Die-cast end caps in black epoxy (RAL 9005) by default.
   rpEndCaps: { color: "#1B1D20", metalness: 0.25, roughness: 0.55, component: "end-caps", shell: true },
   stainless: { color: "#C4CAD0", metalness: 0.95, roughness: 0.22, component: "end-caps" },
+  // Vane outer cases: polyester powder coat, documented standard green RAL 6018.
+  vaneCase: { color: "#57A639", metalness: 0.15, roughness: 0.6, component: "housing", shell: true },
+  // Electro-hydraulic module: tagged with its own components so highlight and isolate work.
+  ehController: { color: "#525A65", metalness: 0.35, roughness: 0.5, component: "controller" },
+  ehReservoir: { color: "#525A65", metalness: 0.35, roughness: 0.55, component: "power-unit" },
+  ehMotor: { color: "#4B525C", metalness: 0.45, roughness: 0.5, component: "power-unit" },
+  vaneFixings: { color: "#C4CAD0", metalness: 0.95, roughness: 0.22, component: "housing" },
+  vaneStops: { color: "#C4CAD0", metalness: 0.95, roughness: 0.22, component: "travel-stops" },
   nameplate: { color: "#D9DDE1", metalness: 0.85, roughness: 0.35, component: "housing" },
   rack: { color: "#C8CED4", metalness: 0.95, roughness: 0.22, component: "rack" },
   pinion: { color: "#B4BBC3", metalness: 0.95, roughness: 0.25, component: "pinion" },
@@ -209,7 +217,7 @@ export function makeShellRaycast(getPlanes: () => THREE.Plane[], isGhost: () => 
 }
 
 /** Painted enclosure parts and their per-finish colours. */
-const PAINTED: MaterialKey[] = ["housing", "housingTrim", "canister", "endCaps", "motor", "controlCover", "terminalBox", "thrustBase", "gasTank"];
+const PAINTED: MaterialKey[] = ["housing", "housingTrim", "canister", "endCaps", "motor", "controlCover", "terminalBox", "thrustBase", "gasTank", "ehController", "ehReservoir", "ehMotor"];
 export const PAINT_COLOURS: Record<PaintFinish, { main: string; trim: string }> = {
   graphite: { main: "#525A65", trim: "#3C434C" },
   red: { main: "#A6231C", trim: "#7E1A15" },
@@ -228,6 +236,14 @@ const RP_CAP_COLOURS: Record<PaintFinish, string> = {
   yellow: PAINT_COLOURS.yellow.main,
 };
 
+/** Vane cases: the standard finish is green (RAL 6018); other finishes are special paint. */
+const VANE_CASE_COLOURS: Record<PaintFinish, string> = {
+  graphite: "#57A639",
+  blue: PAINT_COLOURS.blue.main,
+  red: PAINT_COLOURS.red.main,
+  yellow: PAINT_COLOURS.yellow.main,
+};
+
 export function applyPaint(set: MaterialSet, paint: PaintFinish) {
   const c = PAINT_COLOURS[paint];
   for (const key of PAINTED) {
@@ -235,4 +251,5 @@ export function applyPaint(set: MaterialSet, paint: PaintFinish) {
     set[key].color.set(trim ? c.trim : c.main);
   }
   set.rpEndCaps.color.set(RP_CAP_COLOURS[paint]);
+  set.vaneCase.color.set(VANE_CASE_COLOURS[paint]);
 }
