@@ -92,6 +92,16 @@ export const VALVE = {
   pipeHalfLength: 1.25,
 } as const;
 
+/**
+ * Cylinder radial scale by family. Hydraulic and pipeline-gas units work at far
+ * higher pressure than instrument air, so the same force needs a much smaller
+ * bore: their cylinders are slim (as photographed for hydraulic Scotch yokes).
+ * Visual only; the torque model works in normalised units.
+ */
+export function cylinderScale(family: string): number {
+  return family.startsWith("pneumatic") ? 1 : 0.68;
+}
+
 /** Helpers --------------------------------------------------------------- */
 
 /**

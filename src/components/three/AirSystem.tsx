@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { SceneLabel } from "./SceneLabel";
-import { CYLINDER, PISTON, YOKE_OFFSET, pistonXFromStroke, yokeKinematics } from "@/lib/sim/geometry";
+import { CYLINDER, PISTON, YOKE_OFFSET, cylinderScale, pistonXFromStroke, yokeKinematics } from "@/lib/sim/geometry";
 import type { ChamberCondition, SimulationState } from "@/lib/sim/types";
 import { useEngine } from "@/components/sim/SimulationProvider";
 import { usePrefersReducedMotion } from "@/lib/hooks";
@@ -62,10 +62,13 @@ export const SCOTCH_YOKE_AIR: AirLayout = {
   },
   chambers: (stroke, config) => {
     const px = pistonXFromStroke(stroke, yokeKinematics(config));
-    const r = CYLINDER.boreRadius - 0.012;
+    const cs = cylinderScale(config.family);
+    const r = CYLINDER.boreRadius * cs - 0.012;
+    // The model lowers the whole air system with a slimmer bore; keep the chamber volumes on the cylinder axis.
+    const y = (1 - cs) * 0.43;
     return {
-      a: [{ x0: CYLINDER.tubeStart, x1: px - PISTON.thickness / 2, y: 0, z: Z, r }],
-      b: [{ x0: px + PISTON.thickness / 2, x1: CYLINDER.tubeEnd, y: 0, z: Z, r }],
+      a: [{ x0: CYLINDER.tubeStart, x1: px - PISTON.thickness / 2, y, z: Z, r }],
+      b: [{ x0: px + PISTON.thickness / 2, x1: CYLINDER.tubeEnd, y, z: Z, r }],
     };
   },
   block: { position: v(1.67, 0.53, Z), size: [0.5, 0.22, 0.3] },

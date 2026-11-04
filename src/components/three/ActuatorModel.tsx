@@ -20,6 +20,7 @@ import {
   shaftRotationY,
   springLengthFromStroke,
   yokeKinematics,
+  cylinderScale,
   type YokeKinematics,
 } from "@/lib/sim/geometry";
 import type { ComponentId, CutawayStyle } from "@/lib/sim/types";
@@ -55,23 +56,25 @@ const coverBolts: [number, number][] = (() => {
 
 /* ---------- geometry builders (run once) ---------- */
 
-function roundedRect(shape: THREE.Shape | THREE.Path, x0: number, y0: number, x1: number, y1: number, r: number) {
-  shape.moveTo(x0 + r, y0);
-  shape.lineTo(x1 - r, y0);
-  shape.quadraticCurveTo(x1, y0, x1, y0 + r);
-  shape.lineTo(x1, y1 - r);
-  shape.quadraticCurveTo(x1, y1, x1 - r, y1);
-  shape.lineTo(x0 + r, y1);
-  shape.quadraticCurveTo(x0, y1, x0, y1 - r);
-  shape.lineTo(x0, y0 + r);
-  shape.quadraticCurveTo(x0, y0, x0 + r, y0);
+/** Rectangle with 45° chamfered corners: the fabricated centre-body plan. */
+function chamferedRect(shape: THREE.Shape, x0: number, y0: number, x1: number, y1: number, c: number) {
+  shape.moveTo(x0 + c, y0);
+  shape.lineTo(x1 - c, y0);
+  shape.lineTo(x1, y0 + c);
+  shape.lineTo(x1, y1 - c);
+  shape.lineTo(x1 - c, y1);
+  shape.lineTo(x0 + c, y1);
+  shape.lineTo(x0, y1 - c);
+  shape.lineTo(x0, y0 + c);
+  shape.closePath();
 }
+
 
 function buildHousing() {
   const bevel = 0.035;
   const s = new THREE.Shape();
   // Shape coordinates are (x, -z); see geometry notes.
-  roundedRect(s, -HOUSING.halfX + bevel, -HOUSING.zFront + bevel, HOUSING.halfX - bevel, -HOUSING.zBack - bevel, 0.16);
+  chamferedRect(s, -HOUSING.halfX + bevel, -HOUSING.zFront + bevel, HOUSING.halfX - bevel, -HOUSING.zBack - bevel, 0.24);
   const depth = HOUSING.halfY * 2 - bevel * 2;
   const g = new THREE.ExtrudeGeometry(s, {
     depth,
@@ -152,6 +155,8 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
   const mode = useSimSelector((s) => s.mode);
   const springReturn = actionType === "spring-return";
   const gas = useSimSelector((s) => isGas(s.config.family));
+  // High-pressure (hydraulic, gas, electro-hydraulic) cylinders are slimmer.
+  const cs = useSimSelector((s) => cylinderScale(s.config.family));
   const yoke = useSimSelector((s) => s.config.yoke);
   // Canted yoke: offset swing, centring shift on piston and spring, compensated coupling.
   const k = useMemo(() => yokeKinematics({ yoke, actionType, failPosition }), [yoke, actionType, failPosition]);
@@ -164,14 +169,14 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
     () => ({
       housing: buildHousing(),
       yokePlate: buildYokePlate(),
-      cylTube: buildTubeAlongX(CYLINDER.boreRadius, CYLINDER.outerRadius, CYLINDER.tubeEnd - CYLINDER.tubeStart),
+      cylTube: buildTubeAlongX(CYLINDER.boreRadius * cs, CYLINDER.outerRadius * cs, CYLINDER.tubeEnd - CYLINDER.tubeStart),
       canister: buildTubeAlongX(
         SPRING_MODULE.radius - 0.04,
         SPRING_MODULE.radius,
         SPRING_MODULE.canisterStart - SPRING_MODULE.canisterEnd,
       ),
     }),
-    [],
+    [cs],
   );
   const helix = useMemo(
     () => new HelixSpring(SPRING_MODULE.turns, SPRING_MODULE.coilMeanRadius, SPRING_MODULE.wireRadius),
@@ -219,8 +224,8 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
   });
 
   const pick = { onSelect, onHover };
-  const capSize = 0.86;
-  const tieOff = 0.34;
+  const capSize = 0.86 * cs;
+  const tieOff = 0.34 * cs;
   const cylMid = (CYLINDER.innerCapStart + CYLINDER.tubeEnd + CYLINDER.outerCapThickness) / 2;
   const cylSpan = CYLINDER.tubeEnd + CYLINDER.outerCapThickness - CYLINDER.innerCapStart;
   const rodStart = GUIDE_BLOCK.sizeX / 2;
@@ -394,10 +399,10 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
         <Pick id="piston" {...pick}>
           <mesh position={[PISTON.rodLength + sh, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.piston}>
-            <cylinderGeometry args={[PISTON.radius, PISTON.radius, PISTON.thickness, 40]} />
+            <cylinderGeometry args={[PISTON.radius * cs, PISTON.radius * cs, PISTON.thickness, 40]} />
           </mesh>
           <mesh position={[PISTON.rodLength + sh, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.pistonSeal}>
-            <cylinderGeometry args={[PISTON.radius + 0.006, PISTON.radius + 0.006, 0.03, 40]} />
+            <cylinderGeometry args={[PISTON.radius * cs + 0.006, PISTON.radius * cs + 0.006, 0.03, 40]} />
           </mesh>
         </Pick>
 
@@ -469,7 +474,10 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
       <ValveAssembly mats={mats} pick={pick} ballRef={ball} ballRotation={shaftRotationY(0) + couplingOffset} cutaway={cutaway} showLabels={showLabels} />
 
-      <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil || eh || hydraulic} />
+      {/* the control block sits on the cylinder, so it follows the slimmer high-pressure bore down */}
+      <group position={[0, -(1 - cs) * 0.43, 0]}>
+        <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil || eh || hydraulic} />
+      </group>
       {eh && <ElectroHydraulicModule mats={mats} pick={pick} showLabels={showLabels} />}
       {gas && <GasSystem mats={mats} pick={pick} showLabels={showLabels} shellRaycast={shellRaycast} overOil={overOil} />}
     </group>
