@@ -41,7 +41,7 @@ Import the repository in Vercel. The framework preset (Next.js) and default buil
 | 3D Simulator | Pneumatic Scotch yoke, twin-piston pneumatic rack and pinion, single-vane pneumatic rotary, electric part-turn with worm-wheel segment (on a ball valve), electric multi-turn on a rising-stem wedge gate valve, compact electromechanical part-turn, direct high-pressure gas Scotch yoke with line-break detection and hydraulic hand-pump override, gas-over-oil with flow-controlled stroke speed and a low-pressure trip, a self-contained electro-hydraulic actuator with an integral controller (positioner, ESD, partial-stroke test), and hydraulic Scotch yoke and rack and pinion on a power unit (choose in the header, or `?type=rack-pinion` / `electric-part-turn` / `electric-multi-turn` / `electric-compact-part-turn` / `gas-scotch-yoke` / `gas-over-oil` / `electro-hydraulic` / `hydraulic-scotch-yoke` / `hydraulic-rack-pinion` / `pneumatic-vane`). Scotch yokes offer a symmetric or canted yoke. 5 modes, 3 configurations, supply loss, component inspection |
 | Compare | Scotch yoke vs rack and pinion (torque shape, typical characteristics), and six power sources side by side |
 | Academy | 19-lesson curriculum, all written, with embedded live 3D demos, torque figures and knowledge checks. |
-| Assessments | Three scored quizzes with explanations, including power sources and safety functions |
+| Assessments | Hands-on fault-finding (7 jobs on live simulators with hidden faults and the status line hidden) and three scored quizzes with explanations |
 
 ### Simulator
 
@@ -70,7 +70,7 @@ src/
     familyUi.ts       presentation registry: titles, menu, URL type, labels,
                       which controls and readouts each family shows
   components/learn/   lessons, figures, embedded sims, questions
-  data/               actuators, components, lessons, assessments, valves, compare
+  data/               actuators, components, lessons, assessments, faults, valves, compare
   lib/progress.ts     localStorage progress behind a ProgressRepository interface
 supabase/schema.sql   database-ready entities + RLS for a future backend
 ```

@@ -25,8 +25,11 @@ export function SimulationProvider({
   initialConfig,
   initialMode,
   autoCycle,
+  setup,
 }: {
   children: ReactNode;
+  /** Runs once on the new engine before the clock starts (e.g. to inject a fault). */
+  setup?: (engine: SimulationEngine) => void;
   initialConfig?: Partial<ActuatorConfiguration>;
   initialMode?: VisualizationMode;
   autoCycle?: boolean;
@@ -35,6 +38,7 @@ export function SimulationProvider({
     const e = new SimulationEngine(initialConfig);
     if (initialMode && initialMode !== "normal") e.dispatch({ type: "set-mode", mode: initialMode });
     if (autoCycle) e.dispatch({ type: "set-auto-cycle", value: true });
+    setup?.(e);
     return e;
   });
   const camera = useRef<CameraApi | null>(null);

@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Pause, Play, Timer } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Gauge, Pause, Play, Timer } from "lucide-react";
+import type { SimulationEngine } from "@/lib/sim/engine";
+import { EngineeringOverlay } from "@/components/sim/EngineeringOverlay";
 import type { ActuatorConfiguration, ActuatorFamilyId, VisualizationMode } from "@/lib/sim/types";
 import { GAS } from "@/lib/sim/gas";
 import { MULTI_TURN, isMultiTurn } from "@/lib/sim/electric";
@@ -190,12 +192,28 @@ function StrokeTimer() {
   );
 }
 
+function InstrumentsPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-t border-rule bg-panel px-3 py-2.5">
+      <Button size="sm" variant="secondary" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <Gauge aria-hidden /> {open ? "Hide instruments" : "Read the instruments"}
+      </Button>
+      {open && (
+        <div className="mt-3 [&>div]:w-full [&>div]:max-w-none">
+          <EngineeringOverlay />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LiveChart() {
   const s = useSimState();
   return <TorqueChart config={s.config} pressure={modelPressure(s)} position={s.position} showAxisNote={false} />;
 }
 
-function MiniControls({ supplyToggle, href, extras, strokeTimer }: { supplyToggle: boolean; href: string; extras: ExtraControl[]; strokeTimer: boolean }) {
+function MiniControls({ supplyToggle, href, extras, strokeTimer, hideStatus }: { supplyToggle: boolean; href?: string; extras: ExtraControl[]; strokeTimer: boolean; hideStatus: boolean }) {
   const { engine } = useEngine();
   const s = useSimState();
   return (
@@ -219,17 +237,21 @@ function MiniControls({ supplyToggle, href, extras, strokeTimer }: { supplyToggl
           <Switch tone="air" checked={s.supplyAvailable} onChange={(v) => engine.dispatch({ type: "set-supply", available: v })} label="Supply" />
         </div>
       )}
-      <ButtonLink href={href} size="sm" variant="ghost" className="ml-auto">
-        Full simulator <ExternalLink aria-hidden />
-      </ButtonLink>
+      {href && (
+        <ButtonLink href={href} size="sm" variant="ghost" className="ml-auto">
+          Full simulator <ExternalLink aria-hidden />
+        </ButtonLink>
+      )}
       {extras.length > 0 && (
         <div className="flex w-full flex-wrap items-center gap-2 border-t border-rule pt-2.5">
           <ExtraControls extras={extras} />
         </div>
       )}
-      <p className="w-full text-[12.5px] text-muted" aria-live="polite">
-        {s.notice ?? s.status}
-      </p>
+      {!hideStatus && (
+        <p className="w-full text-[12.5px] text-muted" aria-live="polite">
+          {s.notice ?? s.status}
+        </p>
+      )}
     </div>
   );
 }
@@ -245,7 +267,16 @@ export function EmbeddedSim({
   extras = [],
   chart = false,
   strokeTimer = false,
+  setup,
+  hideStatus = false,
+  instruments = false,
 }: {
+  /** Inject state before the clock starts (fault-finding). */
+  setup?: (engine: SimulationEngine) => void;
+  /** Hide status text and notices (they would give a diagnosis away). */
+  hideStatus?: boolean;
+  /** Offer the Engineering readouts as an instruments panel. */
+  instruments?: boolean;
   config: Partial<ActuatorConfiguration>;
   mode?: VisualizationMode;
   supplyToggle?: boolean;
@@ -265,7 +296,7 @@ export function EmbeddedSim({
   if (config.valve && config.valve !== "ball") params.set("valve", config.valve);
   const all = extra ? [extra, ...extras] : extras;
   return (
-    <SimulationProvider initialConfig={config} initialMode={mode} autoCycle={autoCycle}>
+    <SimulationProvider initialConfig={config} initialMode={mode} autoCycle={autoCycle} setup={setup}>
       <div className={cn("overflow-hidden rounded-2xl bg-viewport", className)}>
         <div className={cn("grid", chart && "md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]")}>
           <div className="relative h-[320px] sm:h-[380px]">
@@ -279,7 +310,14 @@ export function EmbeddedSim({
             </div>
           )}
         </div>
-        <MiniControls supplyToggle={supplyToggle} href={simulatorHref(config.family ?? "pneumatic-scotch-yoke", params)} extras={all} strokeTimer={strokeTimer} />
+        <MiniControls
+          supplyToggle={supplyToggle}
+          href={hideStatus ? undefined : simulatorHref(config.family ?? "pneumatic-scotch-yoke", params)}
+          extras={all}
+          strokeTimer={strokeTimer}
+          hideStatus={hideStatus}
+        />
+        {instruments && <InstrumentsPanel />}
       </div>
     </SimulationProvider>
   );

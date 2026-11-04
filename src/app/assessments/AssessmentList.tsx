@@ -3,14 +3,33 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ASSESSMENTS } from "@/data/assessments";
+import { FAULTS } from "@/data/faults";
 import { LESSON_MAP } from "@/data/lessons";
 import { useProgress } from "@/lib/progress";
 import { Tag } from "@/components/ui/primitives";
 
 export function AssessmentList() {
   const { data } = useProgress();
+  const ff = data.quizzes["fault-finding"];
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      <Link href="/assessments/fault-finding" className="group flex flex-col rounded-2xl bg-panel p-5 transition-colors hover:bg-panel-2 md:col-span-2">
+        <div className="flex items-center gap-2">
+          <Tag tone="live">Hands-on</Tag>
+          <span className="text-[12.5px] text-muted">{FAULTS.length} jobs, live simulators</span>
+          {ff && <Tag tone={ff.best === ff.total ? "ok" : "warn"}>{ff.best === ff.total ? "All diagnosed" : "Attempted"}</Tag>}
+        </div>
+        <h2 className="mt-3 text-[24px] text-fg">Fault-finding</h2>
+        <p className="mt-1 max-w-[70ch] text-[14px] text-fg-2">
+          Each job loads an actuator with a hidden fault: low supply, a stalled stroke, a coupling refitted wrong, a selector left at Stop, a jam, a latched line-break trip, a seized shutdown valve. Operate it, read the instruments, name the cause.
+        </p>
+        <div className="mt-auto flex items-center justify-between border-t border-rule pt-4 text-[13.5px]">
+          <span className="num text-fg-2">{ff ? `Best ${ff.best} of ${ff.total}, ${ff.attempts} attempt${ff.attempts === 1 ? "" : "s"}` : "No pass mark: every diagnosis is explained"}</span>
+          <span className="inline-flex items-center gap-1 font-medium text-fg group-hover:text-accent">
+            {ff ? "Try again" : "Start"} <ArrowRight className="size-4" aria-hidden />
+          </span>
+        </div>
+      </Link>
       {ASSESSMENTS.map((a) => {
         const r = data.quizzes[a.slug];
         const passed = r && r.best / r.total >= a.passMark;
