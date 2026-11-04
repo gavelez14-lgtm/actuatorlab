@@ -34,6 +34,25 @@ import { ElectroHydraulicModule } from "./ElectroHydraulicModule";
 
 const AXIS_Z = -YOKE_OFFSET;
 
+/** Bolted top cover of the centre body and its bolt pattern (original layout). */
+const COVER = { z: (HOUSING.zFront + HOUSING.zBack) / 2, depth: HOUSING.zFront - HOUSING.zBack - 0.14 };
+const coverBolts: [number, number][] = (() => {
+  const out: [number, number][] = [];
+  const hx = HOUSING.halfX - 0.12;
+  const z0 = COVER.z - COVER.depth / 2 + 0.05;
+  const z1 = COVER.z + COVER.depth / 2 - 0.05;
+  for (let i = 0; i <= 5; i++) {
+    const x = -hx + (i * 2 * hx) / 5;
+    out.push([x, z0], [x, z1]);
+  }
+  for (let i = 1; i < 4; i++) {
+    const z = z0 + (i * (z1 - z0)) / 4;
+    out.push([-hx, z], [hx, z]);
+  }
+  // keep clear of the indicator boss over the shaft
+  return out.filter(([x, z]) => Math.hypot(x, z) > 0.36);
+})();
+
 /* ---------- geometry builders (run once) ---------- */
 
 function roundedRect(shape: THREE.Shape | THREE.Path, x0: number, y0: number, x1: number, y1: number, r: number) {
@@ -221,6 +240,21 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
         <mesh position={[0, -HOUSING.halfY - 0.03, 0]} material={mats.housingTrim} raycast={shellRaycast}>
           <cylinderGeometry args={[0.29, 0.27, 0.06, 40]} />
         </mesh>
+        {/* bolted top cover of the fabricated centre body */}
+        <RoundedBox args={[HOUSING.halfX * 2 - 0.14, 0.022, COVER.depth]} radius={0.01} smoothness={2} position={[0, HOUSING.halfY + 0.011, COVER.z]} material={mats.housing} raycast={shellRaycast} />
+        {coverBolts.map(([x, z]) => (
+          <mesh key={`${x}${z}`} position={[x, HOUSING.halfY + 0.03, z]} material={mats.housingTrim} raycast={shellRaycast}>
+            <cylinderGeometry args={[0.022, 0.022, 0.018, 6]} />
+          </mesh>
+        ))}
+        {/* blank nameplate (no maker's mark) on the front face */}
+        <mesh position={[-0.45, 0, HOUSING.zFront + 0.004]} material={mats.nameplate} raycast={shellRaycast}>
+          <boxGeometry args={[0.42, 0.2, 0.006]} />
+        </mesh>
+        {/* pressure relief valve on the underside of the centre body */}
+        <mesh position={[0.62, -HOUSING.halfY - 0.035, -0.82]} material={mats.tieRods} raycast={shellRaycast}>
+          <cylinderGeometry args={[0.032, 0.032, 0.07, 6]} />
+        </mesh>
         {!springReturn && (
           <mesh position={[-HOUSING.halfX - 0.03, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.housingTrim} raycast={shellRaycast}>
             <cylinderGeometry args={[0.24, 0.24, 0.06, 36]} />
@@ -261,6 +295,17 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
           material={mats.endCaps}
           raycast={shellRaycast}
         />
+        {/* lifting plates on the head and end flanges */}
+        {[CYLINDER.innerCapStart + CYLINDER.innerCapThickness / 2, CYLINDER.tubeEnd + CYLINDER.outerCapThickness / 2].map((x) => (
+          <group key={x} position={[x, capSize / 2 + 0.06, AXIS_Z]}>
+            <mesh material={mats.endCaps} raycast={shellRaycast}>
+              <boxGeometry args={[0.035, 0.12, 0.2]} />
+            </mesh>
+            <mesh position={[0, 0.015, 0]} rotation={[0, Math.PI / 2, 0]} material={mats.knob}>
+              <cylinderGeometry args={[0.032, 0.032, 0.04, 16]} />
+            </mesh>
+          </group>
+        ))}
         {/* tie rods */}
         {[
           [tieOff, tieOff],
@@ -280,6 +325,13 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
         <mesh position={[CYLINDER.tubeEnd + CYLINDER.outerCapThickness + 0.03, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.endCaps}>
           <cylinderGeometry args={[0.07, 0.07, 0.04, 6]} />
         </mesh>
+        {/* cap nut sealing the stop bolt */}
+        <mesh position={[CYLINDER.tubeEnd + CYLINDER.outerCapThickness + 0.12, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.tieRods}>
+          <cylinderGeometry args={[0.05, 0.05, 0.1, 6]} />
+        </mesh>
+        <mesh position={[CYLINDER.tubeEnd + CYLINDER.outerCapThickness + 0.17, 0, AXIS_Z]} rotation={[0, 0, -Math.PI / 2]} material={mats.tieRods}>
+          <sphereGeometry args={[0.045, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        </mesh>
         </>}
       </Pick>
 
@@ -297,6 +349,20 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
           <mesh position={[SPRING_MODULE.canisterEnd - SPRING_MODULE.capThickness - 0.07, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.tieRods}>
             <cylinderGeometry args={[0.035, 0.035, 0.14, 16]} />
           </mesh>
+          {/* welded canister: weld beads at both heads and a lifting lug */}
+          {[SPRING_MODULE.canisterStart - 0.03, SPRING_MODULE.canisterEnd + 0.03].map((x) => (
+            <mesh key={x} position={[x, 0, AXIS_Z]} rotation={[0, 0, Math.PI / 2]} material={mats.canister} raycast={shellRaycast}>
+              <torusGeometry args={[SPRING_MODULE.radius + 0.004, 0.012, 8, 48]} />
+            </mesh>
+          ))}
+          <group position={[(SPRING_MODULE.canisterStart + SPRING_MODULE.canisterEnd) / 2, SPRING_MODULE.radius + 0.05, AXIS_Z]}>
+            <mesh material={mats.canister} raycast={shellRaycast}>
+              <boxGeometry args={[0.2, 0.1, 0.035]} />
+            </mesh>
+            <mesh position={[0, 0.01, 0]} rotation={[Math.PI / 2, 0, 0]} material={mats.knob}>
+              <cylinderGeometry args={[0.03, 0.03, 0.04, 16]} />
+            </mesh>
+          </group>
           {/* the coil itself, anchored on the seat at the housing side */}
           <mesh geometry={helix.geometry} position={[SPRING_MODULE.canisterStart, 0, AXIS_Z]} material={mats.spring} />
         </Pick>

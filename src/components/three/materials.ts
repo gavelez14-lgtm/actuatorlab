@@ -24,7 +24,12 @@ const SPECS = {
   cylinder: { color: "#B7BEC6", metalness: 0.85, roughness: 0.3, component: "cylinder", shell: true },
   endCaps: { color: "#5A626D", metalness: 0.4, roughness: 0.5, component: "end-caps", shell: true },
   tieRods: { color: "#9AA2AB", metalness: 0.9, roughness: 0.25, component: "end-caps" },
-  rpBody: { color: "#A7AFB8", metalness: 0.75, roughness: 0.32, component: "housing", shell: true },
+  // Silver anodised extruded aluminium, as documented for compact twin-piston bodies.
+  rpBody: { color: "#B9C0C7", metalness: 0.7, roughness: 0.38, component: "housing", shell: true },
+  // Die-cast end caps in black epoxy (RAL 9005) by default.
+  rpEndCaps: { color: "#1B1D20", metalness: 0.25, roughness: 0.55, component: "end-caps", shell: true },
+  stainless: { color: "#C4CAD0", metalness: 0.95, roughness: 0.22, component: "end-caps" },
+  nameplate: { color: "#D9DDE1", metalness: 0.85, roughness: 0.35, component: "housing" },
   rack: { color: "#C8CED4", metalness: 0.95, roughness: 0.22, component: "rack" },
   pinion: { color: "#B4BBC3", metalness: 0.95, roughness: 0.25, component: "pinion" },
   stopBolt: { color: "#9AA2AB", metalness: 0.9, roughness: 0.25, component: "travel-stops" },
@@ -188,10 +193,22 @@ export const PAINT_COLOURS: Record<PaintFinish, { main: string; trim: string }> 
   yellow: { main: "#D29B19", trim: "#9F7512" },
 };
 
+/**
+ * Rack-and-pinion end caps keep their own finish: black (RAL 9005) as standard,
+ * blue (RAL 5015) as the documented option, other finishes as special paint.
+ */
+const RP_CAP_COLOURS: Record<PaintFinish, string> = {
+  graphite: "#1B1D20",
+  blue: "#2271B3",
+  red: PAINT_COLOURS.red.main,
+  yellow: PAINT_COLOURS.yellow.main,
+};
+
 export function applyPaint(set: MaterialSet, paint: PaintFinish) {
   const c = PAINT_COLOURS[paint];
   for (const key of PAINTED) {
     const trim = key === "housingTrim" || key === "thrustBase";
     set[key].color.set(trim ? c.trim : c.main);
   }
+  set.rpEndCaps.color.set(RP_CAP_COLOURS[paint]);
 }

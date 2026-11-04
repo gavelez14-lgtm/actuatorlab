@@ -215,24 +215,26 @@ export function RackPinionModel({
   const endParts = () => (
     <>
       <Pick id="end-caps" {...pick}>
-        <RoundedBox args={[RP.endCapThickness, B.halfY * 2 + 0.02, B.halfZ * 2 + 0.02]} radius={0.03} smoothness={3} position={[capX, 0, 0]} material={mats.endCaps} raycast={shellRaycast} />
+        {/* die-cast end cap: slightly proud of the extrusion, generously radiused */}
+        <RoundedBox args={[RP.endCapThickness, B.halfY * 2 + 0.03, B.halfZ * 2 + 0.03]} radius={0.06} smoothness={4} position={[capX, 0, 0]} material={mats.rpEndCaps} raycast={shellRaycast} />
+        <RoundedBox args={[0.03, B.halfY * 1.3, B.halfZ * 1.3]} radius={0.04} smoothness={3} position={[capX + RP.endCapThickness / 2, 0, 0]} material={mats.rpEndCaps} raycast={shellRaycast} />
         {[
           [1, 1],
           [1, -1],
           [-1, 1],
           [-1, -1],
         ].map(([a, b2]) => (
-          <mesh key={`${a}${b2}`} position={[capX + 0.045, a * (B.halfY - 0.06), b2 * (B.halfZ - 0.06)]} rotation={[0, 0, Math.PI / 2]} material={mats.endCaps} raycast={shellRaycast}>
-            <cylinderGeometry args={[0.022, 0.022, 0.02, 8]} />
+          <mesh key={`${a}${b2}`} position={[capX + 0.045, a * (B.halfY - 0.065), b2 * (B.halfZ - 0.065)]} rotation={[0, 0, Math.PI / 2]} material={mats.stainless}>
+            <cylinderGeometry args={[0.02, 0.02, 0.02, 12]} />
           </mesh>
         ))}
       </Pick>
       <Pick id="travel-stops" {...pick}>
-        <mesh position={[(boltInsideStart + boltEnd) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.stopBolt}>
+        <mesh position={[(boltInsideStart + boltEnd) / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.stainless}>
           <cylinderGeometry args={[RP.stopBolt.radius, RP.stopBolt.radius, boltEnd - boltInsideStart, 16]} />
         </mesh>
-        <mesh position={[B.halfX + RP.endCapThickness + 0.025, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.stopBolt}>
-          <cylinderGeometry args={[0.06, 0.06, 0.04, 6]} />
+        <mesh position={[B.halfX + RP.endCapThickness + 0.045, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={mats.stainless}>
+          <cylinderGeometry args={[0.055, 0.055, 0.04, 6]} />
         </mesh>
       </Pick>
       {springReturn && (
@@ -250,6 +252,23 @@ export function RackPinionModel({
       {/* Body */}
       <Pick id="housing" {...pick}>
         <mesh geometry={body} material={mats.rpBody} raycast={shellRaycast} />
+        {/* extrusion channels running the length of the anodised body */}
+        {[-1, 1].flatMap((sy) =>
+          [-1, 1].map((sz) => (
+            <mesh key={`${sy}${sz}`} position={[0, sy * (B.halfY + 0.0015), sz * (B.halfZ - 0.12)]} material={mats.knob} raycast={shellRaycast}>
+              <boxGeometry args={[B.halfX * 2 - 0.02, 0.004, 0.022]} />
+            </mesh>
+          )),
+        )}
+        {[-1, 1].map((sz) => (
+          <mesh key={`side${sz}`} position={[0, B.halfY - 0.07, sz * (B.halfZ + 0.0015)]} material={mats.knob} raycast={shellRaycast}>
+            <boxGeometry args={[B.halfX * 2 - 0.02, 0.018, 0.004]} />
+          </mesh>
+        ))}
+        {/* blank nameplate (no maker's mark) on the rear face */}
+        <mesh position={[0.35, -0.04, -(B.halfZ + 0.004)]} material={mats.nameplate} raycast={shellRaycast}>
+          <boxGeometry args={[0.36, 0.16, 0.006]} />
+        </mesh>
         {/* top boss for the pinion and accessory interface */}
         <mesh position={[0, B.halfY + 0.03, 0]} material={mats.rpBody} raycast={shellRaycast}>
           <cylinderGeometry args={[0.2, 0.22, 0.06, 40]} />
