@@ -15,6 +15,7 @@ const MODES: VisualizationMode[] = ["normal", "cutaway", "mechanical", "energy",
  *   mode   = normal | cutaway | mechanical | energy | engineering
  *   valve  = ball (default) | butterfly | plug
  *   yoke   = symmetric (default) | canted
+ *   explode = 1 to open in the exploded (anatomy) view
  *   type   = scotch-yoke (default) | rack-pinion | electric-part-turn | electric-multi-turn
  *            | electric-compact-part-turn | gas-scotch-yoke | gas-over-oil | electro-hydraulic
  *            | hydraulic-scotch-yoke | hydraulic-rack-pinion
@@ -30,9 +31,14 @@ export function SimulatorFromQuery() {
   const valveParam = q.get("valve");
   const valve = valveParam === "butterfly" || valveParam === "plug" ? valveParam : "ball";
   const yoke = q.get("yoke") === "canted" ? "canted" : "symmetric";
+  const exploded = q.get("explode") === "1";
   const config: Partial<ActuatorConfiguration> = { family, actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail, valve, yoke };
   return (
-    <SimulationProvider key={`${family}-${action}-${fail}-${mode}-${valve}-${yoke}`} initialConfig={config} initialMode={mode}>
+    <SimulationProvider key={`${family}-${action}-${fail}-${mode}-${valve}-${yoke}-${exploded}`}
+      initialConfig={config}
+      initialMode={mode}
+      setup={exploded ? (e) => e.dispatch({ type: "set-explode", value: 1 }) : undefined}
+    >
       <SimulatorWorkbench />
     </SimulationProvider>
   );

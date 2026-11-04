@@ -195,3 +195,18 @@ describe("snapshot status stays in step with discrete events", () => {
     expect(e.getSnapshot().status).toMatch(/^Stalled at 0%/);
   });
 });
+
+describe("exploded view state", () => {
+  it("clamps explode, survives reset, and never touches the physics", () => {
+    const e = new SimulationEngine();
+    e.dispatch({ type: "set-explode", value: 3 });
+    expect(e.getState().explode).toBe(1);
+    e.dispatch({ type: "set-isolate", value: true });
+    e.dispatch({ type: "open" });
+    for (let i = 0; i < 600; i++) e.advance(1 / 60);
+    expect(e.getState().position).toBeGreaterThan(0.99);
+    e.dispatch({ type: "reset" });
+    expect(e.getState().explode).toBe(1);
+    expect(e.getState().isolate).toBe(true);
+  });
+});

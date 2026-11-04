@@ -242,6 +242,10 @@ export interface SimulationState {
   housingOpacity: number;
   showLabels: boolean;
   selectedComponent: ComponentId | null;
+  /** Exploded view amount, 0 (assembled) .. 1 (fully exploded). View only. */
+  explode: number;
+  /** Dim every part except the selected one. View only. */
+  isolate: boolean;
 
   /** Plain-language explanation of what the actuator is doing and why. */
   status: string;
@@ -273,6 +277,8 @@ export type SimulationCommand =
   | { type: "set-cutaway"; style: CutawayStyle }
   | { type: "set-housing-opacity"; value: number }
   | { type: "set-labels"; value: boolean }
+  | { type: "set-explode"; value: number }
+  | { type: "set-isolate"; value: boolean }
   | { type: "select"; id: ComponentId | null }
   | { type: "seek"; position: number }
   | { type: "stop" }

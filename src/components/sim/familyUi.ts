@@ -246,5 +246,6 @@ export function setupHref(s: SimulationState) {
   if (ui.valveChoice && s.config.valve && s.config.valve !== "ball") p.set("valve", s.config.valve);
   if (s.config.yoke === "canted") p.set("yoke", "canted");
   if (s.mode !== "normal") p.set("mode", s.mode);
+  if (s.explode >= 0.5) p.set("explode", "1");
   return simulatorHref(s.config.family, p);
 }

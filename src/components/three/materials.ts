@@ -121,6 +121,7 @@ export function createMaterials(): MaterialSet {
   out.dome.transparent = true;
   out.dome.opacity = 0.28;
   out.dome.depthWrite = false;
+  for (const m of Object.values(out)) m.userData.base = { transparent: m.transparent, opacity: m.opacity, depthWrite: m.depthWrite };
   return out;
 }
 
@@ -141,6 +142,29 @@ export function applyHighlight(set: MaterialSet, selected: ComponentId | null, h
     } else {
       m.emissive.setRGB(0, 0, 0);
       m.emissiveIntensity = 0;
+    }
+  }
+}
+
+/**
+ * Isolate: dim every part except `selected`. Runs after applyCutaway, so shell
+ * materials restore to their cutaway state and the rest to their base state.
+ */
+export function applyIsolate(set: MaterialSet, selected: ComponentId | null) {
+  for (const m of Object.values(set)) {
+    const c = m.userData.component as ComponentId | null;
+    const dim = selected !== null && c !== selected;
+    if (dim) {
+      if (!m.transparent) m.needsUpdate = true;
+      m.transparent = true;
+      m.opacity = Math.min(m.opacity, 0.08);
+      m.depthWrite = false;
+    } else if (!m.userData.shell) {
+      const b = m.userData.base as { transparent: boolean; opacity: number; depthWrite: boolean };
+      if (m.transparent !== b.transparent) m.needsUpdate = true;
+      m.transparent = b.transparent;
+      m.opacity = b.opacity;
+      m.depthWrite = b.depthWrite;
     }
   }
 }

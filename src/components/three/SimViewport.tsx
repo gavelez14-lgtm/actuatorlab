@@ -17,7 +17,8 @@ import { VaneModel } from "./VaneModel";
 import { ElectricPartTurnModel } from "./ElectricPartTurnModel";
 import { ElectricMultiTurnModel } from "./ElectricMultiTurnModel";
 import { CompactElectricModel } from "./CompactElectricModel";
-import { applyCutaway, applyHighlight, applyPaint, createMaterials, disposeMaterials } from "./materials";
+import { applyCutaway, applyHighlight, applyIsolate, applyPaint, createMaterials, disposeMaterials } from "./materials";
+import { ExplodeView } from "./ExplodeView";
 import { WebGLFallback } from "./WebGLFallback";
 
 const DEFAULT_TARGET = new THREE.Vector3(-0.15, -0.5, -0.35);
@@ -254,10 +255,12 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
     applyHighlight(mats, selected, interactive ? hovered : null);
     invalidate();
   }, [mats, selected, hovered, interactive, invalidate]);
+  const isolate = useSimSelector((s) => s.isolate);
   useEffect(() => {
     applyCutaway(mats, cutaway, opacity);
+    applyIsolate(mats, isolate ? selected : null);
     invalidate();
-  }, [mats, cutaway, opacity, invalidate]);
+  }, [mats, cutaway, opacity, isolate, selected, invalidate]);
   const paint = useSimSelector((s) => s.paint);
   useEffect(() => {
     applyPaint(mats, paint);
@@ -275,6 +278,7 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
     <>
       <EngineInvalidator />
       <CameraRig controls={controls} root={root} compact={compact} />
+      <ExplodeView root={root} />
       <OrbitControls
         ref={controls}
         makeDefault

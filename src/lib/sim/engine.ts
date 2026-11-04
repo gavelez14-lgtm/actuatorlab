@@ -81,6 +81,8 @@ export function createInitialState(config: Partial<ActuatorConfiguration> = {}):
     housingOpacity: 1,
     showLabels: false,
     selectedComponent: null,
+    explode: 0,
+    isolate: false,
     status: "",
     notice: null,
     time: 0,
@@ -256,7 +258,7 @@ export class SimulationEngine {
         fam.command(ctx, cmd.type, false);
         break;
       case "reset": {
-        const keep = { paint: s.paint, config: s.config, mode: s.mode, cutaway: s.cutaway, housingOpacity: s.housingOpacity, showLabels: s.showLabels, speed: s.speed, selectedComponent: s.selectedComponent };
+        const keep = { paint: s.paint, config: s.config, mode: s.mode, cutaway: s.cutaway, housingOpacity: s.housingOpacity, showLabels: s.showLabels, speed: s.speed, selectedComponent: s.selectedComponent, explode: s.explode, isolate: s.isolate };
         this.s = { ...createInitialState(s.config), ...keep };
         this.s.stroke = 0; // spring return rests at its spring end, the fail position
         derive(this.s);
@@ -318,6 +320,12 @@ export class SimulationEngine {
         break;
       case "set-labels":
         s.showLabels = cmd.value;
+        break;
+      case "set-explode":
+        s.explode = Math.min(1, Math.max(0, cmd.value));
+        break;
+      case "set-isolate":
+        s.isolate = cmd.value;
         break;
       case "select":
         s.selectedComponent = cmd.id;

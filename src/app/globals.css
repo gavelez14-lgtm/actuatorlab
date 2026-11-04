@@ -180,6 +180,21 @@ p {
 .sim-label--air::before {
   background: #0a84ff;
 }
+/* Exploded view: numbered balloons that match the parts list */
+.sim-label--num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background: rgb(28 28 30 / 0.86);
+  box-shadow: 0 0 0 1px #ff9f0a;
+}
+.sim-label--num::before {
+  display: none;
+}
 
 /* Prose for lesson bodies */
 .prose-lab p {

@@ -4,6 +4,7 @@ import { Crosshair, MousePointerClick, X } from "lucide-react";
 import { adaptForValve, componentsFor, type ComponentRole } from "@/data/components";
 import { mechanismFor } from "@/lib/sim/mechanisms";
 import { Button, Tag } from "@/components/ui/primitives";
+import { Range, Switch } from "@/components/ui/controls";
 import { cn } from "@/lib/utils";
 import { useEngine, useSimSelector } from "./SimulationProvider";
 
@@ -27,11 +28,13 @@ export function ComponentInspector() {
   const family = useSimSelector((s) => s.config.family);
   const valve = useSimSelector((s) => s.config.valve);
   const all = adaptForValve(componentsFor(kind, family), valve);
+  const exploded = useSimSelector((s) => s.explode >= 0.5);
   const info = selected ? (all.find((c) => c.id === selected) ?? null) : null;
   const list = all.filter((c) => !c.springReturnOnly || sr);
 
   return (
     <div className="space-y-5">
+      <AnatomyControls />
       {info ? (
         <article aria-live="polite" className="rounded-xl bg-panel-2 p-4">
           <div className="flex items-start justify-between gap-3">
@@ -83,7 +86,13 @@ export function ComponentInspector() {
                       )}
                     >
                       <span className="flex items-center gap-2">
-                        <span className={cn("size-1.5 rounded-full", active ? "bg-accent" : "bg-rule-strong")} aria-hidden />
+                        {exploded ? (
+                          <span className={cn("num inline-grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] ring-1", active ? "bg-accent text-white ring-accent" : "text-fg-2 ring-accent/70")} aria-label={`part ${all.findIndex((x) => x.id === c.id) + 1}`}>
+                            {all.findIndex((x) => x.id === c.id) + 1}
+                          </span>
+                        ) : (
+                          <span className={cn("size-1.5 rounded-full", active ? "bg-accent" : "bg-rule-strong")} aria-hidden />
+                        )}
                         {c.name}
                       </span>
                       <span className="text-[11.5px] text-muted">{c.role}</span>
@@ -94,6 +103,39 @@ export function ComponentInspector() {
           </ul>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Exploded view and isolate: take the actuator apart to see every part. */
+function AnatomyControls() {
+  const { engine } = useEngine();
+  const explode = useSimSelector((s) => s.explode);
+  const isolate = useSimSelector((s) => s.isolate);
+  const selected = useSimSelector((s) => s.selectedComponent);
+  // The view fits the camera itself when the explode animation settles.
+  const set = (v: number) => engine.dispatch({ type: "set-explode", value: v });
+  return (
+    <div className="space-y-3 rounded-xl bg-panel-2 p-4">
+      <div className="flex items-baseline justify-between">
+        <label htmlFor="explode" className="text-[14px] font-medium text-fg">
+          Exploded view
+        </label>
+        <span className="num text-[13px] text-muted">{explode === 0 ? "assembled" : `${Math.round(explode * 100)}%`}</span>
+      </div>
+      <Range id="explode" label="Exploded view" valueText={`${Math.round(explode * 100)} percent exploded`} min={0} max={1} step={0.01} value={explode} onChange={set} />
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant={explode > 0 ? "secondary" : "primary"} onClick={() => set(explode > 0 ? 0 : 1)}>
+          {explode > 0 ? "Reassemble" : "Take it apart"}
+        </Button>
+      </div>
+      <Switch
+        checked={isolate}
+        onChange={(v) => engine.dispatch({ type: "set-isolate", value: v })}
+        label="Isolate selected part"
+        description={selected ? "Everything else is dimmed." : "Select a part below or in the scene to isolate it."}
+      />
+      <p className="text-[12px] text-muted">The mechanism still works while exploded: press Open and watch each part move. Parts are named when more than half exploded.</p>
     </div>
   );
 }
