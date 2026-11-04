@@ -7,7 +7,7 @@ import { MULTI_TURN, isCompact, isMultiTurn, torqueLimitValue } from "@/lib/sim/
 import { ElectricTorqueChart, TorqueChart } from "./TorqueChart";
 import { isGasOverOil } from "@/lib/sim/gas";
 import type { SimulationState } from "@/lib/sim/types";
-import { FAMILY_UI, modelPressure, type ReadoutsKind } from "./familyUi";
+import { FAMILY_UI, modelPressure, poweredWord, type ReadoutsKind } from "./familyUi";
 
 function Row({ label, value, unit, tone }: { label: string; value: string; unit?: string; tone?: "air" | "warn" | "danger" | "ok" }) {
   return (
@@ -114,7 +114,7 @@ function FluidEngineering() {
         <Row label="Output angle" value={s.outputAngle.toFixed(1)} unit="°" />
         {SOURCE_ROWS[kind](s)}
         <Row label="Chamber A" value={s.chamberA} tone={s.chamberA === "supply" ? "air" : undefined} />
-        <Row label="Air torque" value={t.air.toFixed(2)} tone="air" />
+        <Row label={`${poweredWord(s.config.family)} torque`} value={t.air.toFixed(2)} tone="air" />
         <Row label="Chamber B" value={s.chamberB} tone={s.chamberB === "supply" ? "air" : undefined} />
         {sr && <Row label="Spring torque" value={t.spring.toFixed(2)} tone="warn" />}
         <Row label="Valve demand" value={t.valveDemand.toFixed(2)} />

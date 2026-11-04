@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ChevronDown, Focus, Maximize, RotateCcw, Tag as TagIcon } from "lucide-react";
+import { Check, ChevronDown, Focus, Link as LinkIcon, Maximize, RotateCcw, Tag as TagIcon } from "lucide-react";
 import { Button, Illustrative, Tag } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useProgress } from "@/lib/progress";
@@ -14,7 +14,7 @@ import { ComponentInspector } from "./ComponentInspector";
 import { ModeGuide } from "./ModeGuide";
 import { EngineeringOverlay } from "./EngineeringOverlay";
 import { useEngine, useSimSelector, useSimState } from "./SimulationProvider";
-import { FAMILY_UI, MENU_GROUPS, simulatorHref } from "./familyUi";
+import { FAMILY_UI, MENU_GROUPS, setupHref, simulatorHref } from "./familyUi";
 import type { ActuatorFamilyId } from "@/lib/sim/types";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
@@ -54,6 +54,34 @@ function StatusLine() {
   );
 }
 
+function CopyLinkButton() {
+  const { engine } = useEngine();
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      aria-label={copied ? "Link copied" : "Copy a link to this setup"}
+      title={copied ? "Link copied" : "Copy a link to this setup"}
+      onClick={async () => {
+        const url = new URL(setupHref(engine.getState()), window.location.origin).toString();
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch {
+          window.prompt("Copy this link", url);
+        }
+        // Keep the address bar in step so a reload restores the same setup.
+        window.history.replaceState(null, "", url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      }}
+      className={cn(copied && "text-ok")}
+    >
+      {copied ? <Check aria-hidden /> : <LinkIcon aria-hidden />}
+    </Button>
+  );
+}
+
 function ViewportToolbar() {
   const { engine, camera } = useEngine();
   const labels = useSimSelector((s) => s.showLabels);
@@ -87,6 +115,7 @@ function ViewportToolbar() {
       >
         <TagIcon aria-hidden />
       </Button>
+      <CopyLinkButton />
     </div>
   );
 }

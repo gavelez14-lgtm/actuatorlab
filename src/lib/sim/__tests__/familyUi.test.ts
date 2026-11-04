@@ -26,3 +26,16 @@ describe("family UI registry", () => {
     expect(familyFromType(null)).toBe("pneumatic-scotch-yoke");
   });
 });
+
+import { SimulationEngine } from "../engine";
+import { setupHref } from "@/components/sim/familyUi";
+describe("shareable setup links", () => {
+  it("encodes family, action, fail, valve, yoke and mode", () => {
+    const e = new SimulationEngine({ family: "pneumatic-rack-pinion", actionType: "spring-return", failPosition: "fail-open", valve: "plug" });
+    e.dispatch({ type: "set-mode", mode: "engineering" });
+    const u = new URL(setupHref(e.getState()), "http://x");
+    expect(Object.fromEntries(u.searchParams)).toEqual({ type: "rack-pinion", fail: "open", valve: "plug", mode: "engineering" });
+    const y = new SimulationEngine({ actionType: "double-acting", yoke: "canted" });
+    expect(setupHref(y.getState())).toBe("/simulator?action=double-acting&yoke=canted");
+  });
+});

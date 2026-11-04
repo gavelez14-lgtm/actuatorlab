@@ -228,3 +228,23 @@ export function modelPressure(s: SimulationState) {
   if (ui.readouts === "gas") return pipelineToModel(s.gas.tank);
   return s.supplyPressure * (ui.supply?.scale ?? 1);
 }
+
+/** Word for the powered stroke and its torque: "Air" only for instrument air. */
+export function poweredWord(family: ActuatorFamilyId) {
+  const e = FAMILY_UI[family].energyLabel;
+  return e === "Air flow" ? "Air" : e === "Gas flow" ? "Gas" : e === "Oil flow" ? "Oil" : "Motor";
+}
+
+/** Shareable link that reopens the simulator in the current setup. */
+export function setupHref(s: SimulationState) {
+  const ui = FAMILY_UI[s.config.family];
+  const p = new URLSearchParams();
+  if (ui.actionChoice) {
+    if (s.config.actionType === "double-acting") p.set("action", "double-acting");
+    else if (s.config.failPosition === "fail-open") p.set("fail", "open");
+  }
+  if (ui.valveChoice && s.config.valve && s.config.valve !== "ball") p.set("valve", s.config.valve);
+  if (s.config.yoke === "canted") p.set("yoke", "canted");
+  if (s.mode !== "normal") p.set("mode", s.mode);
+  return simulatorHref(s.config.family, p);
+}

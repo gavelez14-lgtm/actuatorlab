@@ -13,6 +13,8 @@ const MODES: VisualizationMode[] = ["normal", "cutaway", "mechanical", "energy",
  *   action = double-acting | spring-return
  *   fail   = closed | open
  *   mode   = normal | cutaway | mechanical | energy | engineering
+ *   valve  = ball (default) | butterfly | plug
+ *   yoke   = symmetric (default) | canted
  *   type   = scotch-yoke (default) | rack-pinion | electric-part-turn | electric-multi-turn
  *            | electric-compact-part-turn | gas-scotch-yoke | gas-over-oil | electro-hydraulic
  *            | hydraulic-scotch-yoke | hydraulic-rack-pinion
@@ -27,9 +29,10 @@ export function SimulatorFromQuery() {
   const family = familyFromType(type);
   const valveParam = q.get("valve");
   const valve = valveParam === "butterfly" || valveParam === "plug" ? valveParam : "ball";
-  const config: Partial<ActuatorConfiguration> = { family, actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail, valve };
+  const yoke = q.get("yoke") === "canted" ? "canted" : "symmetric";
+  const config: Partial<ActuatorConfiguration> = { family, actionType: action, failPosition: action === "double-acting" ? "fail-in-place" : fail, valve, yoke };
   return (
-    <SimulationProvider key={`${family}-${action}-${fail}-${mode}-${valve}`} initialConfig={config} initialMode={mode}>
+    <SimulationProvider key={`${family}-${action}-${fail}-${mode}-${valve}-${yoke}`} initialConfig={config} initialMode={mode}>
       <SimulatorWorkbench />
     </SimulationProvider>
   );

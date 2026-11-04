@@ -1,5 +1,6 @@
 "use client";
 
+import { poweredWord } from "./familyUi";
 import { useMemo } from "react";
 import { torqueCurves } from "@/lib/sim/model";
 import { MECHANISMS, mechanismFor } from "@/lib/sim/mechanisms";
@@ -81,7 +82,7 @@ export function TorqueChart({
       <figcaption className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-muted">
         <span className="flex items-center gap-1.5">
           <span className="h-0.5 w-3 bg-air" aria-hidden />
-          {sr ? "Air stroke (net of spring)" : "Air stroke output"}
+          {sr ? `${poweredWord(config.family)} stroke (net of spring)` : `${poweredWord(config.family)} stroke output`}
         </span>
         {sr && (
           <span className="flex items-center gap-1.5">

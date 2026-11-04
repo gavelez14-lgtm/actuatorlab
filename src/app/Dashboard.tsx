@@ -205,6 +205,15 @@ export function Dashboard() {
               ))}
             </ul>
           )}
+          <Link href="/assessments/fault-finding" className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-panel px-4 py-3 hover:bg-panel-2">
+            <span>
+              <span className="block text-[14.5px] font-medium text-fg">Fault-finding</span>
+              <span className="block text-[12.5px] text-muted">
+                {mounted && data.quizzes["fault-finding"] ? `Best ${data.quizzes["fault-finding"].best} of ${data.quizzes["fault-finding"].total}. Try again.` : "Seven live jobs with hidden faults. Diagnose them from the instruments."}
+              </span>
+            </span>
+            <ArrowRight className="size-4 text-muted" aria-hidden />
+          </Link>
         </section>
       </div>
     </Page>
