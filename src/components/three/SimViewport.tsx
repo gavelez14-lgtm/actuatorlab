@@ -262,10 +262,11 @@ function Scene({ compact, interactive }: { compact: boolean; interactive: boolea
     invalidate();
   }, [mats, cutaway, opacity, isolate, selected, invalidate]);
   const paint = useSimSelector((s) => s.paint);
+  const paintFamily = useSimSelector((s) => s.config.family);
   useEffect(() => {
-    applyPaint(mats, paint);
+    applyPaint(mats, paint, paintFamily);
     invalidate();
-  }, [mats, paint, invalidate]);
+  }, [mats, paint, paintFamily, invalidate]);
   useEffect(() => {
     if (!interactive) return;
     document.body.style.cursor = hovered ? "pointer" : "";

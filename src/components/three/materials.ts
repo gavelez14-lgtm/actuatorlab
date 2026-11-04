@@ -21,7 +21,8 @@ type MatSpec = {
 const SPECS = {
   housing: { color: "#525A65", metalness: 0.35, roughness: 0.55, component: "housing", shell: true },
   housingTrim: { color: "#3C434C", metalness: 0.4, roughness: 0.5, component: "housing", shell: true },
-  cylinder: { color: "#B7BEC6", metalness: 0.85, roughness: 0.3, component: "cylinder", shell: true },
+  // Cylinder tubes are painted with the body on heavy-duty units (as photographed in the brochures).
+  cylinder: { color: "#525A65", metalness: 0.35, roughness: 0.5, component: "cylinder", shell: true },
   endCaps: { color: "#5A626D", metalness: 0.4, roughness: 0.5, component: "end-caps", shell: true },
   tieRods: { color: "#9AA2AB", metalness: 0.9, roughness: 0.25, component: "end-caps" },
   // Silver anodised extruded aluminium, as documented for compact twin-piston bodies.
@@ -35,6 +36,10 @@ const SPECS = {
   ehController: { color: "#525A65", metalness: 0.35, roughness: 0.5, component: "controller" },
   ehReservoir: { color: "#525A65", metalness: 0.35, roughness: 0.55, component: "power-unit" },
   ehMotor: { color: "#4B525C", metalness: 0.45, roughness: 0.5, component: "power-unit" },
+  // Dome position indicators as photographed: yellow on the twin-piston unit, red on the vane unit.
+  domeYellow: { color: "#F2C21B", metalness: 0.05, roughness: 0.35, component: "output-shaft" },
+  domeRed: { color: "#C8352B", metalness: 0.05, roughness: 0.35, component: "output-shaft" },
+  domeBlack: { color: "#1C1E21", metalness: 0.1, roughness: 0.5, component: "output-shaft" },
   vaneFixings: { color: "#C4CAD0", metalness: 0.95, roughness: 0.22, component: "housing" },
   vaneStops: { color: "#C4CAD0", metalness: 0.95, roughness: 0.22, component: "travel-stops" },
   nameplate: { color: "#D9DDE1", metalness: 0.85, roughness: 0.35, component: "housing" },
@@ -97,7 +102,8 @@ const SPECS = {
   pumpBody: { color: "#3C434C", metalness: 0.45, roughness: 0.5, component: "hand-pump" },
   pumpLever: { color: "#C9CED3", metalness: 0.9, roughness: 0.25, component: "hand-pump" },
   gasTank: { color: "#525A65", metalness: 0.35, roughness: 0.55, component: "gas-tank" },
-  gasControl: { color: "#3C434C", metalness: 0.4, roughness: 0.5, component: "gas-controls" },
+  // Gas control cabinets are photographed in stainless steel.
+  gasControl: { color: "#C3C8CD", metalness: 0.85, roughness: 0.3, component: "gas-controls" },
   gaugeFace: { color: "#F1F3F5", metalness: 0, roughness: 0.6, component: "gas-controls" },
   gaugeNeedle: { color: "#C8352B", metalness: 0.1, roughness: 0.5, component: "gas-controls" },
   gasLine: { color: "#B9A06A", metalness: 0.85, roughness: 0.3, component: "gas-controls" },
@@ -217,7 +223,7 @@ export function makeShellRaycast(getPlanes: () => THREE.Plane[], isGhost: () => 
 }
 
 /** Painted enclosure parts and their per-finish colours. */
-const PAINTED: MaterialKey[] = ["housing", "housingTrim", "canister", "endCaps", "motor", "controlCover", "terminalBox", "thrustBase", "gasTank", "ehController", "ehReservoir", "ehMotor"];
+const PAINTED: MaterialKey[] = ["housing", "housingTrim", "canister", "endCaps", "motor", "controlCover", "terminalBox", "thrustBase", "gasTank", "ehController", "ehReservoir", "ehMotor", "cylinder"];
 export const PAINT_COLOURS: Record<PaintFinish, { main: string; trim: string }> = {
   graphite: { main: "#525A65", trim: "#3C434C" },
   red: { main: "#A6231C", trim: "#7E1A15" },
@@ -244,8 +250,15 @@ const VANE_CASE_COLOURS: Record<PaintFinish, string> = {
   yellow: PAINT_COLOURS.yellow.main,
 };
 
-export function applyPaint(set: MaterialSet, paint: PaintFinish) {
-  const c = PAINT_COLOURS[paint];
+/** Standard finishes that are not graphite, by family style (used when "graphite" = standard is chosen). */
+export const STANDARD_FINISH: Partial<Record<string, { main: string; trim: string }>> = {
+  // Self-contained electro-hydraulic units are photographed in a light grey finish.
+  "electro-hydraulic": { main: "#C9CDD1", trim: "#AEB3B8" },
+};
+
+export function applyPaint(set: MaterialSet, paint: PaintFinish, family?: string) {
+  const std = paint === "graphite" && family ? STANDARD_FINISH[family] : undefined;
+  const c = std ?? PAINT_COLOURS[paint];
   for (const key of PAINTED) {
     const trim = key === "housingTrim" || key === "thrustBase";
     set[key].color.set(trim ? c.trim : c.main);

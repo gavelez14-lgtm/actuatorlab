@@ -51,7 +51,7 @@ export const SPRING_MODULE = {
   canisterStart: -HOUSING.halfX - 0.1, // -1.05 (spring seat)
   canisterEnd: -2.85,
   capThickness: 0.1,
-  radius: 0.42,
+  radius: 0.5, // spring cans are photographed noticeably larger in diameter than the cylinder
   plateThickness: 0.1,
   plateRadius: 0.36,
   /** Distance from pin centre to spring plate centre along X. */

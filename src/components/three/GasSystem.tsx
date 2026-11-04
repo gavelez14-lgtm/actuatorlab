@@ -50,7 +50,8 @@ const GO_TANKS = [
   { x: 1.4, side: "A" as const },
   { x: 1.94, side: "B" as const },
 ];
-const GO_R = 0.17;
+/** GO gas/oil tanks stand tall beside the actuator with domed ends, as photographed. */
+const GO_TANK = { y0: -0.72, y1: 0.95, r: 0.22 } as const;
 /** GO hand pumps beside the tanks: one strokes the actuator open, the other closed. */
 const GO_PUMPS = [
   { x: 2.38, label: "open" },
@@ -88,12 +89,12 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
       g.rotation.z = 0.55 + (active ? 0.32 * Math.sin(s.gas.pumpPhase) : 0);
     });
     if (overOil) {
-      const h = TANK.y1 - TANK.y0 - 0.06;
+      const h = GO_TANK.y1 - GO_TANK.y0 - 0.06;
       [0.85 - 0.6 * s.stroke, 0.25 + 0.6 * s.stroke].forEach((lvl, i) => {
         const m = levels.current[i];
         if (!m) return;
         m.scale.y = lvl * h;
-        m.position.y = TANK.y0 + 0.03 + (lvl * h) / 2;
+        m.position.y = GO_TANK.y0 + 0.03 + (lvl * h) / 2;
       });
     }
     if (needle.current) needle.current.rotation.z = Math.PI * 0.75 - (s.gas.pipeline / GAS.pipelineMax) * Math.PI * 1.5;
@@ -195,37 +196,37 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
           <Pick id="gas-tank" {...pick}>
             {GO_TANKS.map((t, i) => (
               <group key={t.side}>
-                <mesh position={[t.x, (TANK.y0 + TANK.y1) / 2, TANK.z]} material={mats.gasTank}>
-                  <cylinderGeometry args={[GO_R, GO_R, TANK.y1 - TANK.y0, 32]} />
+                <mesh position={[t.x, (GO_TANK.y0 + GO_TANK.y1) / 2, TANK.z]} material={mats.gasTank}>
+                  <cylinderGeometry args={[GO_TANK.r, GO_TANK.r, GO_TANK.y1 - GO_TANK.y0, 32]} />
                 </mesh>
-                {[TANK.y0, TANK.y1].map((y, j) => (
+                {[GO_TANK.y0, GO_TANK.y1].map((y, j) => (
                   <mesh key={y} position={[t.x, y, TANK.z]} scale={[1, 0.45, 1]} rotation={[j ? 0 : Math.PI, 0, 0]} material={mats.gasTank}>
-                    <sphereGeometry args={[GO_R, 28, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                    <sphereGeometry args={[GO_TANK.r, 28, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
                   </mesh>
                 ))}
                 {/* sight glass: dark slot with the live oil column */}
-                <mesh position={[t.x, (TANK.y0 + TANK.y1) / 2, TANK.z + GO_R + 0.004]} material={mats.knob}>
-                  <boxGeometry args={[0.07, TANK.y1 - TANK.y0, 0.01]} />
+                <mesh position={[t.x, (GO_TANK.y0 + GO_TANK.y1) / 2, TANK.z + GO_TANK.r + 0.004]} material={mats.knob}>
+                  <boxGeometry args={[0.07, GO_TANK.y1 - GO_TANK.y0, 0.01]} />
                 </mesh>
                 <mesh
                   ref={(m) => {
                     levels.current[i] = m;
                   }}
-                  position={[t.x, TANK.y0 + 0.2, TANK.z + GO_R + 0.012]}
+                  position={[t.x, GO_TANK.y0 + 0.2, TANK.z + GO_TANK.r + 0.012]}
                   material={mats.oil}
                 >
                   <boxGeometry args={[0.05, 1, 0.01]} />
                 </mesh>
               </group>
             ))}
-            <mesh position={[TANK.x, TANK.y0 - 0.14, TANK.z]} material={mats.gasLine}>
+            <mesh position={[TANK.x, GO_TANK.y0 - 0.14, TANK.z]} material={mats.gasLine}>
               <cylinderGeometry args={[0.045, 0.045, 0.1, 6]} />
             </mesh>
           </Pick>
           {/* ---------- Flow-control valves on each tank's oil outlet ---------- */}
           <Pick id="flow-controls" {...pick}>
             {GO_TANKS.map((t) => (
-              <group key={t.side} position={[t.x, TANK.y0 - 0.2, TANK.z + 0.12]}>
+              <group key={t.side} position={[t.x, GO_TANK.y0 - 0.2, TANK.z + 0.12]}>
                 <RoundedBox args={[0.14, 0.1, 0.12]} radius={0.015} smoothness={2} material={mats.pumpBody} />
                 <mesh position={[0, 0, 0.08]} rotation={[Math.PI / 2, 0, 0]} material={mats.gaugeNeedle}>
                   <cylinderGeometry args={[0.03, 0.03, 0.05, 14]} />
@@ -294,7 +295,7 @@ export function GasSystem({ mats, pick, showLabels, shellRaycast, overOil = fals
         <>
           {!overOil && <Label position={[OVERRIDE.x0 + len / 2, 0.42, Z - 0.3]}>Hydraulic override</Label>}
           {overOil ? <Label position={[2.62, -0.25, GAS_FRONT_Z + 0.06]}>Hand pumps: open and close</Label> : <Label position={[3.0, 1.05, Z]}>Hand pump</Label>}
-          <Label position={[TANK.x, TANK.y1 + 0.42, TANK.z - 0.1]}>{overOil ? "Gas/oil tanks" : "Reserve gas tank"}</Label>
+          <Label position={[TANK.x, (overOil ? GO_TANK.y1 : TANK.y1) + 0.42, TANK.z - 0.1]}>{overOil ? "Gas/oil tanks" : "Reserve gas tank"}</Label>
           <Label position={[CONTROL.x, CONTROL.y + 0.42, CONTROL.z]}>Line-break control</Label>
         </>
       )}

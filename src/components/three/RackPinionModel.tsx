@@ -362,14 +362,32 @@ export function RackPinionModel({
           <mesh position={[0, -0.68, 0]} material={mats.stem}>
             <cylinderGeometry args={[0.13, 0.13, 0.24, 6]} />
           </mesh>
-          <group position={[0, HOUSING.halfY + 0.13, 0]} rotation={[0, couplingOffset, 0]}>
-            <mesh material={mats.indicator}>
-              <cylinderGeometry args={[0.2, 0.2, 0.06, 40]} />
-            </mesh>
-            <mesh position={[0, 0.035, 0]} material={mats.indicatorStripe}>
-              <boxGeometry args={[0.045, 0.012, 0.36]} />
-            </mesh>
-          </group>
+          {hydraulic ? (
+            <group position={[0, HOUSING.halfY + 0.13, 0]} rotation={[0, couplingOffset, 0]}>
+              <mesh material={mats.indicator}>
+                <cylinderGeometry args={[0.2, 0.2, 0.06, 40]} />
+              </mesh>
+              <mesh position={[0, 0.035, 0]} material={mats.indicatorStripe}>
+                <boxGeometry args={[0.045, 0.012, 0.36]} />
+              </mesh>
+            </group>
+          ) : (
+            // Yellow dome indicator: a black band across the dome lines up with the valve bore.
+            <group position={[0, HOUSING.halfY + 0.1, 0]} rotation={[0, couplingOffset, 0]}>
+              <mesh material={mats.domeBlack}>
+                <cylinderGeometry args={[0.17, 0.19, 0.05, 40]} />
+              </mesh>
+              <mesh position={[0, 0.025, 0]} scale={[1, 0.62, 1]} material={mats.domeYellow}>
+                <sphereGeometry args={[0.17, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+              </mesh>
+              <mesh position={[0, 0.03, 0]} scale={[1, 0.64, 1]} material={mats.domeBlack}>
+                <sphereGeometry args={[0.172, 32, 16, Math.PI / 2 - 0.12, 0.24, 0, Math.PI / 2]} />
+              </mesh>
+              <mesh position={[0, 0.03, 0]} scale={[1, 0.64, 1]} material={mats.domeBlack}>
+                <sphereGeometry args={[0.172, 32, 16, (3 * Math.PI) / 2 - 0.12, 0.24, 0, Math.PI / 2]} />
+              </mesh>
+            </group>
+          )}
         </Pick>
         {showLabels && <Label position={[0.0, 0.3, 0.32]}>Pinion: rotary output</Label>}
       </group>

@@ -203,6 +203,7 @@ export const FAMILY_UI: Record<ActuatorFamilyId, FamilyUi> = {
     supplyChip: { on: "Power on", off: "Power lost" },
     energyLabel: "Oil flow",
     recentTitle: "Electro-hydraulic simulator",
+    standardFinish: "Light grey (std)",
   },
   // Catalogue entry that opens the multi-turn simulator; never shown as its own type.
   "rising-stem-linear": { ...pneumatic("Rising-stem linear", "Rising stem", "rising-stem-linear"), menu: undefined },

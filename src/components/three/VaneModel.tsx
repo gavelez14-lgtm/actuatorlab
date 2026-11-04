@@ -157,6 +157,12 @@ export function VaneModel({ mats, onSelect, onHover, rootRef }: { mats: Material
             <cylinderGeometry args={[0.018, 0.018, 0.022, 6]} />
           </mesh>
         ))}
+        {/* cast stiffening ribs running over the case */}
+        {Array.from({ length: 16 }, (_, i) => (i / 16) * Math.PI * 2).map((a) => (
+          <mesh key={`rib${a}`} position={[(VANE.drumR + 0.012) * Math.sin(a), 0, (VANE.drumR + 0.012) * Math.cos(a)]} rotation={[0, a, 0]} material={mats.vaneCase} raycast={shellRaycast}>
+            <boxGeometry args={[0.035, VANE.halfY * 2 - 0.1, 0.03]} />
+          </mesh>
+        ))}
         {/* integral NAMUR manifold pad for a direct-mount solenoid */}
         <RoundedBox args={[0.3, 0.2, 0.06]} radius={0.015} smoothness={2} position={[0.33, 0.12, VANE.drumR - 0.08]} rotation={[0, 0.55, 0]} material={mats.vaneCase} raycast={shellRaycast} />
         {/* solid body around the chamber (non-chamber sector) and the chamber's curved wall */}
@@ -211,13 +217,16 @@ export function VaneModel({ mats, onSelect, onHover, rootRef }: { mats: Material
           <mesh position={[0, -0.68, 0]} material={mats.stem}>
             <cylinderGeometry args={[0.13, 0.13, 0.24, 6]} />
           </mesh>
-          {/* NAMUR shaft end with a flat parallel to the vane: the vane position indicator */}
+          {/* NAMUR shaft end under a red dome cap; the black stripe runs parallel to the vane */}
           <group position={[0, VANE.halfY + 0.12, 0]}>
             <mesh material={mats.shaft}>
               <cylinderGeometry args={[0.06, 0.06, 0.12, 24]} />
             </mesh>
-            <mesh position={[0, 0.065, -0.02]} material={mats.indicatorStripe}>
-              <boxGeometry args={[0.028, 0.01, 0.12]} />
+            <mesh position={[0, 0.06, 0]} scale={[1, 0.75, 1]} material={mats.domeRed}>
+              <sphereGeometry args={[0.13, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            </mesh>
+            <mesh position={[0, 0.062, 0]} scale={[1, 0.77, 1]} material={mats.domeBlack}>
+              <sphereGeometry args={[0.132, 32, 16, (3 * Math.PI) / 2 - 0.1, 0.2, 0, Math.PI / 2]} />
             </mesh>
           </group>
         </Pick>
