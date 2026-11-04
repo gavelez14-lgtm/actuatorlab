@@ -15,6 +15,7 @@ import { ModeGuide } from "./ModeGuide";
 import { EngineeringOverlay } from "./EngineeringOverlay";
 import { useEngine, useSimSelector, useSimState } from "./SimulationProvider";
 import { FAMILY_UI, MENU_GROUPS, setupHref, simulatorHref } from "./familyUi";
+import { SupplyBadge } from "./SupplyBadge";
 import type { ActuatorFamilyId } from "@/lib/sim/types";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
@@ -45,6 +46,7 @@ function StatusLine() {
       <p className="pointer-events-auto glass rounded-full px-3.5 py-1.5 text-[13px] text-fg" aria-live="polite">
         {s.status}
       </p>
+      <SupplyBadge className="pointer-events-auto glass rounded-full px-3 py-1" />
       {s.notice && (
         <p className="pointer-events-auto glass rounded-2xl px-3.5 py-2 text-[13px] text-fg-2" role="status">
           {s.notice}

@@ -256,3 +256,72 @@ export function setupHref(s: SimulationState) {
   if (s.explode >= 0.5) p.set("explode", "1");
   return simulatorHref(s.config.family, p);
 }
+
+/* ---------------- Supply medium ---------------- */
+
+export type MediumKind = "air" | "gas" | "oil" | "electric";
+
+/** Colours used for lines, flow markers and the supply readout (same everywhere). */
+export const MEDIUM_COLOURS: Record<MediumKind, string> = {
+  air: "#3A9BE0",
+  gas: "#F2C94C",
+  oil: "#D07A2C",
+  electric: "#A78BFA",
+};
+
+export interface SupplyMedium {
+  /** What drives the actuator, in plain words. */
+  label: string;
+  /** Medium delivered to the cylinder or motor (sets line and marker colour). */
+  working: MediumKind;
+  /** Medium arriving from outside, when different (gas over oil, electro-hydraulic). */
+  source?: MediumKind;
+}
+
+export function supplyMedium(family: ActuatorFamilyId): SupplyMedium {
+  switch (family) {
+    case "gas-scotch-yoke":
+      return { label: "Pipeline gas", working: "gas" };
+    case "gas-over-oil":
+      return { label: "Pipeline gas pushing oil", working: "oil", source: "gas" };
+    case "hydraulic-scotch-yoke":
+    case "hydraulic-rack-pinion":
+      return { label: "Hydraulic oil", working: "oil" };
+    case "electro-hydraulic":
+      return { label: "Electric power, pumped oil", working: "oil", source: "electric" };
+    case "electric-part-turn":
+    case "electric-multi-turn":
+    case "electric-compact-part-turn":
+      return { label: "Electric power", working: "electric" };
+    default:
+      return { label: "Instrument air", working: "air" };
+  }
+}
+
+/** One-line reading of the supply: value and what it is doing now. */
+export function supplyReading(s: SimulationState): { value: string; state: string; ok: boolean } {
+  const f = s.config.family;
+  const moving = s.airFlowing;
+  if (supplyMedium(f).working === "electric")
+    return { value: s.supplyAvailable ? "power on" : "power off", state: s.electric.motorRunning ? "motor running" : moving ? "hand drive" : "motor off", ok: s.supplyAvailable };
+  if (f === "electro-hydraulic")
+    return {
+      value: `${s.supplyAvailable ? "power on" : "power off"}, oil ${s.eh.pressure.toFixed(0)} bar`,
+      state: s.eh.motorRunning ? "pump running" : s.eh.dumping ? "oil returning" : "oil locked in",
+      ok: s.supplyAvailable,
+    };
+  if (f === "gas-scotch-yoke" || f === "gas-over-oil") {
+    const g = s.gas;
+    return {
+      value: `line ${g.pipeline.toFixed(0)} bar, stored ${g.tank.toFixed(0)} bar`,
+      state: g.ruptured ? "line ruptured" : !s.supplyAvailable ? "isolated" : moving ? (f === "gas-over-oil" ? "oil flowing" : "gas flowing") : "holding",
+      ok: s.supplyAvailable && !g.ruptured,
+    };
+  }
+  const decimals = FAMILY_UI[f].supply?.decimals ?? 1;
+  return {
+    value: s.supplyAvailable ? `${s.supplyPressure.toFixed(decimals)} bar` : "0 bar",
+    state: !s.supplyAvailable ? "supply lost" : moving ? (s.chamberA === "supply" || s.chamberB === "supply" ? "flowing in" : "venting") : "holding",
+    ok: s.supplyAvailable,
+  };
+}

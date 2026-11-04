@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { LazyMount } from "@/components/ui/LazyMount";
 import { FAMILY_UI, modelPressure, simulatorHref } from "@/components/sim/familyUi";
 import { TorqueChart } from "@/components/sim/TorqueChart";
+import { SupplyBadge } from "@/components/sim/SupplyBadge";
 
 const SimViewport = dynamic(() => import("@/components/three/SimViewport").then((m) => m.SimViewport), {
   ssr: false,
@@ -231,6 +232,7 @@ function MiniControls({ supplyToggle, href, extras, strokeTimer, hideStatus }: {
         {Math.round(s.position * 100)}% open,{" "}
         {isMultiTurn(s.config.family) ? `${(s.stroke * MULTI_TURN.outputTurns).toFixed(1)} turns` : `${s.outputAngle.toFixed(0)}°`}
       </span>
+      <SupplyBadge compact className="ml-1" />
       {strokeTimer && <StrokeTimer />}
       {supplyToggle && (
         <div className="min-w-[150px]">

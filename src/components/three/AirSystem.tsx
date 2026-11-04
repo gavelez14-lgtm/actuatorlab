@@ -1,5 +1,6 @@
 "use client";
 
+import { MEDIUM_COLOURS } from "@/components/sim/familyUi";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
@@ -90,10 +91,15 @@ interface Stream {
 const MARKERS_PER_STREAM = 7;
 const MAX_STREAMS = 5;
 const MAX_SEGMENTS = 2; // per chamber
-const SUPPLY_COLOR = new THREE.Color("#5DB7EE");
 const EXHAUST_COLOR = new THREE.Color("#C3C9D0");
-const OIL_COLOR = new THREE.Color("#E3A12B");
-const OIL_RETURN_COLOR = new THREE.Color("#9C7A3C");
+/** Supply colour per working medium (shared with the supply readout and lines). */
+const SUPPLY_COLORS: Record<"air" | "gas" | "oil", THREE.Color> = {
+  air: new THREE.Color(MEDIUM_COLOURS.air),
+  gas: new THREE.Color(MEDIUM_COLOURS.gas),
+  oil: new THREE.Color(MEDIUM_COLOURS.oil),
+};
+/** Returning oil is a darker shade of the same oil; air and gas exhaust read grey. */
+const OIL_RETURN_COLOR = new THREE.Color("#8A5A2A");
 
 function streamsFor(a: ChamberCondition, b: ChamberCondition, springReturn: boolean, velocity: number): Stream[] {
   const out: Stream[] = [];
@@ -120,9 +126,12 @@ export function AirSystem({
   active,
   layout = SCOTCH_YOKE_AIR,
   oil = false,
+  gas = false,
 }: {
-  /** Show the working fluid as oil (gas over oil) instead of air or gas. */
+  /** Working fluid is oil (hydraulic, gas over oil, electro-hydraulic). */
   oil?: boolean;
+  /** Working fluid is pipeline gas (direct gas). */
+  gas?: boolean;
   mats: MaterialSet;
   springReturn: boolean;
   active: boolean;
@@ -130,6 +139,13 @@ export function AirSystem({
 }) {
   const { engine } = useEngine();
   const reduced = usePrefersReducedMotion();
+  const medium: "air" | "gas" | "oil" = oil ? "oil" : gas ? "gas" : "air";
+  const supplyColor = SUPPLY_COLORS[medium];
+  const returnColor = oil ? OIL_RETURN_COLOR : EXHAUST_COLOR;
+  // Lines take the medium's colour in every view, so the supply is evident without the flow mode.
+  useEffect(() => {
+    mats.tubing.color.set(MEDIUM_COLOURS[medium]);
+  }, [mats, medium]);
   const C = layout.curves;
 
   const tubes = useMemo(() => {
@@ -178,7 +194,7 @@ export function AirSystem({
         mesh.position.set((seg.x0 + seg.x1) / 2, seg.y, seg.z);
         mesh.scale.set(len, seg.r, seg.r);
         const mat = mesh.material as THREE.MeshBasicMaterial;
-        mat.color.copy(cond === "supply" ? (oil ? OIL_COLOR : SUPPLY_COLOR) : oil ? OIL_RETURN_COLOR : EXHAUST_COLOR);
+        mat.color.copy(cond === "supply" ? supplyColor : returnColor);
         mat.opacity = cond === "supply" ? 0.38 : 0.14;
       }
     };
@@ -187,7 +203,8 @@ export function AirSystem({
 
     const im = markers.current;
     if (!im) return;
-    if (!active || !s.airFlowing) {
+    // Flow markers run in every view while the medium is moving; chamber fills stay in the flow view.
+    if (!s.airFlowing) {
       im.count = 0;
       im.instanceMatrix.needsUpdate = true;
       return;
@@ -206,7 +223,7 @@ export function AirSystem({
         tmp.q.setFromUnitVectors(tmp.f, tmp.t.normalize());
         tmp.m.compose(tmp.p, tmp.q, tmp.s);
         im.setMatrixAt(n, tmp.m);
-        im.setColorAt(n, st.kind === "supply" ? (oil ? OIL_COLOR : SUPPLY_COLOR) : oil ? OIL_RETURN_COLOR : EXHAUST_COLOR);
+        im.setColorAt(n, st.kind === "supply" ? supplyColor : returnColor);
         n++;
       }
     }

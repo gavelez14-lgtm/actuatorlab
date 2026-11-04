@@ -476,7 +476,7 @@ export function ActuatorModel({ mats, onSelect, onHover, rootRef }: ActuatorMode
 
       {/* the control block sits on the cylinder, so it follows the slimmer high-pressure bore down */}
       <group position={[0, -(1 - cs) * 0.43, 0]}>
-        <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil || eh || hydraulic} />
+        <AirSystem mats={mats} springReturn={springReturn} active={mode === "energy"} oil={overOil || eh || hydraulic} gas={gas && !overOil} />
       </group>
       {eh && <ElectroHydraulicModule mats={mats} pick={pick} showLabels={showLabels} />}
       {gas && <GasSystem mats={mats} pick={pick} showLabels={showLabels} shellRaycast={shellRaycast} overOil={overOil} />}

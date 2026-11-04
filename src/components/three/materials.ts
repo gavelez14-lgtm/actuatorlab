@@ -96,7 +96,7 @@ const SPECS = {
   tubing: { color: "#2C7DB5", metalness: 0.1, roughness: 0.45, component: null },
   fitting: { color: "#B9A06A", metalness: 0.85, roughness: 0.3, component: null },
   controlBlock: { color: "#40464F", metalness: 0.4, roughness: 0.5, component: null },
-  hydCylinder: { color: "#AEB5BD", metalness: 0.85, roughness: 0.3, component: "hydraulic-override", shell: true },
+  hydCylinder: { color: "#525A65", metalness: 0.35, roughness: 0.5, component: "hydraulic-override", shell: true },
   hydPiston: { color: "#C9A66B", metalness: 0.8, roughness: 0.35, component: "hydraulic-override" },
   oil: { color: "#C98A1B", metalness: 0, roughness: 0.4, component: "hydraulic-override" },
   pumpBody: { color: "#3C434C", metalness: 0.45, roughness: 0.5, component: "hand-pump" },
@@ -106,7 +106,13 @@ const SPECS = {
   gasControl: { color: "#C3C8CD", metalness: 0.85, roughness: 0.3, component: "gas-controls" },
   gaugeFace: { color: "#F1F3F5", metalness: 0, roughness: 0.6, component: "gas-controls" },
   gaugeNeedle: { color: "#C8352B", metalness: 0.1, roughness: 0.5, component: "gas-controls" },
-  gasLine: { color: "#B9A06A", metalness: 0.85, roughness: 0.3, component: "gas-controls" },
+  // Gas and oil lines are stainless tubing in the photographs.
+  gasLine: { color: "#C8CDD2", metalness: 0.92, roughness: 0.22, component: "gas-controls" },
+  // Painted hand pump and selector blocks, and the GO tank frame (follow the body finish).
+  pumpPaint: { color: "#525A65", metalness: 0.35, roughness: 0.5, component: "hand-pump" },
+  goFrame: { color: "#525A65", metalness: 0.35, roughness: 0.55, component: "gas-tank" },
+  junctionBox: { color: "#E6E8EA", metalness: 0.1, roughness: 0.55, component: "gas-controls" },
+  bellows: { color: "#1C1E21", metalness: 0.1, roughness: 0.7, component: "hand-pump" },
 } satisfies Record<string, MatSpec>;
 
 export type MaterialKey = keyof typeof SPECS;
@@ -223,7 +229,7 @@ export function makeShellRaycast(getPlanes: () => THREE.Plane[], isGhost: () => 
 }
 
 /** Painted enclosure parts and their per-finish colours. */
-const PAINTED: MaterialKey[] = ["housing", "housingTrim", "canister", "endCaps", "motor", "controlCover", "terminalBox", "thrustBase", "gasTank", "ehController", "ehReservoir", "ehMotor", "cylinder"];
+const PAINTED: MaterialKey[] = ["housing", "housingTrim", "canister", "endCaps", "motor", "controlCover", "terminalBox", "thrustBase", "gasTank", "ehController", "ehReservoir", "ehMotor", "cylinder", "pumpPaint", "goFrame", "hydCylinder"];
 export const PAINT_COLOURS: Record<PaintFinish, { main: string; trim: string }> = {
   graphite: { main: "#525A65", trim: "#3C434C" },
   red: { main: "#A6231C", trim: "#7E1A15" },

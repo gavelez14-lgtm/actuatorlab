@@ -697,13 +697,13 @@ export const GAS_COMPONENTS: ComponentInfo[] = [
     function: "Lever pump that feeds oil to the override cylinder.",
     description:
       "Each stroke of the lever displaces a small volume of oil, so a full valve stroke takes many lever strokes. A direction valve selects which side of the override cylinder receives oil; a reservoir sits on top of the pump.",
-    focus: [3.1, 0.45, GZ],
+    focus: [0.62, 0.9, 0.06],
     distance: 2.2,
     group: "actuator",
   },
   {
     id: "gas-tank",
-    name: "Reserve gas tank",
+    name: "Power gas storage tank",
     role: "Energy storage",
     function: "Stores pipeline gas behind a check valve for at least one stroke when the line pressure collapses.",
     description:
@@ -715,13 +715,13 @@ export const GAS_COMPONENTS: ComponentInfo[] = [
   },
   {
     id: "gas-controls",
-    name: "Line-break control",
+    name: "Control cabinet (line break)",
     role: "Sensing and control",
     function: "Watches the rate of pipeline pressure drop and closes the valve when it exceeds a set point.",
     description:
       "A pipeline rupture shows up as pressure falling much faster than normal operation ever causes. The control compares the rate of drop with a set point, and only trips if it stays above it for a delay, so short transients do not shut the line. Once tripped it latches until an operator resets it.",
     caveat: "Real line-break systems may combine rate-of-drop with low-pressure and high-pressure trips, and can be mechanical or electronic.",
-    focus: [0.92, -0.78, 0.8],
+    focus: [-0.52, 0.45, -0.62],
     distance: 2.4,
     group: "actuator",
   },
@@ -733,10 +733,10 @@ export const GAS_OVER_OIL_COMPONENTS: ComponentInfo[] = [
     id: "hand-pump",
     name: "Hand pumps (open and close)",
     role: "Motive power",
-    function: "Two lever pumps, one for each direction, that drive the hydraulic cylinder by hand.",
+    function: "Two lever pumps on the tank frame, one for each direction, that drive the hydraulic cylinder by hand.",
     description:
       "Because the cylinder is already hydraulic, manual override needs no separate cylinder: a selector valve lets each pump push oil into one side of the piston. Using one pump per direction keeps the two gas/oil tanks from leaking into each other.",
-    focus: [2.62, -0.9, 0.86],
+    focus: [0, 0.85, 0.42],
     distance: 2.2,
     group: "actuator",
   },
@@ -759,7 +759,7 @@ export const GAS_OVER_OIL_COMPONENTS: ComponentInfo[] = [
     description:
       "Control valves admit pipeline gas to the top of one tank. Its oil is pushed into the cylinder while oil from the other side returns to the second tank, whose gas is vented. Watch the oil levels swap as the valve strokes. Tank volume must cover a full stroke of oil.",
     caveat: "Tank arrangement, volumes and any separate gas storage vary with design and duty.",
-    focus: [1.67, -0.9, 0.8],
+    focus: [1.17, 0.8, 0.62],
     distance: 2.8,
     group: "actuator",
   },
@@ -770,7 +770,7 @@ export const GAS_OVER_OIL_COMPONENTS: ComponentInfo[] = [
     function: "Meter the oil to set the stroke speed in each direction.",
     description:
       "Because oil is metered rather than gas, stroke time is steady and adjustable, and it barely changes with pipeline pressure. That control is a main reason to choose gas over oil for large pipeline valves, where slamming shut can cause surge.",
-    focus: [1.3, -1.0, 0.8],
+    focus: [1.2, -0.1, 0.7],
     distance: 2.4,
     group: "actuator",
   },
@@ -781,7 +781,7 @@ export const GAS_OVER_OIL_COMPONENTS: ComponentInfo[] = [
     function: "Closes the valve on a fast pressure drop or a sustained low pipeline pressure.",
     description:
       "As on the direct-gas actuator, a rate-of-drop monitor detects a rupture. A low-pressure trip adds a second condition: if pipeline pressure stays below a set point, the valve closes even if it fell slowly. Both latch until reset.",
-    focus: [0.92, -0.78, 0.8],
+    focus: [1.6, 0.8, 0.6],
     distance: 2.4,
     group: "actuator",
   },
