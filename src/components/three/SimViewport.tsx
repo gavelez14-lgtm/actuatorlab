@@ -82,11 +82,12 @@ const GAS_VIEWS: Record<VisualizationMode, View> = {
 
 /** Single-vane drum on the ball valve. */
 const VANE_VIEWS: Record<VisualizationMode, View> = {
-  normal: { target: [0, -0.55, 0], dir: [0.55, 0.42, 0.72], distance: 4.8 },
+  // The case is a fan behind the shaft (-Z): outside views face it so its sector shape reads.
+  normal: { target: [0, -0.5, -0.15], dir: [0.62, 0.45, -0.64], distance: 4.8 },
   cutaway: { target: [0, -0.2, -0.15], dir: [0.35, 0.82, -0.45], distance: 3.8 },
   mechanical: { target: [0, 0.0, -0.2], dir: [0.25, 0.9, -0.36], distance: 2.6 },
   energy: { target: [0, 0.0, -0.15], dir: [0.3, 0.84, -0.45], distance: 3.4 },
-  engineering: { target: [0, -0.55, 0], dir: [0.55, 0.42, 0.72], distance: 4.8 },
+  engineering: { target: [0, -0.5, -0.15], dir: [0.62, 0.45, -0.64], distance: 4.8 },
 };
 
 function viewsFor(kind: MechanismKind, gas = false) {

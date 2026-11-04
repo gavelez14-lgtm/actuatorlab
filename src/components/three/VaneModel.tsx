@@ -43,6 +43,30 @@ const VANE_AIR: AirLayout = {
   labels: { supply: v(0, -0.7, 0.95), exhaust: v(0.7, TOP + 0.32, 0.45), breather: PORT_B.clone().setY(TOP + 0.5) },
 };
 
+/** Sector case outline: a little wider than the chamber, with a hub round the shaft. */
+const CASE = {
+  a0: CHAMBER_A0 - 0.14,
+  a1: CHAMBER_B1 + 0.14,
+  hubR: 0.3,
+  ribs: [-0.6, -0.2, 0.2, 0.6],
+} as const;
+/** Bolts round the parting flange: along the arc, both radial edges and the hub. */
+const caseBolts: [number, number][] = (() => {
+  const out: [number, number][] = [];
+  const r = VANE.drumR + 0.025;
+  for (let i = 0; i <= 8; i++) {
+    const a = CASE.a0 + ((CASE.a1 - CASE.a0) * i) / 8;
+    out.push([r * Math.sin(a), -r * Math.cos(a)]);
+  }
+  for (const a of [CASE.a0 - 0.08, CASE.a1 + 0.08])
+    for (const rr of [0.36, 0.47]) out.push([rr * Math.sin(a), -rr * Math.cos(a)]);
+  for (let i = 1; i < 6; i++) {
+    const a = CASE.a1 + 0.3 + ((Math.PI * 2 - (CASE.a1 - CASE.a0) - 0.6) * i) / 6;
+    out.push([(CASE.hubR + 0.025) * Math.sin(a), -(CASE.hubR + 0.025) * Math.cos(a)]);
+  }
+  return out;
+})();
+
 /** Flat ring sector whose angles are updated in place (no per-frame allocation). */
 const SECTOR_SEGMENTS = 24;
 function makeSector() {
@@ -86,16 +110,41 @@ export function VaneModel({ mats, onSelect, onHover, rootRef }: { mats: Material
   );
 
   const geo = useMemo(() => {
-    // Drum with the chamber cut out: a lathe of the outer skin plus a solid "filler" for the non-chamber sector.
+    // The chamber's curved outer wall (the case is a separate sector shell below).
     const chamberSpan = CHAMBER_B1 - CHAMBER_A0;
-    const fillerStart = CHAMBER_B1;
-    const fillerLen = Math.PI * 2 - chamberSpan;
-    // CylinderGeometry thetaStart is measured from +Z toward +X; convert from our convention (from -Z toward +X).
+    // CylinderGeometry theta is measured from +Z toward +X; ours from -Z toward +X.
     const toTheta = (a: number) => Math.PI - a;
-    const filler = new THREE.CylinderGeometry(VANE.chamberR + 0.005, VANE.chamberR + 0.005, VANE.chamberHalfY * 2, 48, 1, false, toTheta(fillerStart + fillerLen), fillerLen);
-    const skin = new THREE.CylinderGeometry(VANE.drumR, VANE.drumR, VANE.halfY * 2, 64, 1, true);
+    // Sector-shaped case (as photographed): a fan following the vane swing, shaft at the apex.
+    const caseShape = (grow: number) => {
+      const sh = new THREE.Shape();
+      const R = VANE.drumR + grow;
+      const Rh = CASE.hubR + grow;
+      const n = 40;
+      // shape (x, y) maps to world (x, -z): direction a -> (sin a, cos a)
+      for (let i = 0; i <= n; i++) {
+        const a = CASE.a0 - grow * 0.4 + ((CASE.a1 - CASE.a0 + grow * 0.8) * i) / n;
+        const pt: [number, number] = [R * Math.sin(a), R * Math.cos(a)];
+        if (i === 0) sh.moveTo(...pt);
+        else sh.lineTo(...pt);
+      }
+      const back = Math.PI * 2 - (CASE.a1 - CASE.a0 + grow * 0.8);
+      for (let i = 0; i <= n; i++) {
+        const a = CASE.a1 + grow * 0.4 + (back * i) / n;
+        sh.lineTo(Rh * Math.sin(a), Rh * Math.cos(a));
+      }
+      sh.closePath();
+      return sh;
+    };
+    const extrude = (shape: THREE.Shape, depth: number, bevel: number) => {
+      const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 24 });
+      g.rotateX(-Math.PI / 2);
+      g.translate(0, -depth / 2, 0);
+      return g;
+    };
+    const skin = extrude(caseShape(0), VANE.halfY * 2 - 0.08, 0.04);
+    const flange = extrude(caseShape(0.05), 0.06, 0);
     const wall = new THREE.CylinderGeometry(VANE.chamberR, VANE.chamberR, VANE.chamberHalfY * 2, 48, 1, true, toTheta(CHAMBER_B1), chamberSpan);
-    return { filler, skin, wall, secA: makeSector(), secB: makeSector() };
+    return { skin, flange, wall, secA: makeSector(), secB: makeSector() };
   }, []);
   useEffect(() => () => Object.values(geo).forEach((g) => g.dispose()), [geo]);
 
@@ -139,34 +188,38 @@ export function VaneModel({ mats, onSelect, onHover, rootRef }: { mats: Material
   return (
     <group ref={rootRef}>
       <Pick id="housing" {...pick}>
-        {/* two cast outer cases (upper and lower), joined at a bolted parting flange */}
+        {/* two cast outer cases (upper and lower), sector-shaped, bolted round a parting flange */}
         <mesh geometry={geo.skin} material={mats.vaneCase} raycast={shellRaycast} />
-        {[-1, 1].map((sg) => (
-          <mesh key={sg} position={[0, sg * (VANE.halfY - 0.04), 0]} material={mats.vaneCase} raycast={shellRaycast}>
-            <cylinderGeometry args={[VANE.drumR + 0.015, VANE.drumR + 0.015, 0.08, 64]} />
+        <mesh geometry={geo.flange} material={mats.vaneCase} raycast={shellRaycast} />
+        {caseBolts.map(([x, z]) => (
+          <mesh key={`${x.toFixed(3)}${z.toFixed(3)}`} position={[x, 0.045, z]} material={mats.vaneFixings}>
+            <cylinderGeometry args={[0.017, 0.017, 0.022, 6]} />
           </mesh>
         ))}
-        <mesh material={mats.vaneCase} raycast={shellRaycast}>
-          <cylinderGeometry args={[VANE.drumR + 0.05, VANE.drumR + 0.05, 0.07, 64]} />
-        </mesh>
-        <mesh material={mats.knob} raycast={shellRaycast}>
-          <cylinderGeometry args={[VANE.drumR + 0.052, VANE.drumR + 0.052, 0.006, 64]} />
-        </mesh>
-        {Array.from({ length: 12 }, (_, i) => (i / 12) * Math.PI * 2 + Math.PI / 12).map((a) => (
-          <mesh key={a} position={[(VANE.drumR + 0.03) * Math.sin(a), 0.045, (VANE.drumR + 0.03) * Math.cos(a)]} material={mats.vaneFixings}>
-            <cylinderGeometry args={[0.018, 0.018, 0.022, 6]} />
-          </mesh>
-        ))}
-        {/* cast stiffening ribs running over the case */}
-        {Array.from({ length: 16 }, (_, i) => (i / 16) * Math.PI * 2).map((a) => (
-          <mesh key={`rib${a}`} position={[(VANE.drumR + 0.012) * Math.sin(a), 0, (VANE.drumR + 0.012) * Math.cos(a)]} rotation={[0, a, 0]} material={mats.vaneCase} raycast={shellRaycast}>
-            <boxGeometry args={[0.035, VANE.halfY * 2 - 0.1, 0.03]} />
-          </mesh>
-        ))}
-        {/* integral NAMUR manifold pad for a direct-mount solenoid */}
-        <RoundedBox args={[0.3, 0.2, 0.06]} radius={0.015} smoothness={2} position={[0.33, 0.12, VANE.drumR - 0.08]} rotation={[0, 0.55, 0]} material={mats.vaneCase} raycast={shellRaycast} />
-        {/* solid body around the chamber (non-chamber sector) and the chamber's curved wall */}
-        <mesh geometry={geo.filler} material={mats.vaneCase} raycast={shellRaycast} />
+        {/* radial stiffening ribs across the top and bottom of the case */}
+        {[-1, 1].flatMap((sy) =>
+          CASE.ribs.map((a) => (
+            <mesh
+              key={`rib${sy}${a}`}
+              position={dirAt(a, (CASE.hubR + VANE.drumR) / 2, sy * (VANE.halfY - 0.005))}
+              rotation={[0, -a, 0]}
+              material={mats.vaneCase}
+              raycast={shellRaycast}
+            >
+              <boxGeometry args={[0.04, 0.05, VANE.drumR - CASE.hubR - 0.06]} />
+            </mesh>
+          )),
+        )}
+        {/* integral NAMUR manifold pad on the case's side face */}
+        <RoundedBox
+          args={[0.06, 0.2, 0.26]}
+          radius={0.015}
+          smoothness={2}
+          position={dirAt(CASE.a1, (CASE.hubR + VANE.drumR) / 2).add(dirAt(CASE.a1 + Math.PI / 2, 0.04))}
+          rotation={[0, -CASE.a1, 0]}
+          material={mats.vaneCase}
+          raycast={shellRaycast}
+        />
         <mesh geometry={geo.wall} material={mats.endCaps} raycast={shellRaycast} />
         {/* chamber end walls (abutments) */}
         {[CHAMBER_A0, CHAMBER_B1].map((a) => (
