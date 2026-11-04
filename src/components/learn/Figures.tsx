@@ -3,7 +3,7 @@
 import type { FigureId } from "@/data/lessons";
 import { TorqueChart } from "@/components/sim/TorqueChart";
 import { Illustrative } from "@/components/ui/primitives";
-import { EmbeddedSim } from "./EmbeddedSim";
+import { EmbeddedSim, FamilyPickerDemo } from "./EmbeddedSim";
 
 function Frame({ children, caption }: { children: React.ReactNode; caption: string }) {
   return (
@@ -177,8 +177,8 @@ export function LessonFigure({ id }: { id: FigureId }) {
     case "scotch-yoke-live":
       return (
         <figure className="my-5">
-          <EmbeddedSim config={{ actionType: "double-acting" }} mode="cutaway" autoCycle ariaLabel="Live 3D Scotch yoke in half section, cycling open and closed." />
-          <figcaption className="mt-2 text-[12.5px] text-muted">Live model in half section, cycling automatically. Watch the pin slide outward in the slot near the ends of travel.</figcaption>
+          <EmbeddedSim config={{ actionType: "double-acting" }} mode="mechanical" extras={["yoke"]} chart ariaLabel="Live 3D Scotch yoke in mechanism view with a yoke choice and live torque chart." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Press Open and watch the pin slide outward in the slot near the ends of travel, where the chart shows torque rising. Switch to a canted yoke and the swing arc and the curve both shift.</figcaption>
         </figure>
       );
     case "spring-return-live":
@@ -191,8 +191,8 @@ export function LessonFigure({ id }: { id: FigureId }) {
     case "rack-pinion-live":
       return (
         <figure className="my-5">
-          <EmbeddedSim config={{ family: "pneumatic-rack-pinion", actionType: "spring-return", failPosition: "fail-closed" }} mode="cutaway" autoCycle ariaLabel="Live 3D twin-piston rack and pinion in half section, cycling open and closed." />
-          <figcaption className="mt-2 text-[12.5px] text-muted">Live model in half section. The pistons move apart on the air stroke, compressing the spring cartridges; the racks turn the pinion between them.</figcaption>
+          <EmbeddedSim config={{ family: "pneumatic-rack-pinion", actionType: "spring-return", failPosition: "fail-closed" }} mode="cutaway" extras={["spring"]} chart ariaLabel="Live 3D twin-piston rack and pinion in half section with an action choice and live torque chart." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">The pistons move apart on the air stroke, compressing the spring cartridges; the racks turn the pinion between them. Switch to double acting: the springs go and the torque line goes flat.</figcaption>
         </figure>
       );
     case "rack-pinion-torque":
@@ -275,6 +275,60 @@ export function LessonFigure({ id }: { id: FigureId }) {
         <figure className="my-5">
           <EmbeddedSim config={{ family: "hydraulic-scotch-yoke", actionType: "double-acting" }} mode="normal" extras={["flow", "pressure"]} strokeTimer ariaLabel="Live 3D hydraulic actuator with flow-control and pressure sliders and a stroke timer." />
           <figcaption className="mt-2 text-[12.5px] text-muted">Now on metered oil: change the flow control and the stroke time follows it; change the pressure and it barely moves. Pressure sets torque, flow sets speed. Illustrative.</figcaption>
+        </figure>
+      );
+    case "command-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "spring-return", failPosition: "fail-closed" }} mode="normal" supplyToggle ariaLabel="Live 3D actuated ball valve with open, close and supply controls." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">You send Open or Close; the actuator supplies the force. Turn the supply off while it is open and see what it does on its own.</figcaption>
+        </figure>
+      );
+    case "power-source-live":
+      return (
+        <figure className="my-5">
+          <FamilyPickerDemo
+            supplyToggle
+            ariaLabel="Live 3D actuator with a choice of power source"
+            options={[
+              { family: "pneumatic-scotch-yoke", label: "Air", config: { actionType: "spring-return", failPosition: "fail-closed" } },
+              { family: "electric-part-turn", label: "Electric" },
+              { family: "hydraulic-scotch-yoke", label: "Hydraulic", config: { actionType: "double-acting" } },
+              { family: "gas-scotch-yoke", label: "Pipeline gas", config: { actionType: "double-acting" } },
+              { family: "electro-hydraulic", label: "Electro-hydraulic", config: { actionType: "spring-return", failPosition: "fail-closed" } },
+            ]}
+          />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Same command, five power sources. Open the valve, then switch the supply off: the spring-return air and electro-hydraulic units close, the electric and double-acting units stay where they are.</figcaption>
+        </figure>
+      );
+    case "converter-live":
+      return (
+        <figure className="my-5">
+          <FamilyPickerDemo
+            mode="cutaway"
+            ariaLabel="Live 3D mechanisms that turn force into valve movement"
+            options={[
+              { family: "pneumatic-scotch-yoke", label: "Scotch yoke", config: { actionType: "double-acting" } },
+              { family: "pneumatic-rack-pinion", label: "Rack and pinion", config: { actionType: "double-acting" } },
+              { family: "pneumatic-vane", label: "Vane" },
+              { family: "electric-multi-turn", label: "Rising stem (multi-turn)" },
+            ]}
+          />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Three ways to get a quarter turn from air, and one that turns many times to make a straight-line stem movement. Press Open in each and follow the force path.</figcaption>
+        </figure>
+      );
+    case "yoke-torque-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "double-acting" }} mode="mechanical" extras={["pressure"]} chart ariaLabel="Live 3D Scotch yoke with a supply pressure slider and live torque chart." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">The chart&apos;s U shape is the 1/cos²φ lever. Change the pressure: the whole curve scales, but its shape does not. The orange line marks where the yoke is now.</figcaption>
+        </figure>
+      );
+    case "action-live":
+      return (
+        <figure className="my-5">
+          <EmbeddedSim config={{ actionType: "double-acting" }} mode="energy" extras={["spring"]} supplyToggle chart ariaLabel="Live 3D actuator in air-flow view with a spring-return or double-acting choice." />
+          <figcaption className="mt-2 text-[12.5px] text-muted">Double acting: air feeds one chamber and the other exhausts, both ways. Switch to spring return and only one chamber is fed. In each case, open the valve and turn the supply off.</figcaption>
         </figure>
       );
     case "yoke-compare":

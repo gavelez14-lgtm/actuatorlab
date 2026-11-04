@@ -28,7 +28,12 @@ export type FigureId =
   | "solenoid-live"
   | "limit-switch-live"
   | "stroke-time-live"
-  | "flow-control-live";
+  | "flow-control-live"
+  | "command-live"
+  | "power-source-live"
+  | "converter-live"
+  | "yoke-torque-live"
+  | "action-live";
 
 export interface Question {
   id: string;
@@ -89,6 +94,7 @@ export const LESSONS: Lesson[] = [
           "A person with a handwheel can operate a valve, but not from a control room, not in a fraction of a second during an emergency, and not thousands of times a day.",
           "Actuators let a control system operate valves remotely, repeatably and, when designed for it, automatically move them to a safe position if something goes wrong.",
         ],
+        figure: "command-live",
       },
       {
         heading: "What an actuator is not",
@@ -142,12 +148,14 @@ export const LESSONS: Lesson[] = [
           "The bracket holds the actuator square and concentric to the valve. The coupling transmits torque from the actuator shaft to the valve stem. Any misalignment adds side loads and wear, and any backlash shows up as lost motion.",
           "Many valves and actuators follow standard mounting patterns (ISO 5211 is common for part-turn valves), which makes them easier to pair. Always check the specific documentation.",
         ],
+        figure: "coupling-live",
       },
       {
         heading: "The valve sets the requirement",
         body: [
           "The valve's torque requirement depends on its type, size, seat materials, pressure and service. The actuator must exceed it at every point of the stroke, with a safety margin. That is why sizing starts with the valve data, not the actuator catalogue.",
         ],
+        figure: "valve-demand-live",
       },
     ],
     terms: [
@@ -197,6 +205,7 @@ export const LESSONS: Lesson[] = [
         body: [
           "**Electro-hydraulic** actuators contain their own motor and pump, so they need only electrical power yet deliver hydraulic force and can include a spring for fail-safe action. They suit remote sites with no air or hydraulic supply.",
         ],
+        figure: "power-source-live",
       },
       {
         heading: "Choosing between them",
@@ -252,6 +261,7 @@ export const LESSONS: Lesson[] = [
         body: [
           "A piston naturally produces linear force. To drive a quarter-turn valve, a pneumatic or hydraulic actuator needs a mechanism that converts linear movement to rotation. The two most common are the **Scotch yoke** and the **rack and pinion**, covered in the intermediate lessons.",
         ],
+        figure: "converter-live",
       },
     ],
     terms: [
@@ -300,6 +310,7 @@ export const LESSONS: Lesson[] = [
           "Most of a ball valve's torque comes from friction between the ball and its seats, and in the stem packing. It is usually highest when breaking the ball out of the closed seat, and again as it re-seats on closing. Flow and pressure add dynamic torques, especially on butterfly valves.",
           "The valve manufacturer provides the torque values for the specific valve, size and service. The simulator uses an illustrative shape, not real numbers.",
         ],
+        figure: "valve-demand-live",
       },
       {
         heading: "Position is not flow",
@@ -362,7 +373,7 @@ export const LESSONS: Lesson[] = [
           "Let **d** be the distance from the shaft to the pin's line of travel and **φ** the yoke's angle from centre. The pin sits at distance d/cos φ from the shaft, and only the part of the force perpendicular to the yoke turns it. Combining both gives **T = F · d / cos²φ**.",
           "At mid-stroke (φ = 0) the lever arm is shortest and torque is lowest. At the ends (φ = ±45°) cos²φ = 0.5, so torque is twice the mid-stroke value for the same force.",
         ],
-        figure: "torque-curves",
+        figure: "yoke-torque-live",
       },
       {
         heading: "Why that suits many valves",
@@ -503,6 +514,7 @@ export const LESSONS: Lesson[] = [
           "Air is supplied to one side of the piston to drive it one way, and to the other side to drive it back. A directional control valve (often a 5/2 solenoid valve) routes air to one chamber while venting the other.",
           "There is no spring. If the supply fails, **nothing stores energy** to move the valve, so it stays where it is. Fail-open or fail-closed behaviour needs extra stored energy, such as an air reservoir with its own control circuit.",
         ],
+        figure: "action-live",
       },
       {
         heading: "Spring return",
@@ -579,9 +591,9 @@ export const LESSONS: Lesson[] = [
         stat: { value: "90°", label: "Turning the coupling a quarter turn swaps fail closed for fail open on a spring-return quarter-turn actuator." },
         body: [
           "A spring-return actuator always drives to its **spring end of travel**. Whether that end is valve open or valve closed depends on how the actuator is mounted on the valve. Turning the coupling 90° (or mounting the actuator the other way) swaps the fail action.",
-          "Try it below: switch the supply off, then change Fail action in the simulator and repeat.",
+          "Try it below: open the valve and switch the supply off, then change the coupling and repeat.",
         ],
-        figure: "spring-return-live",
+        figure: "coupling-live",
       },
       {
         heading: "Other ways to fail safe",
@@ -644,6 +656,7 @@ export const LESSONS: Lesson[] = [
           "In a symmetric yoke the slot is radial and the stroke is centred: the yoke swings 45° either side of square to the piston. Torque is T = F·d / cos²φ, so it is lowest at mid-stroke and **twice as high at both ends**.",
           "That suits a ball valve well: the valve needs its highest torque at the ends, to break out of the seats and to re-seat.",
         ],
+        figure: "scotch-yoke-live",
       },
       {
         heading: "Where the demand really is",

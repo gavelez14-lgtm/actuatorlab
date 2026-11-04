@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Pause, Play, Timer } from "lucide-react";
-import type { ActuatorConfiguration, VisualizationMode } from "@/lib/sim/types";
+import type { ActuatorConfiguration, ActuatorFamilyId, VisualizationMode } from "@/lib/sim/types";
 import { GAS } from "@/lib/sim/gas";
+import { MULTI_TURN, isMultiTurn } from "@/lib/sim/electric";
 import { SimulationProvider, useEngine, useSimState } from "@/components/sim/SimulationProvider";
 import { Button, ButtonLink } from "@/components/ui/primitives";
 import { Range, Segmented, Switch } from "@/components/ui/controls";
@@ -31,7 +32,9 @@ export type ExtraControl =
   | "pressure" // supply pressure slider
   | "coupling" // fail closed / fail open (spring return)
   | "action" // spring return (3/2) / double acting (5/2)
-  | "flow"; // flow-control setting (oil)
+  | "flow" // flow-control setting (oil)
+  | "yoke" // symmetric / canted Scotch yoke
+  | "spring"; // spring return / double acting (neutral wording)
 
 function Row({ children }: { children: React.ReactNode }) {
   return <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2">{children}</div>;
@@ -56,6 +59,34 @@ function ExtraControls({ extras }: { extras: ExtraControl[] }) {
               { value: "ball", label: "Ball" },
               { value: "butterfly", label: "Butterfly" },
               { value: "plug", label: "Plug" },
+            ]}
+          />
+        </Row>
+      )}
+      {has("yoke") && (
+        <Row>
+          <span className="text-[12.5px] text-muted">Yoke</span>
+          <Segmented
+            label="Yoke"
+            value={s.config.yoke ?? "symmetric"}
+            onChange={(v) => engine.dispatch({ type: "set-config", config: { yoke: v } })}
+            options={[
+              { value: "symmetric", label: "Symmetric" },
+              { value: "canted", label: "Canted" },
+            ]}
+          />
+        </Row>
+      )}
+      {has("spring") && (
+        <Row>
+          <span className="text-[12.5px] text-muted">Action</span>
+          <Segmented
+            label="Action type"
+            value={s.config.actionType}
+            onChange={(v) => engine.dispatch({ type: "set-config", config: { actionType: v } })}
+            options={[
+              { value: "spring-return", label: "Spring return" },
+              { value: "double-acting", label: "Double acting" },
             ]}
           />
         </Row>
@@ -179,7 +210,8 @@ function MiniControls({ supplyToggle, href, extras, strokeTimer }: { supplyToggl
         <ArrowDownToLine aria-hidden /> Close
       </Button>
       <span className="num ml-1 text-[13px] text-fg-2">
-        {Math.round(s.position * 100)}% open, {s.outputAngle.toFixed(0)}°
+        {Math.round(s.position * 100)}% open,{" "}
+        {isMultiTurn(s.config.family) ? `${(s.stroke * MULTI_TURN.outputTurns).toFixed(1)} turns` : `${s.outputAngle.toFixed(0)}°`}
       </span>
       {strokeTimer && <StrokeTimer />}
       {supplyToggle && (
@@ -250,5 +282,32 @@ export function EmbeddedSim({
         <MiniControls supplyToggle={supplyToggle} href={simulatorHref(config.family ?? "pneumatic-scotch-yoke", params)} extras={all} strokeTimer={strokeTimer} />
       </div>
     </SimulationProvider>
+  );
+}
+
+/**
+ * The same lesson demo across several families. Switching family remounts the
+ * simulator (each family has its own engine module and model).
+ */
+export function FamilyPickerDemo({
+  options,
+  mode = "normal",
+  supplyToggle = false,
+  ariaLabel,
+}: {
+  options: { family: ActuatorFamilyId; label: string; config?: Partial<ActuatorConfiguration> }[];
+  mode?: VisualizationMode;
+  supplyToggle?: boolean;
+  ariaLabel?: string;
+}) {
+  const [family, setFamily] = useState(options[0].family);
+  const opt = options.find((o) => o.family === family) ?? options[0];
+  return (
+    <div>
+      <div className="mb-2 overflow-x-auto">
+        <Segmented label="Actuator" value={family} onChange={(v) => setFamily(v)} options={options.map((o) => ({ value: o.family, label: o.label }))} />
+      </div>
+      <EmbeddedSim key={family} config={{ family, ...opt.config }} mode={mode} supplyToggle={supplyToggle} ariaLabel={`${ariaLabel ?? "Live 3D actuator"}: ${opt.label}`} />
+    </div>
   );
 }
